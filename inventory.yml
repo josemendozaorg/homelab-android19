@@ -4,7 +4,7 @@ all:
       hosts:
         android16:
           ansible_host: 192.168.0.10
-          ansible_user: root
+          ansible_user: josemendoza
           ansible_python_interpreter: /usr/bin/python3
     proxmox:
       hosts:

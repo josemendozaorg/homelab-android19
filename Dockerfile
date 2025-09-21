@@ -27,9 +27,6 @@ RUN pip install --no-cache-dir \
 # Create workspace directory
 WORKDIR /workspace
 
-# Copy project files
-COPY . /workspace/
-
 # Set up SSH directory
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 
