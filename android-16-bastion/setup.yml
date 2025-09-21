@@ -1,0 +1,32 @@
+---
+- name: Initial Setup for Android #16 Bastion Host
+  hosts: bastion
+
+  tasks:
+    - name: Test connection
+      ping:
+
+    - name: Configure passwordless sudo for user
+      lineinfile:
+        path: /etc/sudoers.d/{{ ansible_user }}
+        line: "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      become: yes
+      tags: sudo-setup
+
+    - name: Verify sudo configuration
+      command: sudo -n whoami
+      register: sudo_test
+      failed_when: false
+      changed_when: false
+
+    - name: Display sudo status
+      debug:
+        msg: >
+          {% if sudo_test.rc == 0 %}
+          ✅ Passwordless sudo configured successfully
+          {% else %}
+          ❌ Passwordless sudo configuration failed
+          {% endif %}

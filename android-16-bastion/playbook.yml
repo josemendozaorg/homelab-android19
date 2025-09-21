@@ -1,7 +1,6 @@
 ---
 - name: Configure Android #16 Bastion Host
   hosts: bastion
-  become: yes
 
   tasks:
     - name: Test connection
@@ -10,9 +9,4 @@
     - name: Set hostname
       hostname:
         name: android16-bastion
-
-    - name: Update /etc/hosts
-      lineinfile:
-        path: /etc/hosts
-        line: "192.168.0.10 android16-bastion android16"
-        state: present
+      become: yes

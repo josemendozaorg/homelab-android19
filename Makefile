@@ -16,6 +16,9 @@ shell: ## Open shell in development container
 ping: ## Test connection to all machines
 	docker-compose exec -T homelab-dev ansible all -i inventory.yml -m ping
 
+setup-sudo: ## Configure passwordless sudo (run once)
+	docker-compose exec homelab-dev ansible-playbook --ask-become-pass android-16-bastion/setup.yml
+
 deploy: ## Deploy configuration to all machines
 	docker-compose exec -T homelab-dev ansible-playbook android-16-bastion/playbook.yml android-19-proxmox/playbook.yml
 
