@@ -22,8 +22,14 @@ setup-sudo: ## Configure passwordless sudo (run once)
 deploy-bastion: ## Deploy configuration to bastion host only
 	docker-compose exec -T homelab-dev ansible-playbook android-16-bastion/playbook.yml
 
-deploy-proxmox: ## Deploy configuration to Proxmox server only
+deploy-proxmox: ## Deploy base configuration to Proxmox server
 	docker-compose exec -T homelab-dev ansible-playbook android-19-proxmox/playbook.yml
+
+deploy-proxmox-services: ## Deploy all Proxmox services
+	docker-compose exec -T homelab-dev ansible-playbook android-19-proxmox/services.yml
+
+setup-adguard: ## Deploy AdGuard Home service only
+	docker-compose exec -T homelab-dev ansible-playbook android-19-proxmox/services.yml --tags adguard
 
 deploy: ## Deploy configuration to all machines
 	docker-compose exec -T homelab-dev ansible-playbook android-16-bastion/playbook.yml android-19-proxmox/playbook.yml

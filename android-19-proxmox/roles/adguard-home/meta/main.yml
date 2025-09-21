@@ -1,0 +1,16 @@
+galaxy_info:
+  author: Homelab Team
+  description: Install AdGuard Home LXC container using community script
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - proxmox
+    - lxc
+    - dns
+    - adguard
+
+dependencies: []

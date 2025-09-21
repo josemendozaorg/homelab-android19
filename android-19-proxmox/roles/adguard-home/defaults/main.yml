@@ -1,0 +1,30 @@
+---
+# AdGuard Home role defaults
+# These values are loaded from the infrastructure catalog
+
+# Load catalog values
+catalog: "{{ lookup('file', playbook_dir + '/infrastructure-catalog.yml') | from_yaml }}"
+
+# Container configuration from catalog
+adguard_container_id: 125
+adguard_static_ip: "{{ catalog.services[125].ip }}"
+adguard_gateway: "{{ catalog.network.gateway }}"
+adguard_netmask: "24"
+
+# Service configuration
+adguard_web_port: 3000
+adguard_dns_port: 53
+
+# Admin credentials
+adguard_admin_username: admin
+adguard_admin_password: homelab123
+
+# DNS settings
+adguard_upstream_dns:
+  - "1.1.1.1"
+  - "8.8.8.8"
+  - "9.9.9.9"
+
+# Bind addresses
+adguard_web_bind: "0.0.0.0"
+adguard_dns_bind: "0.0.0.0"

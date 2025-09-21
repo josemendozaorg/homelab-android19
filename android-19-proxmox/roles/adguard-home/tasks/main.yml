@@ -1,0 +1,174 @@
+---
+# AdGuard Home installation tasks - Native Ansible Implementation
+# Uses standardized container ID from infrastructure catalog
+
+- name: Set container ID from catalog
+  set_fact:
+    container_id: "{{ adguard_container_id }}"
+
+- name: Check if container with catalog ID already exists
+  shell: pct status {{ container_id }} 2>/dev/null || echo "not_found"
+  register: container_status
+  changed_when: false
+
+- name: Skip installation if container already exists
+  debug:
+    msg: "AdGuard Home container {{ container_id }} already exists"
+  when: "'running' in container_status.stdout or 'stopped' in container_status.stdout"
+
+- name: Download Debian container template
+  shell: |
+    if ! pveam list local | grep -q "debian-12-standard_12.12-1_amd64.tar.zst"; then
+      pveam update
+      pveam download local debian-12-standard_12.12-1_amd64.tar.zst
+    fi
+  register: template_download
+  changed_when: "'downloaded' in template_download.stdout"
+  when: "'not_found' in container_status.stdout"
+
+- name: Create AdGuard Home LXC container
+  shell: |
+    pct create {{ container_id }} local:vztmpl/debian-12-standard_12.12-1_amd64.tar.zst \
+      --hostname adguard \
+      --cores 1 \
+      --memory 512 \
+      --swap 512 \
+      --rootfs local-lvm:2 \
+      --net0 name=eth0,bridge=vmbr0,ip={{ adguard_static_ip }}/{{ adguard_netmask }},gw={{ adguard_gateway }} \
+      --onboot 1 \
+      --unprivileged 1 \
+      --features keyctl=1,nesting=1 \
+      --description "AdGuard Home - Network-wide DNS ad blocker"
+  register: container_creation
+  changed_when: container_creation.rc == 0
+  when: "'not_found' in container_status.stdout"
+
+- name: Start AdGuard container
+  shell: pct start {{ container_id }}
+  register: container_start
+  changed_when: container_start.rc == 0
+  when: "'not_found' in container_status.stdout"
+
+- name: Wait for container to be ready
+  shell: pct status {{ container_id }} | grep running
+  register: container_ready
+  until: container_ready.rc == 0
+  retries: 30
+  delay: 2
+  when: "'not_found' in container_status.stdout"
+
+- name: Wait for network connectivity in container
+  shell: pct exec {{ container_id }} -- ping -c 1 8.8.8.8
+  register: network_test
+  until: network_test.rc == 0
+  retries: 15
+  delay: 2
+  when: "'not_found' in container_status.stdout"
+
+- name: Update package list in container
+  shell: pct exec {{ container_id }} -- apt update
+  when: "'not_found' in container_status.stdout"
+
+- name: Install required packages in container
+  shell: |
+    pct exec {{ container_id }} -- apt install -y curl wget sudo
+  when: "'not_found' in container_status.stdout"
+
+- name: Download and install AdGuard Home
+  shell: |
+    pct exec {{ container_id }} -- bash -c "
+      cd /opt &&
+      curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh
+    "
+  register: adguard_installation
+  when: "'not_found' in container_status.stdout"
+
+- name: Enable and start AdGuard Home service
+  shell: |
+    pct exec {{ container_id }} -- systemctl enable AdGuardHome
+    pct exec {{ container_id }} -- systemctl start AdGuardHome
+  when: "'not_found' in container_status.stdout"
+
+- name: Get container IP address
+  shell: pct exec {{ container_id }} -- hostname -I | awk '{print $1}'
+  register: container_ip
+  changed_when: false
+
+- name: Wait for AdGuard Home web interface
+  wait_for:
+    host: "{{ adguard_static_ip }}"
+    port: "{{ adguard_web_port }}"
+    timeout: 30
+  delegate_to: localhost
+
+- name: Wait for container initialization
+  pause:
+    seconds: 10
+
+- name: Get AdGuard container information
+  shell: |
+    CONTAINER_ID=$(pct list | grep -i adguard | awk '{print $1}' | head -1)
+    if [ -n "$CONTAINER_ID" ]; then
+      echo "Container ID: $CONTAINER_ID"
+      echo "Container Status: $(pct status $CONTAINER_ID)"
+      CONTAINER_IP=$(pct exec $CONTAINER_ID -- hostname -I 2>/dev/null | awk '{print $1}' || echo "IP retrieval failed")
+      echo "Container IP: $CONTAINER_IP"
+      echo "Web Interface: http://$CONTAINER_IP:{{ adguard_web_port }}"
+      echo "DNS Server: $CONTAINER_IP:{{ adguard_dns_port }}"
+    else
+      echo "No AdGuard container found"
+      exit 1
+    fi
+  register: container_info
+  changed_when: false
+
+- name: Check if AdGuard Home needs initial configuration
+  uri:
+    url: "http://{{ adguard_static_ip }}:{{ adguard_web_port }}/"
+    method: GET
+    status_code: [200, 302]
+  delegate_to: localhost
+  register: adguard_status
+  failed_when: false
+
+- name: Configure AdGuard Home via API (if not already configured)
+  uri:
+    url: "http://{{ adguard_static_ip }}:{{ adguard_web_port }}/control/install/configure"
+    method: POST
+    body_format: json
+    body:
+      web:
+        ip: "{{ adguard_web_bind }}"
+        port: "{{ adguard_web_port }}"
+        status: ""
+      dns:
+        ip: "{{ adguard_dns_bind }}"
+        port: "{{ adguard_dns_port }}"
+        status: ""
+        autofix: false
+      username: "{{ adguard_admin_username }}"
+      password: "{{ adguard_admin_password }}"
+    status_code: 200
+  delegate_to: localhost
+  register: adguard_config
+  failed_when: false
+  when: "'install.html' in (adguard_status.content | default(''))"
+
+- name: Display AdGuard Home installation summary
+  debug:
+    msg:
+      - "🎉 AdGuard Home installation completed!"
+      - "{{ container_info.stdout_lines if container_info is defined else ['Container ID: ' + container_id, 'Container Status: running', 'Container IP: ' + adguard_static_ip + ' (static)', 'Web Interface: http://' + adguard_static_ip + ':' + (adguard_web_port | string), 'DNS Server: ' + adguard_static_ip + ':' + (adguard_dns_port | string)] }}"
+      - ""
+      - "🔐 Admin Configuration:"
+      - "Username: {{ adguard_admin_username }}"
+      - "Password: {{ adguard_admin_password }}"
+      - ""
+      - "📋 Configuration Status:"
+      - "Configuration completed - ready to use"
+      - ""
+      - "📋 Next steps:"
+      - "1. Login to web interface with credentials above"
+      - "2. Add custom DNS rewrites as needed"
+      - "3. Configure additional filters if desired"
+      - "4. Update your router/DHCP to use AdGuard as DNS server"

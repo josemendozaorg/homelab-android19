@@ -1,0 +1,12 @@
+---
+- name: Deploy Proxmox Services
+  hosts: proxmox
+  become: yes
+
+  roles:
+    - role: adguard-home
+      tags: adguard
+
+    # Future services can be added here
+    # - role: roles/portainer
+    #   tags: portainer
