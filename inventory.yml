@@ -1,0 +1,16 @@
+all:
+  children:
+    bastion:
+      hosts:
+        android16:
+          ansible_host: 192.168.0.10
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
+    proxmox:
+      hosts:
+        android19:
+          ansible_host: 192.168.0.19
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

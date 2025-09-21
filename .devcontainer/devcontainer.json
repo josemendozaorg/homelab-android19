@@ -1,0 +1,32 @@
+{
+    "name": "Homelab Infrastructure",
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": ".."
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "mounts": [
+        "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind,readonly"
+    ],
+    "postCreateCommand": "echo 'Dev container ready! Run: ansible --version'",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "redhat.ansible",
+                "ms-python.python",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "ansible.validation.enabled": true,
+                "ansible.completion.provideRedirectModules": true
+            }
+        }
+    },
+    "remoteUser": "root",
+    "workspaceFolder": "/workspace"
+}

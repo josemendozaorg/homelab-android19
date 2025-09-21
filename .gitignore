@@ -28,6 +28,17 @@ secrets/
 
 # Ansible
 *.retry
+.ansible/
+
+# Development environments
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
 # IDE
 .vscode/

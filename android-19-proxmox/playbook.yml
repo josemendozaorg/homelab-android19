@@ -1,0 +1,21 @@
+---
+- name: Configure Android #19 Proxmox Server
+  hosts: proxmox
+  become: yes
+
+  tasks:
+    - name: Test connection
+      ping:
+
+    - name: Set hostname
+      hostname:
+        name: android19-proxmox
+
+    - name: Update /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+        state: present
+      loop:
+        - "192.168.0.19 android19-proxmox android19 pve"
+        - "192.168.0.10 android16-bastion android16"
