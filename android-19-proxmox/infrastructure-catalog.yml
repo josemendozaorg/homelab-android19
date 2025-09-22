@@ -2,82 +2,43 @@
 # Infrastructure Catalog - Source of Truth for IDs and IPs
 # All roles/playbooks should reference this catalog for ID and IP assignments
 #
+# Network Strategy (see docs/adr/002-homelab-network-strategy.md):
+# - Physical hosts: .10-.19
+# - Containers: .20-.99 (ID matches IP last octet)
+# - VMs: .100-.199 (ID matches IP last octet)
+# - DHCP pool: .200-.249
+#
 # To add a new service:
-# 1. Pick an unused ID (any number not in the services list)
-# 2. Assign an IP address
-# 3. Add entry to this catalog with type: "container" or "vm"
-# 4. Create/update role to use: catalog.services[ID]
+# 1. Choose appropriate IP range based on service type
+# 2. Pick unused ID matching IP last octet if possible
+# 3. Add entry with type: "container" or "vm"
+# 4. Update role to use: catalog.services[ID]
 
 # Services (both containers and VMs - unified to prevent ID conflicts)
+# Only services with Ansible implementations should be listed here
 services:
-  100:
-    name: "coolify"
-    type: "vm"
-    ip: "192.168.0.100"
-    description: "PaaS platform"
-  103:
-    name: "dev-machine-1"
-    type: "vm"
-    ip: "192.168.0.103"
-    description: "Development VM 1"
-  104:
-    name: "dev-machine-ubuntu"
-    type: "vm"
-    ip: "192.168.0.104"
-    description: "Ubuntu development desktop"
-  112:
-    name: "dev-machine-windows"
-    type: "vm"
-    ip: "192.168.0.112"
-    description: "Windows 11 Pro development"
-  113:
-    name: "proxmox-backup-server"
-    type: "vm"
-    ip: "192.168.0.113"
-    description: "Proxmox Backup Server"
-  116:
-    name: "gpu-ai-machine"
-    type: "vm"
-    ip: "192.168.0.116"
-    description: "GPU/AI development machine"
   125:
     name: "adguard"
     type: "container"
     ip: "192.168.0.25"
     description: "AdGuard Home DNS server"
-  126:
-    name: "openvpn"
-    type: "container"
-    ip: "192.168.0.26"
-    description: "OpenVPN server"
-  127:
-    name: "portainer"
-    type: "container"
-    ip: "192.168.0.27"
-    description: "Container management"
-  128:
-    name: "homarr"
-    type: "container"
-    ip: "192.168.0.28"
-    description: "Dashboard"
-  129:
-    name: "runtipi"
-    type: "container"
-    ip: "192.168.0.29"
-    description: "App store platform"
-  130:
-    name: "jellyfin"
-    type: "container"
-    ip: "192.168.0.30"
-    description: "Media server"
 
 # Physical Infrastructure
 physical:
   android16-bastion: "192.168.0.10"
   android19-proxmox: "192.168.0.19"
 
-# Network
+# Network Configuration
 network:
   subnet: "192.168.0.0/24"
   gateway: "192.168.0.1"
   dns: "192.168.0.25"
+
+  # IP Range Allocation Strategy
+  ranges:
+    router_gateway: "192.168.0.1-9"      # Router and network infrastructure
+    physical_hosts: "192.168.0.10-19"    # Physical machines
+    containers: "192.168.0.20-99"        # LXC containers
+    virtual_machines: "192.168.0.100-199" # QEMU VMs
+    dhcp_pool: "192.168.0.200-249"       # Dynamic allocation
+    reserved: "192.168.0.250-254"        # Future use
