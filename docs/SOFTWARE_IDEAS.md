@@ -152,7 +152,6 @@ This document contains software ideas to consider for installation on the Androi
 - **E2B** → Secure AI code execution sandbox
 - **Firecrawl** → Web crawler
 - **OpenLovable** → Open source alternative to Lovable
-- **Nixstack** → Language-agnostic build and deployment
 
 ### Shell Enhancement
 - **Starship** → Enhanced shell prompt
