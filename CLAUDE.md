@@ -57,6 +57,7 @@ make setup-ssh
 - `make proxmox-tf-apply` - Apply Terraform configuration for Proxmox
 - `make proxmox-tf-destroy` - Destroy Terraform-managed infrastructure
 - `make proxmox-tf-show` - Show current state and outputs
+- `make proxmox-tf-rebuild-state` - Rebuild state by importing existing infrastructure
 
 ## Architecture
 
@@ -103,6 +104,33 @@ SSH key authentication is required for Ansible to communicate with both machines
 - Use full cloud-init with user-data scripts
 - Can handle package installation, service setup, custom scripts
 - Still use Ansible for complex configuration management
+
+## Terraform State Recovery
+
+If you lose your Terraform state file, you can rebuild it automatically:
+
+### Recovery Process
+```bash
+# 1. Rebuilds state by importing existing infrastructure
+make proxmox-tf-rebuild-state
+
+# 2. Verify what will be changed/created
+make proxmox-tf-plan
+
+# 3. Apply if everything looks correct
+make proxmox-tf-apply
+```
+
+### How it works
+- Reads `infrastructure-catalog.yml` to know what should exist
+- Checks what actually exists on Proxmox via SSH
+- Imports existing containers into Terraform state
+- Creates automatic backup of any existing state file
+
+### Requirements
+- SSH access to Proxmox must be working (`make setup-ssh`)
+- Python3 with PyYAML for parsing the infrastructure catalog
+- Infrastructure catalog must be up to date
 
 ## Development Workflow
 1. Set up environment: `make env-setup`

@@ -115,6 +115,9 @@ proxmox-tf-destroy: ## Destroy Terraform-managed Proxmox infrastructure
 proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
 
+proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infrastructure
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
+
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
