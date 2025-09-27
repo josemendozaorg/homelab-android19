@@ -55,7 +55,7 @@ physical:
 network:
   subnet: "192.168.0.0/24"
   gateway: "192.168.0.1"
-  dns: "192.168.0.1"  # Using router DNS until AdGuard is configured
+  dns: "192.168.0.25"  # AdGuard Home DNS server
 
   # IP Range Allocation Strategy
   ranges:
