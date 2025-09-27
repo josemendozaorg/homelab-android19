@@ -1,0 +1,35 @@
+---
+# Terraform Preparation Playbook
+# Ensures Proxmox host is ready for Terraform provisioning
+- name: Prepare Proxmox for Terraform
+  hosts: proxmox
+
+  tasks:
+    - name: Update Proxmox template list
+      shell: pveam update
+      register: template_update
+      changed_when: template_update.rc == 0
+
+    - name: Check if Debian 12 template exists
+      shell: pveam list local | grep -q "debian-12-standard_12.12-1_amd64.tar.zst"
+      register: template_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Download Debian 12 LXC template if not present
+      shell: pveam download local debian-12-standard_12.12-1_amd64.tar.zst
+      register: template_download
+      changed_when: "'downloaded' in template_download.stdout"
+      when: template_exists.rc != 0
+
+    - name: Verify template is available
+      shell: pveam list local | grep "debian-12-standard_12.12-1_amd64.tar.zst"
+      register: template_verification
+      changed_when: false
+
+    - name: Display template status
+      debug:
+        msg:
+          - "✅ Proxmox templates ready for Terraform"
+          - "Available template: {{ template_verification.stdout }}"
+          - "Terraform can now provision containers using this template"

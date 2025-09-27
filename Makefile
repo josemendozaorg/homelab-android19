@@ -14,7 +14,7 @@ INVENTORY := inventory.yml
 .PHONY: help env-all env-setup env-shell env-clean env-check \
         test-ping test-ping-bastion test-ping-proxmox \
         bastion-setup-sudo bastion-deploy \
-        proxmox-deploy proxmox-services proxmox-adguard \
+        proxmox-deploy proxmox-services proxmox-adguard proxmox-terraform-prep \
         tf-init tf-plan tf-apply tf-destroy test-provision \
         all-deploy all-ping
 
@@ -94,20 +94,23 @@ proxmox-services: ## Deploy all Proxmox services
 proxmox-adguard: ## Deploy AdGuard Home service only
 	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml --tags adguard
 
+proxmox-terraform-prep: ## Prepare Proxmox for Terraform (download templates, etc.)
+	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/terraform-prep.yml
+
 # Terraform
 tf-init: ## Initialize Terraform
 	cd terraform && terraform init
 
-tf-plan: ## Show Terraform execution plan
+tf-plan: proxmox-terraform-prep ## Show Terraform execution plan (with Proxmox prep)
 	cd terraform && terraform plan
 
-tf-apply: ## Apply Terraform configuration
+tf-apply: proxmox-terraform-prep ## Apply Terraform configuration (with Proxmox prep)
 	cd terraform && terraform apply
 
 tf-destroy: ## Destroy Terraform-managed infrastructure
 	cd terraform && terraform destroy
 
-test-provision: tf-apply test-ping ## Test workflow: provision with Terraform then test connectivity
+test-provision: tf-apply test-ping ## Test workflow: prep Proxmox, provision with Terraform, test connectivity
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines

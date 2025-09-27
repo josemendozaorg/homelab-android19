@@ -11,30 +11,28 @@ This directory contains Terraform configuration for provisioning VMs and contain
 
 2. **Configure your Proxmox API token in terraform.tfvars**
 
-3. **Verify LXC template exists in Proxmox:**
-   ```bash
-   # SSH to Proxmox server and check available templates
-   pveam list local
-
-   # If template doesn't exist, download it:
-   pveam update
-   pveam download local debian-12-standard_12.12-1_amd64.tar.zst
-   ```
-
-4. **Initialize and apply:**
+3. **Initialize Terraform:**
    ```bash
    make tf-init
-   make tf-plan
-   make tf-apply
+   ```
+
+4. **Provision infrastructure** (Ansible will automatically prepare Proxmox):
+   ```bash
+   make tf-plan   # Includes Ansible prep + Terraform plan
+   make tf-apply  # Includes Ansible prep + Terraform apply
    ```
 
 ## Template Management
 
-The default LXC template is `debian-12-standard_12.12-1_amd64.tar.zst` (matches the existing AdGuard container).
+Templates are automatically managed by Ansible before Terraform runs:
+
+- **Ansible playbook** `android-19-proxmox/terraform-prep.yml` handles template downloads
+- **Default template**: `debian-12-standard_12.12-1_amd64.tar.zst` (matches existing AdGuard container)
+- **Automatic download**: Templates are downloaded if not present when running `make tf-plan` or `make tf-apply`
 
 To use a different template:
-1. Check what's available: `pveam list local`
-2. Update `lxc_template` variable in your `terraform.tfvars`
+1. Update `lxc_template` variable in your `terraform.tfvars`
+2. Modify `terraform-prep.yml` to download the required template
 3. Re-run `make tf-plan` to verify changes
 
 ## Test Container
