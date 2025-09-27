@@ -40,5 +40,18 @@ WORKDIR /workspace
 # Set up SSH directory
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 
+# Create entrypoint script to handle SSH setup
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'if [ -d "/tmp/.ssh" ]; then' >> /entrypoint.sh && \
+    echo '    cp -r /tmp/.ssh/* /root/.ssh/ 2>/dev/null || true' >> /entrypoint.sh && \
+    echo '    chmod 700 /root/.ssh' >> /entrypoint.sh && \
+    echo '    chmod 600 /root/.ssh/* 2>/dev/null || true' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'exec "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Default command
-CMD ["bash"]
+CMD ["tail", "-f", "/dev/null"]
