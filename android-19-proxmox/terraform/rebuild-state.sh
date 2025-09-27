@@ -14,14 +14,14 @@ PROXMOX_HOST=$(python3 -c "
 import yaml
 with open('$CATALOG_FILE', 'r') as f:
     catalog = yaml.safe_load(f)
-print(catalog['proxmox']['host_ip'])
+print(catalog['physical']['android19-proxmox']['ip'])
 ")
 
 PROXMOX_NODE=$(python3 -c "
 import yaml
 with open('$CATALOG_FILE', 'r') as f:
     catalog = yaml.safe_load(f)
-print(catalog['proxmox']['node_name'])
+print(catalog['physical']['android19-proxmox']['node_name'])
 ")
 
 echo "🔧 Terraform State Reconstruction Tool"

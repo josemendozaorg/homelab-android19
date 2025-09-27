@@ -37,16 +37,15 @@ services:
       disk: 8
     storage: "local-lvm"
 
-# Proxmox Configuration
-proxmox:
-  node_name: "proxmox"
-  host_ip: "192.168.0.19"
-  api_port: 8006
-
 # Physical Infrastructure
 physical:
-  android16-bastion: "192.168.0.10"
-  android19-proxmox: "192.168.0.19"
+  android16-bastion:
+    ip: "192.168.0.10"
+
+  android19-proxmox:
+    ip: "192.168.0.19"
+    node_name: "proxmox"
+    api_port: 8006
 
 # Network Configuration
 network:
