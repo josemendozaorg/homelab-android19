@@ -1,0 +1,89 @@
+---
+# Complete Provisioning and Configuration Workflow
+# This playbook orchestrates the entire infrastructure provisioning process
+
+- name: Pre-flight checks
+  hosts: proxmox
+  gather_facts: no
+  tasks:
+    - name: Check SSH connectivity
+      ping:
+      register: ping_result
+
+    - name: Verify Proxmox is accessible
+      shell: pvesh get /version
+      register: proxmox_version
+      changed_when: false
+
+    - name: Display Proxmox version
+      debug:
+        msg: "Proxmox version: {{ proxmox_version.stdout | from_json | json_query('version') }}"
+
+- name: Prepare Proxmox for Terraform
+  import_playbook: ../../android-19-proxmox/terraform-prep.yml
+
+- name: Run Terraform provisioning
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Initialize Terraform
+      shell: |
+        cd terraform && terraform init
+      args:
+        chdir: /workspace
+      register: tf_init
+
+    - name: Apply Terraform configuration
+      shell: |
+        cd terraform && terraform apply -auto-approve
+      args:
+        chdir: /workspace
+      register: tf_apply
+
+    - name: Get Terraform outputs
+      shell: |
+        cd terraform && terraform output -json
+      args:
+        chdir: /workspace
+      register: tf_outputs
+      changed_when: false
+
+    - name: Display provisioned resources
+      debug:
+        msg: "{{ tf_outputs.stdout | from_json }}"
+
+- name: Configure provisioned containers
+  import_playbook: configure-container.yml
+
+- name: Final validation
+  hosts: localhost
+  gather_facts: no
+  vars:
+    container_ip: 192.168.0.30
+  tasks:
+    - name: Test container connectivity
+      wait_for:
+        host: "{{ container_ip }}"
+        port: 80
+        timeout: 30
+        state: started
+
+    - name: Verify web server response
+      uri:
+        url: "http://{{ container_ip }}"
+        method: GET
+        status_code: 200
+      register: web_response
+
+    - name: Display final status
+      debug:
+        msg:
+          - "🎉 PROVISIONING COMPLETE!"
+          - "========================"
+          - "Container IP: {{ container_ip }}"
+          - "Web Server: http://{{ container_ip }}"
+          - "Status: All services running"
+          - ""
+          - "Test your infrastructure:"
+          - "  curl http://{{ container_ip }}"
+          - "  ssh root@192.168.0.19 'pct enter 130'"

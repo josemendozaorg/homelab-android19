@@ -1,0 +1,83 @@
+---
+# Configure Container After Terraform Provisioning
+# This playbook configures containers created by Terraform
+
+- name: Configure test nginx container
+  hosts: proxmox
+  vars:
+    container_id: 130
+    container_ip: 192.168.0.30
+
+  tasks:
+    - name: Check if container exists and is running
+      shell: pct status {{ container_id }}
+      register: container_status
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure container is started
+      shell: pct start {{ container_id }}
+      when:
+        - container_status.rc == 0
+        - "'stopped' in container_status.stdout"
+
+    - name: Wait for container to be ready
+      wait_for:
+        host: "{{ container_ip }}"
+        port: 22
+        delay: 5
+        timeout: 60
+        state: started
+      delegate_to: localhost
+      ignore_errors: yes
+
+    - name: Update package list in container
+      shell: pct exec {{ container_id }} -- apt-get update
+      register: apt_update
+      retries: 3
+      delay: 5
+      until: apt_update.rc == 0
+
+    - name: Install basic packages in container
+      shell: |
+        pct exec {{ container_id }} -- apt-get install -y \
+          curl \
+          wget \
+          nginx \
+          net-tools \
+          iputils-ping
+      register: package_install
+      retries: 3
+      delay: 5
+      until: package_install.rc == 0
+
+    - name: Start nginx service
+      shell: |
+        pct exec {{ container_id }} -- systemctl enable nginx
+        pct exec {{ container_id }} -- systemctl start nginx
+      register: nginx_start
+
+    - name: Create custom index page
+      shell: |
+        pct exec {{ container_id }} -- bash -c "echo '<h1>Test Container - Provisioned by Terraform + Ansible</h1>' > /var/www/html/index.html"
+
+    - name: Verify nginx is running
+      uri:
+        url: "http://{{ container_ip }}"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      retries: 5
+      delay: 2
+
+    - name: Display container information
+      debug:
+        msg:
+          - "✅ Container {{ container_id }} configured successfully!"
+          - "Container IP: {{ container_ip }}"
+          - "Web Server: http://{{ container_ip }}"
+          - "Status: nginx is running"
+          - ""
+          - "Test with:"
+          - "  curl http://{{ container_ip }}"
+          - "  ping {{ container_ip }}"

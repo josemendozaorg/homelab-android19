@@ -17,6 +17,7 @@ INVENTORY := inventory.yml
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard proxmox-terraform-prep \
         tf-init tf-plan tf-apply tf-destroy test-provision \
+        configure-container provision-complete \
         all-deploy all-ping
 
 # Help target with color output
@@ -121,7 +122,13 @@ tf-apply-with-prep: proxmox-terraform-prep tf-apply ## Apply Terraform with Ansi
 tf-destroy: ## Destroy Terraform-managed infrastructure
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform destroy -auto-approve"
 
-test-provision: tf-apply test-ping ## Test workflow: prep Proxmox, provision with Terraform, test connectivity
+test-provision: tf-apply configure-container ## Test workflow: provision with Terraform, configure with Ansible
+
+configure-container: ## Configure containers created by Terraform (install nginx, etc.)
+	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) ansible/playbooks/configure-container.yml
+
+provision-complete: ## Complete provisioning workflow (Terraform + Ansible + validation)
+	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) ansible/playbooks/provision-and-configure.yml
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
