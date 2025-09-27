@@ -99,16 +99,16 @@ proxmox-terraform-prep: ## Prepare Proxmox for Terraform (download templates, et
 
 # Terraform
 tf-init: ## Initialize Terraform
-	cd terraform && terraform init
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform init"
 
 tf-plan: proxmox-terraform-prep ## Show Terraform execution plan (with Proxmox prep)
-	cd terraform && terraform plan
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform plan"
 
 tf-apply: proxmox-terraform-prep ## Apply Terraform configuration (with Proxmox prep)
-	cd terraform && terraform apply
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform apply -auto-approve"
 
 tf-destroy: ## Destroy Terraform-managed infrastructure
-	cd terraform && terraform destroy
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform destroy -auto-approve"
 
 test-provision: tf-apply test-ping ## Test workflow: prep Proxmox, provision with Terraform, test connectivity
 
