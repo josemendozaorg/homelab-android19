@@ -70,8 +70,8 @@ make env-setup
 # 3. Test connectivity
 make test-ping
 
-# 4. Deploy infrastructure
-make proxmox-tf-apply
+# 4. Deploy everything (Terraform + Ansible)
+make proxmox-full-deploy
 ```
 
 ### Troubleshooting
@@ -102,6 +102,13 @@ Ansible manages LXC containers through Proxmox, not direct SSH:
 - **Simple**: One SSH connection manages all containers
 
 ### Workflow
+
+**One-Command Deployment:**
+```bash
+make proxmox-full-deploy  # Does everything: Terraform + Ansible
+```
+
+**Step-by-Step Workflow:**
 ```bash
 # 1. Provision infrastructure
 make proxmox-tf-apply

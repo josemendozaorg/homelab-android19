@@ -59,6 +59,9 @@ make setup-ssh
 - `make proxmox-tf-show` - Show current state and outputs
 - `make proxmox-tf-rebuild-state` - Rebuild state by importing existing infrastructure
 
+### Complete Deployment
+- `make proxmox-full-deploy` - **Complete end-to-end deployment: Terraform + Ansible**
+
 ## Architecture
 
 ### Directory Structure
@@ -161,6 +164,14 @@ make proxmox-tf-apply
 - Infrastructure catalog must be up to date
 
 ## Development Workflow
+
+### Quick Start (Complete Deployment)
+1. Set up environment: `make env-setup`
+2. Test connectivity: `make test-ping`
+3. **Deploy everything**: `make proxmox-full-deploy`
+4. Validate deployment: `make test-ping`
+
+### Step-by-Step Workflow
 1. Set up environment: `make env-setup`
 2. Test connectivity: `make test-ping`
 3. Make configuration changes in appropriate machine directories

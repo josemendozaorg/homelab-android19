@@ -16,7 +16,7 @@ INVENTORY := inventory.yml
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard \
-        proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show \
+        proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         all-deploy all-ping
 
 # Help target with color output
@@ -118,6 +118,20 @@ proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
 proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infrastructure
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
 
+
+# Complete Infrastructure Deployment
+proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansible configure
+	@echo "🚀 Starting complete Proxmox infrastructure deployment..."
+	@echo "📋 Step 1/4: Initialize Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform init"
+	@echo "📋 Step 2/4: Apply Terraform configuration"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
+	@echo "📋 Step 3/4: Deploy base Proxmox configuration"
+	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/playbook.yml
+	@echo "📋 Step 4/4: Configure all services"
+	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml
+	@echo "✅ Complete Proxmox deployment finished!"
+	@echo "🌐 Run 'make test-ping' to validate deployment"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
