@@ -5,7 +5,7 @@ locals {
 
 # Test container - nginx at .30
 resource "proxmox_virtual_environment_container" "test_nginx" {
-  node_name = "android19"
+  node_name = "proxmox"
   vm_id     = 130
 
   initialization {
@@ -29,5 +29,10 @@ resource "proxmox_virtual_environment_container" "test_nginx" {
 
   memory {
     dedicated = 512
+  }
+
+  disk {
+    datastore_id = "local-lvm"
+    size         = 8
   }
 }
