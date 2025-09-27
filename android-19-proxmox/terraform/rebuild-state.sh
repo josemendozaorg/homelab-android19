@@ -42,7 +42,7 @@ if [[ ! -f "$CATALOG_FILE" ]]; then
     exit 1
 fi
 
-# Parse YAML and extract terraform-managed containers
+# Parse YAML and extract all container services
 echo "📋 Reading infrastructure catalog..."
 terraform_containers=$(python3 -c "
 import yaml
@@ -52,12 +52,12 @@ try:
     with open('$CATALOG_FILE', 'r') as f:
         catalog = yaml.safe_load(f)
 
-    terraform_services = {}
+    container_services = {}
     for service_id, service in catalog.get('services', {}).items():
-        if service.get('provisioner') == 'terraform' and service.get('type') == 'container':
-            terraform_services[service_id] = service
+        if service.get('type') == 'container':
+            container_services[service_id] = service
 
-    for service_id, service in terraform_services.items():
+    for service_id, service in container_services.items():
         print(f'{service_id}:{service[\"name\"]}:{service[\"ip\"]}')
 
 except Exception as e:
@@ -66,11 +66,11 @@ except Exception as e:
 ")
 
 if [[ -z "$terraform_containers" ]]; then
-    echo "ℹ️  No Terraform-managed containers found in catalog."
+    echo "ℹ️  No container services found in catalog."
     exit 0
 fi
 
-echo "🔍 Found Terraform-managed containers:"
+echo "🔍 Found container services:"
 echo "$terraform_containers" | while IFS=':' read -r id name ip; do
     echo "  - ID $id: $name ($ip)"
 done
@@ -122,7 +122,7 @@ echo "$terraform_containers" | while IFS=':' read -r id name ip; do
             echo "$import_output" | sed 's/^/       /'
         fi
     else
-        echo "  ⚠️  Container $id ($name) not found on Proxmox - will be created on next apply"
+        echo "  ⚠️  Container $id ($name) not found on Proxmox - will be created on next terraform apply"
     fi
 done
 

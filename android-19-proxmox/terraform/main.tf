@@ -1,15 +1,15 @@
 # Read existing infrastructure catalog
 locals {
   catalog = yamldecode(file("../infrastructure-catalog.yml"))
-  # Filter services to only include those provisioned by Terraform
+  # All container services are managed by Terraform
   terraform_containers = {
     for id, service in local.catalog.services :
     id => service
-    if lookup(service, "provisioner", "") == "terraform" && service.type == "container"
+    if service.type == "container"
   }
 }
 
-# Create containers defined in the catalog with provisioner: terraform
+# Create all containers defined in the catalog
 resource "proxmox_virtual_environment_container" "containers" {
   for_each = local.terraform_containers
 
