@@ -18,6 +18,12 @@ resource "proxmox_virtual_environment_container" "containers" {
   started      = true  # Ensure container is started after creation
   unprivileged = true  # Use unprivileged containers (required for API token access)
 
+  # Network interface configuration
+  network_interface {
+    name = "eth0"
+    bridge = "vmbr0"
+  }
+
   initialization {
     hostname = each.value.name
 
