@@ -77,6 +77,9 @@ make setup-ssh
 ### Key Technologies
 - **Docker/Docker Compose**: Development environment containerization
 - **Ansible**: Configuration management (machine-specific only)
+  - **Execution Method**: Connects to Proxmox host via SSH, uses `pct exec` commands to run tasks inside containers
+  - **Container Management**: `ansible → ssh proxmox → pct exec container_id -- command`
+  - **Benefits**: No SSH servers needed in containers, lightweight, uses Proxmox native management
 - **Terraform**: Infrastructure provisioning with initialization
   - **LXC containers**: Uses Proxmox container initialization (SSH keys, user accounts)
   - **VMs**: Uses full cloud-init (custom scripts, packages, services)
@@ -92,6 +95,31 @@ make setup-ssh
 
 ## SSH Authentication
 SSH key authentication is required for Ansible to communicate with both machines. If you encounter "Permission denied" errors, run `make setup-ssh` or follow the detailed guide in `docs/SSH_SETUP.md`.
+
+## Container Management Architecture
+
+### Ansible Execution Method
+Ansible does NOT connect directly to containers. Instead, it uses Proxmox as a proxy:
+
+```
+[Ansible] → SSH → [Proxmox Host] → pct exec → [Container]
+            (192.168.0.19)                     (125, 130, etc.)
+```
+
+**Command Flow Example:**
+```bash
+# Ansible runs this on the Proxmox host:
+pct exec 125 -- systemctl status AdGuardHome
+
+# Which executes inside container 125:
+systemctl status AdGuardHome
+```
+
+**Benefits of this approach:**
+- **Lightweight containers**: No SSH servers required in each container
+- **Security**: No need to manage SSH keys per container
+- **Proxmox integration**: Uses native `pct` container management
+- **Simplicity**: Single SSH connection to Proxmox manages all containers
 
 ## Terraform Initialization Strategy
 
