@@ -13,34 +13,33 @@ This directory contains Terraform configuration for provisioning VMs and contain
 
 3. **Initialize Terraform:**
    ```bash
-   make tf-init
+   make proxmox-tf-init
    ```
 
-4. **Provision infrastructure** (Ansible will automatically prepare Proxmox):
+4. **Provision infrastructure with cloud-init:**
    ```bash
-   make tf-plan   # Includes Ansible prep + Terraform plan
-   make tf-apply  # Includes Ansible prep + Terraform apply
+   make proxmox-tf-plan   # Show execution plan
+   make proxmox-tf-apply  # Apply configuration
    ```
 
-## Template Management
+## Container Provisioning
 
-Templates are automatically managed by Ansible before Terraform runs:
+This Terraform configuration uses cloud-init for initial container setup:
 
-- **Ansible playbook** `android-19-proxmox/terraform-prep.yml` handles template downloads
-- **Default template**: `debian-12-standard_12.12-1_amd64.tar.zst` (matches existing AdGuard container)
-- **Automatic download**: Templates are downloaded if not present when running `make tf-plan` or `make tf-apply`
+- **Container template**: Debian 12 standard LXC template
+- **Cloud-init**: Handles SSH key setup and basic configuration
+- **Infrastructure catalog**: Reads from `../infrastructure-catalog.yml` for service definitions
+- **Self-contained**: No external Ansible preparation required
 
-To use a different template:
-1. Update `lxc_template` variable in your `terraform.tfvars`
-2. Modify `terraform-prep.yml` to download the required template
-3. Re-run `make tf-plan` to verify changes
+To modify containers:
+1. Update service definitions in `../infrastructure-catalog.yml`
+2. Set `provisioner: terraform` for containers you want Terraform to manage
+3. Run `make proxmox-tf-plan` to see changes
 
-## Test Container
+## Container Management
 
-The current configuration creates a test nginx container:
-- **VM ID**: 130
-- **IP**: 192.168.0.30
-- **Hostname**: test-nginx
-- **Resources**: 1 core, 512MB RAM
-
-This can be used to verify the Terraform → Ansible workflow before migrating production services.
+The configuration provisions containers defined in the infrastructure catalog:
+- Containers with `provisioner: terraform` are managed by this configuration
+- Each container gets cloud-init setup with SSH keys
+- Containers are automatically started and connectivity is verified
+- Resources (CPU, memory, disk) are defined in the infrastructure catalog
