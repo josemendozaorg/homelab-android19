@@ -90,7 +90,7 @@ echo "📥 Importing existing containers into Terraform state..."
 echo "$terraform_containers" | while IFS=':' read -r id name ip; do
     if echo "$existing_containers" | grep -q "^$id$"; then
         echo "  ✅ Importing container $id ($name)..."
-        terraform import "proxmox_virtual_environment_container.containers[\"$id\"]" "$id" || {
+        terraform import "proxmox_virtual_environment_container.containers[\"$id\"]" "proxmox/$id" || {
             echo "  ⚠️  Warning: Failed to import container $id"
         }
     else
