@@ -15,6 +15,7 @@ INVENTORY := inventory.yml
         test-ping test-ping-bastion test-ping-proxmox \
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard \
+        tf-init tf-plan tf-apply tf-destroy test-provision \
         all-deploy all-ping
 
 # Help target with color output
@@ -33,6 +34,9 @@ help: ## Show available commands
 	@echo ""
 	@echo "Android #19 Proxmox (proxmox-*):"
 	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
+	@echo ""
+	@echo "Terraform (tf-*):"
+	@$(MAKE) -s help-section SECTION="Terraform"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -89,6 +93,21 @@ proxmox-services: ## Deploy all Proxmox services
 
 proxmox-adguard: ## Deploy AdGuard Home service only
 	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml --tags adguard
+
+# Terraform
+tf-init: ## Initialize Terraform
+	cd terraform && terraform init
+
+tf-plan: ## Show Terraform execution plan
+	cd terraform && terraform plan
+
+tf-apply: ## Apply Terraform configuration
+	cd terraform && terraform apply
+
+tf-destroy: ## Destroy Terraform-managed infrastructure
+	cd terraform && terraform destroy
+
+test-provision: tf-apply test-ping ## Test workflow: provision with Terraform then test connectivity
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines

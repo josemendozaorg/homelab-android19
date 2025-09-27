@@ -1,0 +1,4 @@
+# Copy this file to terraform.tfvars and fill in your actual values
+# terraform.tfvars is ignored by git for security
+
+proxmox_api_token = "terraform@pve!terraform=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

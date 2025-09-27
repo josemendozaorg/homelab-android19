@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/josep/dev/homelab-android19/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
