@@ -13,9 +13,10 @@ locals {
 resource "proxmox_virtual_environment_container" "containers" {
   for_each = local.terraform_containers
 
-  node_name = local.catalog.physical.android19-proxmox.node_name
-  vm_id     = tonumber(each.key)
-  started   = true  # Ensure container is started after creation
+  node_name    = local.catalog.physical.android19-proxmox.node_name
+  vm_id        = tonumber(each.key)
+  started      = true  # Ensure container is started after creation
+  unprivileged = true  # Use unprivileged containers (required for API token access)
 
   initialization {
     hostname = each.value.name
@@ -62,11 +63,6 @@ resource "proxmox_virtual_environment_container" "containers" {
   # Features for better container functionality
   features {
     nesting = true
-  }
-
-  # Wait for container to be fully started
-  provisioner "local-exec" {
-    command = "sleep 15"
   }
 }
 
