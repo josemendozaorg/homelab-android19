@@ -48,3 +48,30 @@ This repository aims to contain:
 - Automation scripts
 - Infrastructure as Code
 - Home lab documentation
+
+## Getting Started
+
+### Prerequisites
+1. Docker and Docker Compose installed
+2. SSH key authentication to Proxmox (see [SSH Setup Guide](docs/SSH_SETUP.md))
+3. Proxmox API token for Terraform
+
+### Quick Start
+```bash
+# 1. Set up SSH keys (if not already done)
+ssh-copy-id root@192.168.0.19
+
+# 2. Build development environment
+make env-setup
+
+# 3. Test connectivity
+make test-ping
+
+# 4. Deploy infrastructure
+make tf-apply
+```
+
+### Troubleshooting
+- **SSH Permission Denied**: See [SSH Setup Guide](docs/SSH_SETUP.md)
+- **Terraform API Issues**: Check your API token in `terraform/terraform.tfvars`
+- **Docker Issues**: Ensure Docker is running and you have proper permissions

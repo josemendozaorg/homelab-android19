@@ -13,6 +13,7 @@ INVENTORY := inventory.yml
 # Declare phony targets
 .PHONY: help env-all env-setup env-shell env-clean env-check \
         test-ping test-ping-bastion test-ping-proxmox \
+        setup-ssh check-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard proxmox-terraform-prep \
         tf-init tf-plan tf-apply tf-destroy test-provision \
@@ -48,6 +49,12 @@ help-section:
 	      in_section && /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Environment
+setup-ssh: ## Set up SSH key authentication for Ansible
+	@bash scripts/setup-ssh.sh
+
+check-ssh: ## Check SSH connectivity and show setup instructions if needed
+	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) ansible/playbooks/check-ssh.yml
+
 env-all: env-setup test-ping ## Build environment and test connections
 
 env-setup: ## Build and start development environment
