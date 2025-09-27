@@ -87,17 +87,17 @@ bastion-setup-sudo: ## Configure passwordless sudo on bastion (run once)
 	$(ANSIBLE_INTERACTIVE) ansible-playbook --ask-become-pass android-16-bastion/setup.yml
 
 bastion-deploy: ## Deploy configuration to bastion host
-	$(ANSIBLE_EXEC) ansible-playbook android-16-bastion/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml
 
 # Android #19 Proxmox
 proxmox-deploy: ## Deploy base configuration to Proxmox server
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 
 proxmox-services: ## Deploy all Proxmox services
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
 
 proxmox-adguard: ## Deploy AdGuard Home service only
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml --tags adguard
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml --tags adguard
 
 
 proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure
@@ -127,15 +127,15 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	@echo "📋 Step 2/4: Apply Terraform configuration"
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
 	@echo "📋 Step 3/4: Deploy base Proxmox configuration"
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 	@echo "📋 Step 4/4: Configure all services"
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
 	@echo "✅ Complete Proxmox deployment finished!"
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
-	$(ANSIBLE_EXEC) ansible-playbook android-16-bastion/playbook.yml android-19-proxmox/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml android-19-proxmox/playbook.yml
 
 all-ping: test-ping ## Test connection to all machines (alias)
 
