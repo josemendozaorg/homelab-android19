@@ -2,82 +2,35 @@
 # Configure Container After Terraform Provisioning
 # This playbook configures containers created by Terraform
 
-- name: Configure test nginx container
+- name: Configure containers from infrastructure catalog
   hosts: proxmox
   vars:
-    container_id: 130
-    container_ip: 192.168.0.30
+    catalog_file: "{{ playbook_dir }}/../../android-19-proxmox/infrastructure-catalog.yml"
 
   tasks:
-    - name: Check if container exists and is running
-      shell: pct status {{ container_id }}
-      register: container_status
-      changed_when: false
-      failed_when: false
+    - name: Load infrastructure catalog
+      include_vars: "{{ catalog_file }}"
 
-    - name: Ensure container is started
-      shell: pct start {{ container_id }}
-      when:
-        - container_status.rc == 0
-        - "'stopped' in container_status.stdout"
+    - name: Get Terraform-managed containers
+      set_fact:
+        terraform_containers: "{{ services | dict2items | selectattr('value.provisioner', 'defined') | selectattr('value.provisioner', 'equalto', 'terraform') | list }}"
 
-    - name: Wait for container to be ready
-      wait_for:
-        host: "{{ container_ip }}"
-        port: 22
-        delay: 5
-        timeout: 60
-        state: started
-      delegate_to: localhost
-      ignore_errors: yes
+    - name: Configure each Terraform container
+      include_tasks: tasks/configure-single-container.yml
+      loop: "{{ terraform_containers }}"
+      loop_control:
+        loop_var: container_item
+      vars:
+        container_id: "{{ container_item.key }}"
+        container_ip: "{{ container_item.value.ip }}"
+        container_name: "{{ container_item.value.name }}"
 
-    - name: Update package list in container
-      shell: pct exec {{ container_id }} -- apt-get update
-      register: apt_update
-      retries: 3
-      delay: 5
-      until: apt_update.rc == 0
-
-    - name: Install basic packages in container
-      shell: |
-        pct exec {{ container_id }} -- apt-get install -y \
-          curl \
-          wget \
-          nginx \
-          net-tools \
-          iputils-ping
-      register: package_install
-      retries: 3
-      delay: 5
-      until: package_install.rc == 0
-
-    - name: Start nginx service
-      shell: |
-        pct exec {{ container_id }} -- systemctl enable nginx
-        pct exec {{ container_id }} -- systemctl start nginx
-      register: nginx_start
-
-    - name: Create custom index page
-      shell: |
-        pct exec {{ container_id }} -- bash -c "echo '<h1>Test Container - Provisioned by Terraform + Ansible</h1>' > /var/www/html/index.html"
-
-    - name: Verify nginx is running
-      uri:
-        url: "http://{{ container_ip }}"
-        method: GET
-        status_code: 200
-      delegate_to: localhost
-      retries: 5
-      delay: 2
-
-    - name: Display container information
+    - name: Display summary of configured containers
       debug:
         msg:
-          - "✅ Container {{ container_id }} configured successfully!"
-          - "Container IP: {{ container_ip }}"
-          - "Web Server: http://{{ container_ip }}"
-          - "Status: nginx is running"
+          - "🎉 All Terraform containers configured successfully!"
+          - "======================================================="
+          - "Configured containers: {{ terraform_containers | map(attribute='value.name') | list | join(', ') }}"
           - ""
-          - "Test with:"
-          - "  curl http://{{ container_ip }}"
-          - "  ping {{ container_ip }}"
+          - "Test connectivity:"
+          - "{% for item in terraform_containers %}  curl http://{{ item.value.ip }}  # {{ item.value.name }}{% endfor %}"

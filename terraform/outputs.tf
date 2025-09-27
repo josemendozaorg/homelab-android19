@@ -1,25 +1,29 @@
-output "test_container_info" {
-  description = "Information about the test nginx container"
+output "terraform_containers" {
+  description = "Information about containers managed by Terraform"
   value = {
-    id       = proxmox_virtual_environment_container.test_nginx.vm_id
-    hostname = proxmox_virtual_environment_container.test_nginx.initialization[0].hostname
-    ip       = "192.168.0.30"
-    status   = proxmox_virtual_environment_container.test_nginx.started ? "started" : "stopped"
+    for id, container in proxmox_virtual_environment_container.containers :
+    container.initialization[0].hostname => {
+      id       = container.vm_id
+      hostname = container.initialization[0].hostname
+      ip       = local.terraform_containers[tostring(container.vm_id)].ip
+      status   = container.started ? "started" : "stopped"
+      description = local.terraform_containers[tostring(container.vm_id)].description
+    }
   }
 }
 
 output "next_steps" {
   description = "Next steps after container creation"
   value = <<-EOT
-    Container created successfully!
+    Containers created successfully!
 
     Test connectivity:
-      ping 192.168.0.30
-
-    SSH to container (from Proxmox):
-      ssh root@192.168.0.19 "pct enter 130"
+      ${join("\n      ", [for id, svc in local.terraform_containers : "ping ${svc.ip}  # ${svc.name}"])}
 
     Configure with Ansible:
-      make configure-test-container
+      make configure-container
+
+    View all containers:
+      make tf-show
   EOT
 }

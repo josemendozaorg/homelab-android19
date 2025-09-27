@@ -15,13 +15,27 @@
 # 4. Update role to use: catalog.services[ID]
 
 # Services (both containers and VMs - unified to prevent ID conflicts)
-# Only services with Ansible implementations should be listed here
+# Services can be provisioned by Terraform and/or configured by Ansible
 services:
   125:
     name: "adguard"
     type: "container"
     ip: "192.168.0.25"
     description: "AdGuard Home DNS server"
+    provisioner: "ansible"  # Created by Ansible
+
+  130:
+    name: "test-nginx"
+    type: "container"
+    ip: "192.168.0.30"
+    description: "Test container for Terraform provisioning"
+    provisioner: "terraform"  # Created by Terraform
+    template: "debian-12-standard_12.12-1_amd64.tar.zst"
+    resources:
+      cores: 1
+      memory: 512
+      disk: 8
+    storage: "local-lvm"
 
 # Physical Infrastructure
 physical:

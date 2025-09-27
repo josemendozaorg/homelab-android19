@@ -122,6 +122,9 @@ tf-apply-with-prep: proxmox-terraform-prep tf-apply ## Apply Terraform with Ansi
 tf-destroy: ## Destroy Terraform-managed infrastructure
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform destroy -auto-approve"
 
+tf-show: ## Show current Terraform state and outputs
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
+
 test-provision: tf-apply configure-container ## Test workflow: provision with Terraform, configure with Ansible
 
 configure-container: ## Configure containers created by Terraform (install nginx, etc.)
