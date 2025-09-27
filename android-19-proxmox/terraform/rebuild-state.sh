@@ -89,10 +89,20 @@ fi
 echo "📥 Importing existing containers into Terraform state..."
 echo "$terraform_containers" | while IFS=':' read -r id name ip; do
     if echo "$existing_containers" | grep -q "^$id$"; then
-        echo "  ✅ Importing container $id ($name)..."
-        terraform import "proxmox_virtual_environment_container.containers[\"$id\"]" "proxmox/$id" || {
+        echo "  🔍 Checking container $id ($name)..."
+
+        # Try to import, capture both stdout and stderr
+        import_output=$(terraform import "proxmox_virtual_environment_container.containers[\"$id\"]" "proxmox/$id" 2>&1)
+        import_result=$?
+
+        if [[ $import_result -eq 0 ]]; then
+            echo "  ✅ Successfully imported container $id"
+        elif echo "$import_output" | grep -q "Resource already managed by Terraform"; then
+            echo "  ℹ️  Container $id already in Terraform state - skipping"
+        else
             echo "  ⚠️  Warning: Failed to import container $id"
-        }
+            echo "     Error: $(echo "$import_output" | head -n 1)"
+        fi
     else
         echo "  ⚠️  Container $id ($name) not found on Proxmox - will be created on next apply"
     fi
