@@ -76,7 +76,9 @@ make setup-ssh
 ### Key Technologies
 - **Docker/Docker Compose**: Development environment containerization
 - **Ansible**: Configuration management (machine-specific only)
-- **Terraform**: Infrastructure provisioning with cloud-init
+- **Terraform**: Infrastructure provisioning with initialization
+  - **LXC containers**: Uses Proxmox container initialization (SSH keys, user accounts)
+  - **VMs**: Uses full cloud-init (custom scripts, packages, services)
 - **Proxmox**: Virtualization platform for VMs and LXC containers
 
 ## Important Files
@@ -89,6 +91,18 @@ make setup-ssh
 
 ## SSH Authentication
 SSH key authentication is required for Ansible to communicate with both machines. If you encounter "Permission denied" errors, run `make setup-ssh` or follow the detailed guide in `docs/SSH_SETUP.md`.
+
+## Terraform Initialization Strategy
+
+### LXC Containers (current)
+- Uses Proxmox's built-in container initialization
+- Limited to SSH keys, user accounts, network configuration
+- Ansible handles all software installation and service configuration
+
+### VMs (future)
+- Use full cloud-init with user-data scripts
+- Can handle package installation, service setup, custom scripts
+- Still use Ansible for complex configuration management
 
 ## Development Workflow
 1. Set up environment: `make env-setup`
