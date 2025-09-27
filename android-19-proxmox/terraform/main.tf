@@ -13,7 +13,7 @@ locals {
 resource "proxmox_virtual_environment_container" "containers" {
   for_each = local.terraform_containers
 
-  node_name = "proxmox"
+  node_name = local.catalog.proxmox.node_name
   vm_id     = tonumber(each.key)
   started   = true  # Ensure container is started after creation
 

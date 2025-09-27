@@ -8,8 +8,13 @@ terraform {
   }
 }
 
+# Read infrastructure catalog for provider configuration
+locals {
+  catalog = yamldecode(file("../infrastructure-catalog.yml"))
+}
+
 provider "proxmox" {
-  endpoint = "https://192.168.0.19:8006"
+  endpoint = "https://${local.catalog.proxmox.host_ip}:${local.catalog.proxmox.api_port}"
   api_token = var.proxmox_api_token
   insecure = true
 }

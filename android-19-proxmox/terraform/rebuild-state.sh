@@ -8,10 +8,26 @@ set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CATALOG_FILE="../infrastructure-catalog.yml"
-PROXMOX_HOST="192.168.0.19"
+
+# Read Proxmox configuration from catalog
+PROXMOX_HOST=$(python3 -c "
+import yaml
+with open('$CATALOG_FILE', 'r') as f:
+    catalog = yaml.safe_load(f)
+print(catalog['proxmox']['host_ip'])
+")
+
+PROXMOX_NODE=$(python3 -c "
+import yaml
+with open('$CATALOG_FILE', 'r') as f:
+    catalog = yaml.safe_load(f)
+print(catalog['proxmox']['node_name'])
+")
 
 echo "🔧 Terraform State Reconstruction Tool"
 echo "======================================"
+echo "📡 Proxmox Host: $PROXMOX_HOST"
+echo "🖥️  Proxmox Node: $PROXMOX_NODE"
 echo ""
 
 # Check if we're in the right directory
@@ -93,7 +109,7 @@ echo "$terraform_containers" | while IFS=':' read -r id name ip; do
         echo "  🔍 Checking container $id ($name)..."
 
         # Try to import, capture both stdout and stderr
-        import_output=$(terraform import "proxmox_virtual_environment_container.containers[\"$id\"]" "proxmox/$id" 2>&1)
+        import_output=$(terraform import "proxmox_virtual_environment_container.containers[\"$id\"]" "$PROXMOX_NODE/$id" 2>&1)
         import_result=$?
 
         if [[ $import_result -eq 0 ]]; then
