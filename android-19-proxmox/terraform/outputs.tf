@@ -17,13 +17,14 @@ output "next_steps" {
   value = <<-EOT
     Containers created successfully!
 
-    Test connectivity:
-      ${join("\n      ", [for id, svc in local.terraform_containers : "ping ${svc.ip}  # ${svc.name}"])}
+    Test connectivity with Ansible:
+      make test-ping
 
-    Configure with Ansible:
-      make configure-container
+    Configure services with Ansible:
+      make proxmox-deploy
+      make proxmox-services
 
     View all containers:
-      make tf-show
+      make proxmox-tf-show
   EOT
 }

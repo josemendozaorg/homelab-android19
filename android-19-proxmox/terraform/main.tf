@@ -70,24 +70,3 @@ resource "proxmox_virtual_environment_container" "containers" {
   }
 }
 
-# Null resource to verify container connectivity for each container
-resource "null_resource" "verify_containers" {
-  for_each = local.terraform_containers
-  depends_on = [proxmox_virtual_environment_container.containers]
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "Waiting for container ${each.value.name} to be ready..."
-      for i in $(seq 1 30); do
-        if ping -c 1 -W 2 ${each.value.ip} > /dev/null 2>&1; then
-          echo "✅ Container ${each.value.name} is responding to ping at ${each.value.ip}"
-          exit 0
-        fi
-        echo "Attempt $i/30: Waiting for ${each.value.name}..."
-        sleep 2
-      done
-      echo "❌ Container ${each.value.name} failed to respond after 60 seconds"
-      exit 1
-    EOT
-  }
-}
