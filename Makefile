@@ -95,7 +95,7 @@ proxmox-adguard: ## Deploy AdGuard Home service only
 	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml --tags adguard
 
 proxmox-terraform-prep: ## Prepare Proxmox for Terraform (download templates, etc.)
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/terraform-prep.yml
+	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) android-19-proxmox/terraform-prep.yml
 
 # Terraform
 tf-init: ## Initialize Terraform
