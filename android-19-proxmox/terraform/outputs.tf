@@ -3,11 +3,11 @@ output "terraform_containers" {
   value = {
     for id, container in proxmox_virtual_environment_container.containers :
     container.initialization[0].hostname => {
-      id       = container.vm_id
+      id       = container.vm_id != null ? container.vm_id : tonumber(id)
       hostname = container.initialization[0].hostname
-      ip       = local.terraform_containers[tostring(container.vm_id)].ip
+      ip       = container.vm_id != null ? local.terraform_containers[tostring(container.vm_id)].ip : local.terraform_containers[id].ip
       status   = container.started ? "started" : "stopped"
-      description = local.terraform_containers[tostring(container.vm_id)].description
+      description = container.vm_id != null ? local.terraform_containers[tostring(container.vm_id)].description : local.terraform_containers[id].description
     }
   }
 }
