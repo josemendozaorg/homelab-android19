@@ -13,11 +13,10 @@ INVENTORY := inventory.yml
 # Declare phony targets
 .PHONY: help env-all env-setup env-shell env-clean env-check \
         test-ping test-ping-bastion test-ping-proxmox \
-        setup-ssh check-ssh \
+        setup-ssh \
         bastion-setup-sudo bastion-deploy \
-        proxmox-deploy proxmox-services proxmox-adguard proxmox-terraform-prep \
-        tf-init tf-plan tf-apply tf-destroy test-provision \
-        configure-container provision-complete \
+        proxmox-deploy proxmox-services proxmox-adguard \
+        proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show \
         all-deploy all-ping
 
 # Help target with color output
@@ -37,8 +36,8 @@ help: ## Show available commands
 	@echo "Android #19 Proxmox (proxmox-*):"
 	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
 	@echo ""
-	@echo "Terraform (tf-*):"
-	@$(MAKE) -s help-section SECTION="Terraform"
+	@echo "Proxmox Terraform (proxmox-tf-*):"
+	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -53,8 +52,6 @@ help-section:
 setup-ssh: ## Set up SSH key authentication for Ansible
 	@bash scripts/setup-ssh.sh
 
-check-ssh: ## Check SSH connectivity and show setup instructions if needed
-	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) ansible/playbooks/check-ssh.yml
 
 env-all: env-setup test-ping ## Build environment and test connections
 
@@ -102,36 +99,22 @@ proxmox-services: ## Deploy all Proxmox services
 proxmox-adguard: ## Deploy AdGuard Home service only
 	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml --tags adguard
 
-proxmox-terraform-prep: ## Prepare Proxmox for Terraform (download templates, etc.)
-	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) android-19-proxmox/terraform-prep.yml
 
-# Terraform
-tf-init: ## Initialize Terraform
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform init"
+proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform init"
 
-tf-plan: ## Show Terraform execution plan
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform plan"
+proxmox-tf-plan: ## Show Terraform execution plan for Proxmox
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform plan"
 
-tf-plan-with-prep: proxmox-terraform-prep tf-plan ## Show plan with Ansible prep first
+proxmox-tf-apply: ## Apply Terraform configuration for Proxmox
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
 
-tf-apply: ## Apply Terraform configuration (with optional Proxmox prep - run proxmox-terraform-prep separately if needed)
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform apply -auto-approve"
+proxmox-tf-destroy: ## Destroy Terraform-managed Proxmox infrastructure
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform destroy -auto-approve"
 
-tf-apply-with-prep: proxmox-terraform-prep tf-apply ## Apply Terraform with Ansible prep first
+proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
 
-tf-destroy: ## Destroy Terraform-managed infrastructure
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform destroy -auto-approve"
-
-tf-show: ## Show current Terraform state and outputs
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
-
-test-provision: tf-apply configure-container ## Test workflow: provision with Terraform, configure with Ansible
-
-configure-container: ## Configure containers created by Terraform (install nginx, etc.)
-	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) ansible/playbooks/configure-container.yml
-
-provision-complete: ## Complete provisioning workflow (Terraform + Ansible + validation)
-	$(ANSIBLE_EXEC) ansible-playbook -i $(INVENTORY) ansible/playbooks/provision-and-configure.yml
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
