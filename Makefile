@@ -2,7 +2,7 @@
 # See: https://www.gnu.org/software/make/manual/make.html
 
 # Variables
-DOCKER_COMPOSE := docker-compose
+DOCKER_COMPOSE := docker compose
 ANSIBLE_EXEC := $(DOCKER_COMPOSE) exec -T homelab-dev
 ANSIBLE_INTERACTIVE := $(DOCKER_COMPOSE) exec homelab-dev
 INVENTORY := inventory.yml
