@@ -20,7 +20,7 @@ resource "proxmox_virtual_environment_container" "test_nginx" {
   }
 
   operating_system {
-    template_file_id = "local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst"
+    template_file_id = var.lxc_template
   }
 
   cpu {

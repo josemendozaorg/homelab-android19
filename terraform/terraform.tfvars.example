@@ -2,3 +2,8 @@
 # terraform.tfvars is ignored by git for security
 
 proxmox_api_token = "terraform@pve!terraform=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# LXC template (verify it exists in Proxmox before using)
+# Check available templates: pveam list local
+# Download if needed: pveam download local debian-12-standard_12.12-1_amd64.tar.zst
+lxc_template = "local:vztmpl/debian-12-standard_12.12-1_amd64.tar.zst"
