@@ -3,7 +3,8 @@
 # Rebuilds terraform.tfstate by importing existing resources from Proxmox
 # Uses infrastructure-catalog.yml as source of truth
 
-set -e
+# Don't exit on errors - we want to handle them gracefully
+set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CATALOG_FILE="../infrastructure-catalog.yml"
@@ -101,7 +102,8 @@ echo "$terraform_containers" | while IFS=':' read -r id name ip; do
             echo "  ℹ️  Container $id already in Terraform state - skipping"
         else
             echo "  ⚠️  Warning: Failed to import container $id"
-            echo "     Error: $(echo "$import_output" | head -n 1)"
+            echo "     Error details:"
+            echo "$import_output" | sed 's/^/       /'
         fi
     else
         echo "  ⚠️  Container $id ($name) not found on Proxmox - will be created on next apply"
@@ -118,3 +120,6 @@ echo "  3. Apply if everything looks correct: terraform apply"
 echo ""
 echo "If something went wrong, restore from backup:"
 echo "  cp terraform.tfstate.backup.* terraform.tfstate"
+
+# Exit successfully - even if some imports failed, the script completed its job
+exit 0
