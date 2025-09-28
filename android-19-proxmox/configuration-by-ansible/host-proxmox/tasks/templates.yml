@@ -62,12 +62,12 @@
     - name: Display ISO download status
       ansible.builtin.debug:
         msg: >
-          ISO {{ item.item.name }}:
+          ISO {{ item.item.item.name }}:
           {% if item.changed | default(false) %}Downloaded{% else %}Already exists{% endif %}
       loop: "{{ iso_download.results }}"
       when: iso_download.results is defined
       loop_control:
-        label: "{{ item.item.name }}"
+        label: "{{ item.item.item.name }}"
 
 - name: Verify templates in storage
   ansible.builtin.command: pvesm list {{ proxmox_storage.local_storage.name }}

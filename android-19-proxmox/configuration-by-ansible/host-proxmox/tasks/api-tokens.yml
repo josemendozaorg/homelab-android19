@@ -83,15 +83,15 @@
       ansible.builtin.command: >
         pveum user add ansible@pve
         --comment "Ansible automation user"
-      register: ansible_user
+      register: ansible_user_result
       failed_when: false
-      changed_when: "'create user' in ansible_user.stdout | default('')"
+      changed_when: "'create user' in ansible_user_result.stdout | default('')"
 
     - name: Apply admin role to Ansible user
       ansible.builtin.command: >
         pveum acl modify /
         --users ansible@pve
         --roles Administrator
-      register: ansible_acl
-      changed_when: "'update acl' in ansible_acl.stdout | default('')"
+      register: ansible_acl_result
+      changed_when: "'update acl' in ansible_acl_result.stdout | default('')"
   when: proxmox_api.create_ansible_token | default(false)

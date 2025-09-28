@@ -47,8 +47,8 @@ proxmox_ct_templates:
 
 # VM Templates/ISOs
 proxmox_vm_isos:
-  - name: "debian-12.8.0-amd64-netinst.iso"
-    url: "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.8.0-amd64-netinst.iso"
+  - name: "debian-13.1.0-amd64-netinst.iso"
+    url: "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.1.0-amd64-netinst.iso"
     storage: "local"
 
   - name: "ubuntu-24.04.1-live-server-amd64.iso"
