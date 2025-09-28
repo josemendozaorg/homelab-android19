@@ -1,0 +1,89 @@
+---
+# Google Remote Desktop setup for Omarchy VM
+#
+# This task automates the installation and initial setup of Chrome Remote Desktop
+# on Arch Linux. Note: Manual configuration steps are still required for:
+# 1. Google account authorization at https://remotedesktop.google.com/headless
+# 2. Desktop environment selection in ~/.chrome-remote-desktop-session
+
+- name: Install Chrome Remote Desktop dependencies
+  block:
+    - name: Install required packages via pacman
+      pacman:
+        name:
+          - base-devel  # Required for AUR builds
+          - git         # Required for AUR clone
+          - python-psutil  # Chrome Remote Desktop dependency
+          - xorg-server-xvfb  # Virtual display for headless
+        state: present
+      become: yes
+
+    - name: Create build directory for AUR packages
+      file:
+        path: /tmp/aur-build
+        state: directory
+        mode: '0755'
+
+    - name: Clone chrome-remote-desktop from AUR
+      git:
+        repo: https://aur.archlinux.org/chrome-remote-desktop.git
+        dest: /tmp/aur-build/chrome-remote-desktop
+        force: yes
+
+    - name: Build and install chrome-remote-desktop
+      shell: |
+        cd /tmp/aur-build/chrome-remote-desktop
+        makepkg -si --noconfirm --skipchecksums
+      args:
+        creates: /opt/google/chrome-remote-desktop/chrome-remote-desktop
+      become: yes
+
+- name: Configure Chrome Remote Desktop service
+  block:
+    - name: Add user to chrome-remote-desktop group
+      user:
+        name: "{{ ansible_user }}"
+        groups: chrome-remote-desktop
+        append: yes
+      become: yes
+
+    - name: Create Chrome Remote Desktop session configuration
+      template:
+        src: chrome-remote-desktop-session.j2
+        dest: "/home/{{ ansible_user }}/.chrome-remote-desktop-session"
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Enable Chrome Remote Desktop service
+      systemd:
+        name: chrome-remote-desktop@{{ ansible_user }}.service
+        enabled: yes
+        daemon_reload: yes
+      become: yes
+
+- name: Display Remote Desktop setup instructions
+  debug:
+    msg: |
+      🖥️  Chrome Remote Desktop Installation Complete!
+
+      MANUAL STEPS REQUIRED:
+
+      1. Open browser and go to: https://remotedesktop.google.com/headless
+      2. Sign in with your Google account
+      3. Click "Begin" → "Next" → "Authorize"
+      4. Copy the Debian command provided (ignore the Debian part)
+      5. SSH into this VM and run the copied command
+      6. Set a PIN when prompted
+
+      EXAMPLE:
+      The command will look like:
+      /opt/google/chrome-remote-desktop/start-host \
+        --code="AUTHORIZATION_CODE_HERE" \
+        --redirect-url="https://remotedesktop.google.com/_/oauthredirect" \
+        --name="omarchy-dev"
+
+      After setup, you can access the VM through:
+      https://remotedesktop.google.com/access
+
+      Desktop Environment: {{ remote_desktop_session | default('Hyprland') }}

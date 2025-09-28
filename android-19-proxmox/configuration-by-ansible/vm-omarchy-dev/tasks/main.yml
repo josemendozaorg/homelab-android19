@@ -12,3 +12,10 @@
   tags:
     - omarchy
     - configure
+
+- name: Include remote desktop setup
+  include_tasks: remote-desktop.yml
+  tags:
+    - omarchy
+    - remote-desktop
+  when: remote_desktop_enable | default(true)

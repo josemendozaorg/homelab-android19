@@ -1,0 +1,28 @@
+#!/bin/bash
+# Chrome Remote Desktop session configuration for Omarchy (Arch Linux + Hyprland)
+#
+# This script defines which desktop environment to start when connecting
+# via Chrome Remote Desktop. For Omarchy, we use Hyprland as the compositor.
+
+{% set session_type = remote_desktop_session | default('hyprland') %}
+
+{% if session_type == 'hyprland' %}
+# Start Hyprland compositor for Omarchy
+exec /usr/bin/Hyprland
+
+{% elif session_type == 'gnome' %}
+# Alternative: GNOME desktop
+exec /usr/bin/gnome-session
+
+{% elif session_type == 'kde' %}
+# Alternative: KDE Plasma
+exec /usr/bin/startplasma-x11
+
+{% elif session_type == 'xfce' %}
+# Alternative: XFCE desktop
+exec /usr/bin/startxfce4
+
+{% else %}
+# Default: Hyprland for Omarchy
+exec /usr/bin/Hyprland
+{% endif %}

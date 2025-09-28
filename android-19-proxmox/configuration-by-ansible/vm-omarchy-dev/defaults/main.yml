@@ -21,3 +21,7 @@ omarchy_vm_install_agent: false  # Try to install QEMU guest agent via qm guest 
 omarchy_vm_enable_backup: false  # Create backup schedule
 omarchy_vm_backup_schedule: "sun 02:00"  # Backup schedule time
 omarchy_vm_backup_storage: "local"  # Storage for backups
+
+# Remote Desktop Configuration
+remote_desktop_session: "hyprland"  # Desktop environment for Chrome Remote Desktop
+remote_desktop_enable: true  # Install and configure Chrome Remote Desktop

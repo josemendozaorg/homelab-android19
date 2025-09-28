@@ -109,9 +109,10 @@ resource "proxmox_virtual_environment_vm" "vms" {
     sockets = 1
   }
 
-  # Memory configuration
+  # Memory configuration with balloon
   memory {
     dedicated = lookup(each.value.resources, "memory", 4096)
+    floating  = lookup(each.value.resources, "memory", 4096)  # Enable balloon memory
   }
 
   # Primary disk
@@ -133,10 +134,9 @@ resource "proxmox_virtual_environment_vm" "vms" {
     model  = "virtio"
   }
 
-  # VGA display for desktop environment
+  # VGA display - default settings for remote access
   vga {
-    type = "qxl"
-    memory = 32
+    type = "std"  # Default standard VGA (compatible with remote desktop)
   }
 
   # On boot behavior
