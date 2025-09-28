@@ -1,22 +1,7 @@
 ---
-- name: Configure Omarchy Dev VM (post-Terraform provisioning)
+- name: Omarchy Dev VM Setup
   hosts: proxmox
   gather_facts: no
 
   roles:
     - role: omarchy-dev-vm
-      tags:
-        - omarchy
-        - always
-
-  tasks:
-    - name: Display setup summary
-      ansible.builtin.debug:
-        msg:
-          - "Omarchy Dev VM configuration complete"
-          - "VM ID: {{ omarchy_vm.id | default(101) }}"
-          - "IP Address: {{ omarchy_vm.ip | default('192.168.0.101') }}"
-          - "Next steps:"
-          - "1. VM should be provisioned by Terraform first"
-          - "2. Start VM and complete Omarchy installation manually"
-          - "3. Install QEMU guest agent for better integration"

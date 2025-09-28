@@ -15,3 +15,9 @@ omarchy_vm:
 
 # Optional configuration
 omarchy_vm_balloon: 4096  # Memory ballooning for dynamic allocation
+omarchy_vm_start_on_configure: false  # Start VM during configuration
+omarchy_vm_wait_for_network: false  # Wait for VM network to be available
+omarchy_vm_install_agent: false  # Try to install QEMU guest agent via qm guest exec
+omarchy_vm_enable_backup: false  # Create backup schedule
+omarchy_vm_backup_schedule: "sun 02:00"  # Backup schedule time
+omarchy_vm_backup_storage: "local"  # Storage for backups
