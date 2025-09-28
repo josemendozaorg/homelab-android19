@@ -20,7 +20,7 @@
 
 - name: Generate cloud-init user-data configuration
   ansible.builtin.template:
-    src: cloud-init-user-data.yml.j2
+    src: ../templates/cloud-init-user-data.yml.j2
     dest: /tmp/cloud-init-user-data-{{ omarchy_vm_automated.id }}.yml
     mode: '0644'
   delegate_to: "{{ groups['proxmox'][0] }}"
@@ -73,13 +73,10 @@
   delegate_to: "{{ groups['proxmox'][0] }}"
 
 - name: Import QCOW2 cloud image as VM disk
-  ansible.builtin.shell: |
-    # Import the QCOW2 image as the VM's main disk
-    # This will be used by Terraform to configure the VM
-    echo "QCOW2 image ready for Terraform import: {{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}"
-    echo "Cloud-init ISO ready: {{ cloud_image_storage_path }}/cloud-init-{{ omarchy_vm_automated.id }}.iso"
-  register: cloud_image_import_result
-  delegate_to: "{{ groups['proxmox'][0] }}"
+  ansible.builtin.debug:
+    msg: |
+      QCOW2 image ready for Terraform import: {{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}
+      Cloud-init ISO ready: {{ cloud_image_storage_path }}/cloud-init-{{ omarchy_vm_automated.id }}.iso
 
 - name: Display cloud-init preparation completion
   ansible.builtin.debug:

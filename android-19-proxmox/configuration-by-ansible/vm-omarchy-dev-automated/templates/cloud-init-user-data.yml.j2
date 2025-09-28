@@ -8,7 +8,7 @@ timezone: {{ cloud_init_timezone }}
 # User configuration
 users:
   - name: {{ cloud_init_user }}
-    passwd: {{ cloud_init_password | password_hash('sha512') }}
+    plain_text_passwd: {{ cloud_init_password }}
     groups: [wheel, sudo]
     shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL

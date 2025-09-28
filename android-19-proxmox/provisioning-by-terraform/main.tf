@@ -85,7 +85,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
   node_name = local.catalog.physical.android19-proxmox.node_name
   vm_id     = tonumber(each.key)
   name      = each.value.name
-  started   = false  # Don't auto-start - manual installation required
+  started   = lookup(each.value, "cloud_init", false)  # Auto-start cloud-init VMs, manual for ISO-based
 
   description = each.value.description
 
@@ -94,8 +94,8 @@ resource "proxmox_virtual_environment_vm" "vms" {
 
   machine = lookup(each.value, "machine", "q35")  # Modern chipset
 
-  # Boot from ISO first, then disk
-  boot_order = ["ide2", "scsi0"]
+  # Boot order: cloud images boot from disk, ISOs boot from ISO first
+  boot_order = lookup(each.value, "cloud_init", false) ? ["scsi0"] : ["ide2", "scsi0"]
 
   # Enable QEMU guest agent if specified
   agent {
@@ -122,10 +122,23 @@ resource "proxmox_virtual_environment_vm" "vms" {
     interface    = "scsi0"
   }
 
-  # ISO for installation
-  cdrom {
-    enabled = true
-    file_id = "local:iso/${each.value.iso}"
+  # ISO for installation (skip for cloud images)
+  dynamic "cdrom" {
+    for_each = lookup(each.value, "iso", null) != null ? [1] : []
+    content {
+      enabled = true
+      file_id = "local:iso/${each.value.iso}"
+    }
+  }
+
+  # Cloud-init ISO for cloud images
+  dynamic "cdrom" {
+    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    content {
+      enabled = true
+      file_id = "local:iso/cloud-init-${each.key}.iso"
+      interface = "ide2"
+    }
   }
 
   # Network interface
