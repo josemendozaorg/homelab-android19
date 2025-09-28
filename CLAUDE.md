@@ -52,8 +52,14 @@ make setup-ssh
 - `make proxmox-services` - Deploy all Proxmox services
 
 ### Service-Level Deployment (Terraform + Ansible)
-- `make adguard-service` - Deploy AdGuard DNS service (provision + configure)
-- `make omarchy-service` - Deploy Omarchy development VM (provision + configure)
+#### New Naming Convention (Recommended)
+- `make deploy-lxc-adguard-dns` - Deploy AdGuard DNS server (LXC container)
+- `make deploy-vm-omarchy-devmachine` - Deploy Omarchy development workstation (VM)
+- `make deploy-proxmox-all` - Deploy all Proxmox VMs and LXCs
+
+#### Backward Compatibility Aliases
+- `make adguard-service` - Deploy AdGuard DNS service (alias)
+- `make omarchy-service` - Deploy Omarchy development VM (alias)
 - `make proxmox-adguard` - Deploy AdGuard service (alias)
 
 ### Proxmox Infrastructure (Terraform)
@@ -81,11 +87,26 @@ make setup-ssh
 - `scripts/` - Helper scripts (SSH setup, etc.)
 - `docs/` - Documentation including SSH setup guide
 
-### Role Naming Convention
+### Naming Conventions
+
+#### Ansible Role Naming
 All Ansible roles follow a prefixed naming pattern:
 - **host-*** - Physical machine roles (e.g., host-proxmox)
 - **lxc-*** - LXC container roles (e.g., lxc-adguard)
 - **vm-*** - Virtual machine roles (e.g., vm-omarchy-dev)
+
+#### Makefile Target Naming
+Service deployment targets follow a structured naming pattern:
+- **deploy-{type}-{name}-{capability}** - Complete orchestration (Terraform + Ansible)
+  - `{type}` = `lxc` or `vm` (infrastructure type)
+  - `{name}` = Service name (e.g., adguard, omarchy)
+  - `{capability}` = Homelab function (e.g., dns, devmachine, vpn, containerplatform)
+
+**Examples:**
+- `deploy-lxc-adguard-dns` - AdGuard DNS server running in LXC container
+- `deploy-vm-omarchy-devmachine` - Omarchy development workstation running in VM
+- `deploy-lxc-nextcloud-fileserver` - Nextcloud file server in LXC container
+- `deploy-vm-docker-containerplatform` - Docker host VM for containers
 
 ### Infrastructure Flow
 1. **Terraform Provisioning**: Create VMs/containers on Proxmox with cloud-init
@@ -107,7 +128,7 @@ All Ansible roles follow a prefixed naming pattern:
 - `Makefile` - Main automation interface with all commands
 - `inventory.yml` - Ansible inventory defining machine groups
 - `docker-compose.yml` - Development environment definition
-- `android-19-proxmox/terraform/terraform.tfvars` - Terraform configuration (not committed)
+- `android-19-proxmox/provisioning-by-terraform/terraform.tfvars` - Terraform configuration (not committed)
 - `android-19-proxmox/infrastructure-catalog.yml` - Service definitions for Terraform
 - `docs/SSH_SETUP.md` - Comprehensive SSH authentication setup guide
 

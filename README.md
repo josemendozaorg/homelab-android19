@@ -91,11 +91,26 @@ This homelab uses a **service-oriented approach** with clear separation:
 2. **Ansible** (`configuration-by-ansible/`): Configures services and applications
 3. **Makefile**: Orchestrates services combining both Terraform and Ansible
 
-### Role Naming Convention
+### Naming Conventions
+
+#### Ansible Role Naming
 All Ansible roles follow a prefixed naming pattern:
 - **host-*** - Physical machine roles (e.g., host-proxmox)
 - **lxc-*** - LXC container roles (e.g., lxc-adguard)
 - **vm-*** - Virtual machine roles (e.g., vm-omarchy-dev)
+
+#### Makefile Target Naming
+Service deployment targets follow a structured naming pattern:
+- **deploy-{type}-{name}-{capability}** - Complete orchestration (Terraform + Ansible)
+  - `{type}` = `lxc` or `vm` (infrastructure type)
+  - `{name}` = Service name (e.g., adguard, omarchy)
+  - `{capability}` = Homelab function (e.g., dns, devmachine, vpn, containerplatform)
+
+**Examples:**
+- `deploy-lxc-adguard-dns` - AdGuard DNS server running in LXC container
+- `deploy-vm-omarchy-devmachine` - Omarchy development workstation running in VM
+- `deploy-lxc-nextcloud-fileserver` - Nextcloud file server in LXC container
+- `deploy-vm-docker-containerplatform` - Docker host VM for containers
 
 ### Container Management
 Ansible manages LXC containers through Proxmox, not direct SSH:
@@ -118,14 +133,18 @@ Ansible manages LXC containers through Proxmox, not direct SSH:
 make proxmox-full-deploy  # Does everything: Terraform + Ansible
 ```
 
-**Service-Level Deployment:**
+**Service-Level Deployment (New Naming Convention):**
 ```bash
 # Deploy individual services (Terraform + Ansible)
-make adguard-service    # DNS server
-make omarchy-service    # Development VM
+make deploy-lxc-adguard-dns        # AdGuard DNS server (LXC)
+make deploy-vm-omarchy-devmachine   # Omarchy development workstation (VM)
 
-# Or deploy all services
-make proxmox-services
+# Deploy all services
+make deploy-proxmox-all
+
+# Backward compatibility aliases still work
+make adguard-service    # Alias for deploy-lxc-adguard-dns
+make omarchy-service    # Alias for deploy-vm-omarchy-devmachine
 ```
 
 **Step-by-Step Workflow:**
