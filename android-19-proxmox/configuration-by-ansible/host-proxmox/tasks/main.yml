@@ -1,6 +1,14 @@
 ---
 # Main tasks for Proxmox Host Configuration
 
+- name: Pre-flight safety checks
+  include_tasks: preflight-checks.yml
+  tags:
+    - proxmox
+    - preflight
+    - safety
+  when: proxmox_preflight_checks | default(true)
+
 - name: System configuration
   include_tasks: system.yml
   tags:
@@ -13,12 +21,19 @@
     - proxmox
     - storage
 
-- name: Network configuration
+- name: Network configuration (DISABLED - use network-safe instead)
   include_tasks: network.yml
   tags:
     - proxmox
     - network
   when: false  # Disabled until we can safely configure networking
+
+- name: Safe network configuration
+  include_tasks: network-safe.yml
+  tags:
+    - proxmox
+    - network-safe
+    - safety
 
 - name: Template management
   include_tasks: templates.yml

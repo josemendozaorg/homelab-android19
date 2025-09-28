@@ -95,6 +95,39 @@ make proxmox-full-deploy
 
 **Lesson**: Always verify actual interface names (`ip link show`) before any network configuration changes on production systems.
 
+### Safety Procedures Implemented
+
+**1. Preflight Checks System**
+- Automatic interface validation before network changes
+- Current configuration backup with timestamps
+- Display of current vs proposed changes
+- Mandatory user confirmation for critical operations
+
+**2. Safe Mode Commands**
+Use these commands instead of direct configuration:
+
+```bash
+# Validate configuration without making changes
+make proxmox-host-check                    # Check all host configuration
+make proxmox-host-network-check           # Check only network configuration
+
+# Apply configuration with safety checks
+make proxmox-host-network-safe            # Network config with mandatory verification
+```
+
+**3. Emergency Recovery**
+If you lose remote access:
+1. **Physical console access required**
+2. Restore backup: `cp /etc/network/interfaces.backup.TIMESTAMP /etc/network/interfaces`
+3. Restart networking: `systemctl restart networking`
+4. Verify connectivity: `ip addr show`
+
+**4. Best Practices**
+- Always run `make proxmox-host-check` first to validate changes
+- Verify interface names with: `ansible proxmox -m shell -a "ip link show"`
+- Never disable preflight checks (`proxmox_preflight_checks: false`)
+- Ensure physical/console access is available before network changes
+
 ## Architecture
 
 ### Infrastructure Management
