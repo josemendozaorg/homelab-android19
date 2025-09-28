@@ -1,0 +1,7 @@
+---
+- name: AdGuard Home Setup
+  hosts: proxmox
+  gather_facts: no
+
+  roles:
+    - role: adguard-home

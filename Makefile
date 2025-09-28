@@ -16,7 +16,7 @@ INVENTORY := inventory.yml
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-host-setup proxmox-host-storage proxmox-host-templates proxmox-host-api \
-        proxmox-deploy proxmox-services proxmox-adguard \
+        proxmox-deploy proxmox-services adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         all-deploy all-ping
@@ -110,11 +110,13 @@ proxmox-host-api: ## Configure API tokens for automation
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 
-proxmox-services: ## Deploy all Proxmox services
+proxmox-services: ## Deploy all Proxmox services (orchestration)
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
 
-proxmox-adguard: ## Deploy AdGuard Home service only
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml --tags adguard
+adguard-setup: ## Deploy AdGuard Home service
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/adguard-setup.yml
+
+proxmox-adguard: adguard-setup ## Deploy AdGuard Home service (alias)
 
 
 proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure

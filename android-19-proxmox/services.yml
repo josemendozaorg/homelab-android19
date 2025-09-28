@@ -1,12 +1,17 @@
 ---
-- name: Deploy Proxmox Services
-  hosts: proxmox
-  become: yes
+# Services Orchestration Playbook
+# This playbook orchestrates individual service deployments
+# Each service has its own setup playbook following the pattern
 
-  roles:
-    - role: adguard-home
-      tags: adguard
+- name: Deploy AdGuard Home Service
+  import_playbook: adguard-setup.yml
+  tags: adguard
 
-    # Future services can be added here
-    # - role: roles/portainer
-    #   tags: portainer
+# Future services following the same pattern:
+# - name: Deploy Portainer Service
+#   import_playbook: portainer-setup.yml
+#   tags: portainer
+
+# - name: Deploy Nextcloud Service
+#   import_playbook: nextcloud-setup.yml
+#   tags: nextcloud
