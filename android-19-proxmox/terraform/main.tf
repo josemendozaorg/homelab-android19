@@ -7,6 +7,12 @@ locals {
     id => service
     if service.type == "container"
   }
+  # All VM services are managed by Terraform
+  terraform_vms = {
+    for id, service in local.catalog.services :
+    id => service
+    if service.type == "vm"
+  }
 }
 
 # Create all containers defined in the catalog

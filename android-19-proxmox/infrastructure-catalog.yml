@@ -41,6 +41,23 @@ services:
       disk: 8
     storage: "local-lvm"
 
+  101:
+    name: "omarchy-dev"
+    type: "vm"
+    ip: "192.168.0.101"
+    description: "Omarchy (Arch Linux + Hyprland) development workstation"
+    iso: "omarchy-online.iso"
+    resources:
+      cores: 4
+      memory: 8192
+      disk: 60
+    storage: "local-lvm"
+    boot_order: "scsi0"
+    bios: "ovmf"  # UEFI boot
+    machine: "q35"  # Modern chipset
+    agent: true  # Enable QEMU guest agent
+    onboot: false  # Don't auto-start on Proxmox boot
+
 # Physical Infrastructure
 physical:
   android16-bastion:
