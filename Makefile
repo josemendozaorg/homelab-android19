@@ -122,7 +122,7 @@ proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
 proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infrastructure
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
 
-# Omarchy Development VM
+# Omarchy
 omarchy-template-setup: ## Setup Omarchy VM template (ISO download + template creation)
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags iso,template
 
