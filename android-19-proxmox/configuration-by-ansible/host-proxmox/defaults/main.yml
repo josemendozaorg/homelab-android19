@@ -7,14 +7,14 @@ proxmox_storage:
   vm_storage:
     name: "vm-storage"
     type: "zfspool"
-    pool_name: "vm-pool"
+    pool_name: "zfs-nvme-1"   # Existing ZFS pool to import
+    dataset_name: "vm-data"   # Dataset for VM/LXC storage
     device: "/dev/nvme1n1p1"  # 3.6TB partition on 4TB NVMe disk
     content:
       - "images"     # VM disk images
       - "rootdir"    # Container root filesystems
     nodes: "proxmox"
     compression: "lz4"        # Enable compression
-    ashift: "12"              # 4K sectors
     enabled: true
 
   # Local storage configuration

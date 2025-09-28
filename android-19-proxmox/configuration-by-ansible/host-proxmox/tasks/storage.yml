@@ -23,22 +23,27 @@
     - storage_disk.stat.exists | default(false)
     - proxmox_storage.vm_storage.type == "zfspool"
   block:
-    - name: Check if ZFS pool already exists
+    - name: Check if ZFS pool is imported
       ansible.builtin.command: zpool list {{ proxmox_storage.vm_storage.pool_name }}
       register: zpool_check
       failed_when: false
       changed_when: false
 
-    - name: Create ZFS pool for VM storage
-      ansible.builtin.command: >
-        zpool create
-        -o ashift={{ proxmox_storage.vm_storage.ashift }}
-        -O compression={{ proxmox_storage.vm_storage.compression }}
-        -O atime=off
-        -O relatime=on
-        {{ proxmox_storage.vm_storage.pool_name }}
-        {{ proxmox_storage.vm_storage.device }}
+    - name: Import existing ZFS pool
+      ansible.builtin.command: zpool import -f {{ proxmox_storage.vm_storage.pool_name }}
       when: zpool_check.rc != 0
+      register: zpool_import
+
+    - name: Create ZFS dataset for VM storage
+      ansible.builtin.command: >
+        zfs create
+        -o compression={{ proxmox_storage.vm_storage.compression }}
+        -o atime=off
+        -o relatime=on
+        {{ proxmox_storage.vm_storage.pool_name }}/{{ proxmox_storage.vm_storage.dataset_name }}
+      register: zfs_dataset_create
+      failed_when: false
+      changed_when: zfs_dataset_create.rc == 0
 
     - name: Get ZFS pool status
       ansible.builtin.command: zpool status {{ proxmox_storage.vm_storage.pool_name }}
@@ -62,9 +67,10 @@
     - name: Add ZFS storage pool to Proxmox
       ansible.builtin.command: >
         pvesm add zfspool {{ proxmox_storage.vm_storage.name }}
-        --pool {{ proxmox_storage.vm_storage.pool_name }}
+        --pool {{ proxmox_storage.vm_storage.pool_name }}/{{ proxmox_storage.vm_storage.dataset_name }}
         --content {{ proxmox_storage.vm_storage.content | join(',') }}
         --nodes {{ proxmox_storage.vm_storage.nodes }}
+        --sparse
       when:
         - proxmox_storage.vm_storage.enabled | default(true)
         - proxmox_storage.vm_storage.type == "zfspool"
