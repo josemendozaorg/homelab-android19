@@ -8,7 +8,7 @@ omarchy_template_id: 9001  # High ID for template
 # Proxmox storage configuration
 iso_storage_path: "/var/lib/vz/template/iso"
 proxmox_iso_storage: "local"  # Storage for ISOs
-proxmox_vm_storage: "local-lvm"  # Storage for VM disks and templates
+proxmox_vm_storage: "local"  # Storage for VM disks and templates
 
 # VM template specifications
 omarchy_template:

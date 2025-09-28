@@ -51,7 +51,7 @@ services:
       cores: 4
       memory: 8192
       disk: 60
-    storage: "local-lvm"
+    storage: "local"
     boot_order: "scsi0"
     bios: "ovmf"  # UEFI boot
     machine: "q35"  # Modern chipset
