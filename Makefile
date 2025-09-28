@@ -110,32 +110,40 @@ proxmox-host-api: ## Configure API tokens for automation
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 
-proxmox-services: adguard-service ## Deploy all Proxmox services (orchestration)
+proxmox-services: deploy-lxc-adguard-dns ## Deploy all Proxmox services (orchestration)
 
 # Service-level orchestration (Terraform + Ansible)
-adguard-service: ## Deploy AdGuard service (Terraform + Ansible)
-	@echo "🚀 Deploying AdGuard service..."
+# Services depend on Proxmox host being properly configured
+deploy-lxc-adguard-dns: proxmox-tf-init ## Deploy AdGuard DNS server (LXC container)
+	@echo "🚀 Deploying AdGuard DNS server (LXC)..."
 	@echo "📋 Step 1/2: Provisioning container with Terraform"
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_container.containers[\\\"125\\\"]"
 	@echo "📋 Step 2/2: Configuring AdGuard with Ansible"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/adguard-setup.yml
-	@echo "✅ AdGuard service deployment complete!"
+	@echo "✅ AdGuard DNS server deployment complete!"
 
-omarchy-service: ## Deploy Omarchy service (Terraform + Ansible)
-	@echo "🚀 Deploying Omarchy development VM service..."
+deploy-vm-omarchy-devmachine: proxmox-tf-init ## Deploy Omarchy development workstation (VM)
+	@echo "🚀 Deploying Omarchy development workstation (VM)..."
 	@echo "📋 Step 1/3: Download ISO"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags iso
 	@echo "📋 Step 2/3: Provisioning VM with Terraform"
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 	@echo "📋 Step 3/3: Initial configuration with Ansible"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags configure
-	@echo "✅ Omarchy service deployment complete! Complete OS installation manually."
+	@echo "✅ Omarchy development workstation deployment complete! Complete OS installation manually."
+
+# Group deployment targets
+deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs
+
+# Backward compatibility aliases
+adguard-service: deploy-lxc-adguard-dns ## Deploy AdGuard service (alias)
+omarchy-service: deploy-vm-omarchy-devmachine ## Deploy Omarchy service (alias)
 
 # Individual component deployment
 adguard-setup: ## Deploy AdGuard Home configuration only (Ansible)
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/adguard-setup.yml
 
-proxmox-adguard: adguard-service ## Deploy AdGuard service (alias)
+proxmox-adguard: deploy-lxc-adguard-dns ## Deploy AdGuard service (alias)
 
 
 proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure

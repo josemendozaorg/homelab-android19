@@ -1,7 +1,7 @@
 ---
 # Omarchy Dev VM role defaults
-omarchy_iso_url: "https://iso.omarchy.org/omarchy-online.iso"
-omarchy_iso_name: "omarchy-online.iso"
+omarchy_iso_url: "https://iso.omarchy.org/omarchy-3.0.1.iso"
+omarchy_iso_name: "omarchy-3.0.1.iso"
 
 # Proxmox storage configuration
 iso_storage_path: "/var/lib/vz/template/iso"

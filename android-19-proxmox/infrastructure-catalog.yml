@@ -46,12 +46,12 @@ services:
     type: "vm"
     ip: "192.168.0.101"
     description: "Omarchy (Arch Linux + Hyprland) development workstation"
-    iso: "omarchy-online.iso"
+    iso: "omarchy-3.0.1.iso"
     resources:
       cores: 4
       memory: 8192
       disk: 60
-    storage: "local"
+    storage: "local-lvm"
     boot_order: "scsi0"
     bios: "ovmf"  # UEFI boot
     machine: "q35"  # Modern chipset

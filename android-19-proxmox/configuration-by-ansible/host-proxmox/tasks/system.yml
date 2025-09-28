@@ -3,12 +3,23 @@
 
 - name: Configure repositories
   block:
+    - name: Check if enterprise repository files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: enterprise_repo_files
+      loop:
+        - /etc/apt/sources.list.d/pve-enterprise.list
+        - /etc/apt/sources.list.d/pve-enterprise.sources
+
     - name: Disable enterprise repository (no subscription)
       ansible.builtin.replace:
-        path: /etc/apt/sources.list.d/pve-enterprise.list
+        path: "{{ item.item }}"
         regexp: '^(deb.*)$'
         replace: '#\1'
-      when: proxmox_system.disable_enterprise_repo | default(true)
+      when:
+        - proxmox_system.disable_enterprise_repo | default(true)
+        - item.stat.exists
+      loop: "{{ enterprise_repo_files.results }}"
 
     - name: Enable no-subscription repository
       ansible.builtin.apt_repository:
