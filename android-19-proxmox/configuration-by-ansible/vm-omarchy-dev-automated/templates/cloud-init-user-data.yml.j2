@@ -1,0 +1,137 @@
+#cloud-config
+# Cloud-init configuration for automated Omarchy installation
+
+# Basic system configuration
+hostname: {{ cloud_init_hostname }}
+timezone: {{ cloud_init_timezone }}
+
+# User configuration
+users:
+  - name: {{ cloud_init_user }}
+    passwd: {{ cloud_init_password | password_hash('sha512') }}
+    groups: [wheel, sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: []
+
+# Network configuration
+network_config: disabled  # Use DHCP from VM network
+
+# Package updates and installations
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - wget
+  - curl
+  - base-devel
+
+# Write files before running commands
+write_files:
+  - path: /home/{{ cloud_init_user }}/omarchy-install.sh
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      echo "=== Starting Automated Omarchy Installation ==="
+      echo "Timestamp: $(date)"
+
+      # Configure git (required by Omarchy)
+      git config --global user.name "{{ git_user_name }}"
+      git config --global user.email "{{ git_user_email }}"
+      echo "✅ Git configured: {{ git_user_name }} <{{ git_user_email }}>"
+
+      # Set Omarchy environment variables for headless installation
+      export OMARCHY_BARE=true
+      export OMARCHY_PATH="$HOME/.local/share/omarchy"
+
+      echo "🚀 Starting Omarchy installation (bare mode)..."
+
+      # Download and execute Omarchy install script
+      if wget -qO- {{ omarchy_install_script_url }} | bash; then
+        echo "✅ Omarchy installation completed successfully!"
+      else
+        echo "❌ Omarchy installation failed!"
+        exit 1
+      fi
+
+      # Update PATH for current session
+      export PATH="$OMARCHY_PATH/bin:$PATH"
+
+      # Ensure PATH is updated for future sessions
+      if ! grep -q "OMARCHY_PATH" "$HOME/.bashrc"; then
+        echo 'export OMARCHY_PATH="$HOME/.local/share/omarchy"' >> "$HOME/.bashrc"
+        echo 'export PATH="$OMARCHY_PATH/bin:$PATH"' >> "$HOME/.bashrc"
+        echo "✅ Updated .bashrc with Omarchy PATH"
+      fi
+
+{% if omarchy_enable_remote_desktop %}
+      echo "🖥️ Configuring Google Remote Desktop..."
+
+      # Install Google Chrome Remote Desktop (AUR package)
+      if command -v yay >/dev/null 2>&1; then
+        yay -S --noconfirm chrome-remote-desktop || echo "⚠️ Chrome Remote Desktop installation failed"
+      elif command -v paru >/dev/null 2>&1; then
+        paru -S --noconfirm chrome-remote-desktop || echo "⚠️ Chrome Remote Desktop installation failed"
+      else
+        echo "⚠️ No AUR helper found, skipping Chrome Remote Desktop"
+      fi
+
+      # Create remote desktop session script
+      mkdir -p "$HOME/.config"
+      cat > "$HOME/.chrome-remote-desktop-session" << 'EOF'
+#!/bin/bash
+export DISPLAY=:20
+exec Hyprland
+EOF
+      chmod +x "$HOME/.chrome-remote-desktop-session"
+      echo "✅ Remote desktop session configured"
+{% endif %}
+
+      echo "🎉 Automated Omarchy installation complete!"
+      echo "📋 Next steps:"
+      echo "  1. Reboot to ensure all services start properly"
+      echo "  2. Log in and verify Hyprland desktop environment"
+{% if omarchy_enable_remote_desktop %}
+      echo "  3. Set up Google Remote Desktop authorization"
+{% endif %}
+      echo "  4. Start developing!"
+
+    owner: {{ cloud_init_user }}:{{ cloud_init_user }}
+    permissions: '0755'
+
+# Commands to run after the system is set up
+runcmd:
+  # Wait for network to be fully available
+  - sleep 30
+
+  # Ensure user owns their home directory
+  - chown -R {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}
+
+  # Run Omarchy installation as the user (not root)
+  - sudo -u {{ cloud_init_user }} bash /home/{{ cloud_init_user }}/omarchy-install.sh >> /var/log/omarchy-install.log 2>&1
+
+  # Enable and start services
+  - systemctl enable sshd
+  - systemctl start sshd
+
+  # Reboot to ensure all services start properly with new configuration
+  - shutdown -r +1 "Rebooting to complete Omarchy setup"
+
+# Final message
+final_message: |
+  Omarchy Cloud-init Setup Complete!
+
+  System: {{ cloud_init_hostname }}
+  User: {{ cloud_init_user }}
+
+  The system will reboot in 1 minute to complete the setup.
+  After reboot, you can:
+  - SSH: ssh {{ cloud_init_user }}@{{ omarchy_vm_automated.ip }}
+  - Use Hyprland desktop environment
+{% if omarchy_enable_remote_desktop %}
+  - Configure Google Remote Desktop for headless access
+{% endif %}
+
+  Installation log: /var/log/omarchy-install.log

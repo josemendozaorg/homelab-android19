@@ -20,6 +20,8 @@ INVENTORY := inventory.yml
         proxmox-deploy proxmox-services adguard-service omarchy-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
+        omarchy-start omarchy-stop omarchy-status \
+        deploy-vm-omarchy-devmachine-automated omarchy-automated-start omarchy-automated-stop omarchy-automated-status omarchy-automated-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -150,6 +152,33 @@ omarchy-stop: ## Stop Omarchy VM
 omarchy-status: ## Check Omarchy VM status
 	@echo "📊 Checking Omarchy VM status..."
 	$(ANSIBLE_EXEC) ansible proxmox -m shell -a "qm status 101 && echo '---' && qm config 101 | grep -E 'cores|memory|balloon|boot'" --inventory $(INVENTORY)
+
+deploy-vm-omarchy-devmachine-automated: proxmox-tf-init ## Deploy Omarchy development workstation - Fully automated cloud-init installation (VM)
+	@echo "🤖 Deploying Omarchy development workstation with cloud-init automation..."
+	@echo "📋 Step 1/3: Download Arch Linux Cloud Image (QCOW2)"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-automated-setup.yml --tags download
+	@echo "📋 Step 2/3: Prepare cloud-init configuration"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-automated-setup.yml --tags cloud-init
+	@echo "📋 Step 3/3: Provision VM with Terraform (imports QCOW2 + cloud-init)"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"102\\\"]"
+	@echo "🔄 Cloud-init will automatically install Omarchy (monitor via VM console)"
+	@echo "✅ Automated Omarchy development workstation deployment initiated!"
+	@echo "📊 Check status with: make omarchy-automated-status"
+
+omarchy-automated-start: ## Start Automated Omarchy VM
+	@echo "🚀 Starting Automated Omarchy VM..."
+	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm start 102" --inventory $(INVENTORY)
+
+omarchy-automated-stop: ## Stop Automated Omarchy VM
+	@echo "🛑 Stopping Automated Omarchy VM..."
+	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm stop 102" --inventory $(INVENTORY)
+
+omarchy-automated-status: ## Check Automated Omarchy VM status
+	@echo "📊 Checking Automated Omarchy VM status..."
+	$(ANSIBLE_EXEC) ansible proxmox -m shell -a "qm status 102 && echo '---' && qm config 102 | grep -E 'cores|memory|balloon|boot'" --inventory $(INVENTORY)
+
+omarchy-automated-destroy: ## Destroy Automated Omarchy VM with Terraform
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"102\\\"]"
 
 # Group deployment targets
 deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs

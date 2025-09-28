@@ -1,0 +1,26 @@
+---
+# Omarchy Automated Development VM Setup Playbook
+# Two-stage automated installation: Arch Linux + Omarchy
+- name: Setup Omarchy Development VM - Automated Installation
+  hosts: proxmox
+  become: false
+  gather_facts: true
+
+  vars:
+    # Load configuration from infrastructure catalog
+    catalog: "{{ lookup('file', 'infrastructure-catalog.yml') | from_yaml }}"
+    vm_config: "{{ catalog.services['102'] }}"
+
+  roles:
+    - name: vm-omarchy-dev-automated
+      vars:
+        # Override defaults with infrastructure catalog values
+        omarchy_vm_automated:
+          id: 102
+          name: "{{ vm_config.name }}"
+          ip: "{{ vm_config.ip }}"
+
+  tags:
+    - omarchy-automated
+    - vm
+    - development

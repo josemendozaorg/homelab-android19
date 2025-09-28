@@ -25,3 +25,6 @@ omarchy_vm_backup_storage: "local"  # Storage for backups
 # Remote Desktop Configuration
 remote_desktop_session: "hyprland"  # Desktop environment for Chrome Remote Desktop
 remote_desktop_enable: true  # Install and configure Chrome Remote Desktop
+
+# Installation Configuration (Manual via Omarchy ISO)
+omarchy_guided_install: true  # Show interactive installation guidance

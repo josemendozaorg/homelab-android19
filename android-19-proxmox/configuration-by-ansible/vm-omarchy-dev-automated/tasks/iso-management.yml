@@ -1,0 +1,58 @@
+---
+# Cloud Image Management for Automated Omarchy Installation
+# Downloads Arch Linux Cloud Image (QCOW2) with cloud-init support
+
+- name: Check if Arch Linux Cloud Image already exists
+  ansible.builtin.stat:
+    path: "{{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}"
+  register: arch_cloud_image_file
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Display Cloud Image status
+  ansible.builtin.debug:
+    msg: |
+      📦 Arch Linux Cloud Image Status:
+      - Image Path: {{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}
+      - Image URL: {{ arch_cloud_image_url }}
+      - Status: {{ 'Available' if arch_cloud_image_file.stat.exists else 'Missing - will download' }}
+      {% if arch_cloud_image_file.stat.exists -%}
+      - Size: {{ (arch_cloud_image_file.stat.size / 1024 / 1024) | round(2) }}MB
+      {% endif -%}
+
+- name: Create cloud image storage directory
+  ansible.builtin.file:
+    path: "{{ cloud_image_storage_path }}"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Download Arch Linux Cloud Image to Proxmox storage (background)
+  ansible.builtin.shell: |
+    nohup wget -O "{{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}.tmp" "{{ arch_cloud_image_url }}" > /tmp/arch-cloud-image-download.log 2>&1 && \
+    mv "{{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}.tmp" "{{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}" &
+  register: cloud_image_download_start
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  when: not arch_cloud_image_file.stat.exists
+
+- name: Wait for Cloud Image download to complete
+  ansible.builtin.wait_for:
+    path: "{{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}"
+    timeout: 1800  # 30 minutes timeout for download
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  when: not arch_cloud_image_file.stat.exists
+
+- name: Verify Cloud Image download
+  ansible.builtin.stat:
+    path: "{{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}"
+  register: cloud_image_download_verify
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Display download completion
+  ansible.builtin.debug:
+    msg: |
+      ✅ Arch Linux Cloud Image Download Complete
+      - Path: {{ cloud_image_storage_path }}/{{ arch_cloud_image_name }}
+      - Size: {{ (cloud_image_download_verify.stat.size / 1024 / 1024) | round(2) }}MB
+      - Format: QCOW2 with cloud-init support
+      - Ready for automated installation
+  when: cloud_image_download_verify.stat.exists
