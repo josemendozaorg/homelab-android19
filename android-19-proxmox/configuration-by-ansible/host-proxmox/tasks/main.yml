@@ -18,6 +18,7 @@
   tags:
     - proxmox
     - network
+  when: false  # Disabled until we can safely configure networking
 
 - name: Template management
   include_tasks: templates.yml

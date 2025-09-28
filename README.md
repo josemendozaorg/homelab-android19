@@ -82,6 +82,19 @@ make proxmox-full-deploy
 - **Terraform API Issues**: Check your API token in `terraform/terraform.tfvars`
 - **Docker Issues**: Ensure Docker is running and you have proper permissions
 
+## ⚠️ CRITICAL SAFETY WARNING
+
+### Network Configuration Risk
+**EXTREME CAUTION**: Proxmox network configuration can cause **complete remote lockout**!
+
+**What Happened**: Ansible overwrote `/etc/network/interfaces` assuming interface name `eno1`, but the actual interface had a different name. Network restart with invalid config = total loss of SSH and web access.
+
+**Current Status**: Network configuration is **DISABLED** in the codebase to prevent this.
+
+**Recovery**: Requires **physical console access** to restore network configuration from backup.
+
+**Lesson**: Always verify actual interface names (`ip link show`) before any network configuration changes on production systems.
+
 ## Architecture
 
 ### Infrastructure Management

@@ -1,5 +1,23 @@
 ---
 # Network configuration tasks for Proxmox Host
+#
+# ⚠️ CRITICAL WARNING: This task is DISABLED by default (see main.yml)
+#
+# WHY DISABLED:
+# This configuration caused complete network lockout because:
+# 1. Template assumes interface name "eno1" (from defaults/main.yml)
+# 2. Real system may have different interface names (enp1s0, eth0, etc.)
+# 3. Template overwrites /etc/network/interfaces without validation
+# 4. Network restart with invalid config = total loss of connectivity
+# 5. Both SSH and web UI become unreachable
+# 6. Only physical console access can recover the system
+#
+# TO SAFELY ENABLE:
+# 1. Check actual interface: ansible all -m shell -a "ip link show"
+# 2. Update defaults/main.yml to match real interface names
+# 3. Test on non-production system first
+# 4. Ensure physical/console access is available
+# 5. Consider using check mode first: --check
 
 - name: Configure network bridges
   block:

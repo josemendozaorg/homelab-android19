@@ -131,6 +131,46 @@ Service deployment targets follow a structured naming pattern:
 ## SSH Authentication
 SSH key authentication is required for Ansible to communicate with both machines. If you encounter "Permission denied" errors, run `make setup-ssh` or follow the detailed guide in `docs/SSH_SETUP.md`.
 
+## ⚠️ CRITICAL WARNING: Network Configuration
+**NEVER run network configuration tasks on production Proxmox hosts without extreme caution!**
+
+### What Happened (Lesson Learned)
+The Ansible network configuration in `host-proxmox/tasks/network.yml` overwrites `/etc/network/interfaces` with a template. This caused complete loss of SSH and web access because:
+
+1. **Template Assumptions**: The template assumes specific interface names (e.g., `eno1`) that may not exist
+2. **No Validation**: No verification that the new config matches existing working setup
+3. **Immediate Apply**: Network restart happens immediately, breaking connectivity if config is wrong
+4. **Complete Lockout**: Both SSH (port 22) and web UI (port 8006) become unreachable
+
+### Current Status
+Network configuration is **DISABLED** in `host-proxmox/tasks/main.yml` (when: false) to prevent this issue.
+
+### Recovery Procedure
+If network access is lost, **physical console access is required**:
+
+```bash
+# 1. Check what interfaces actually exist
+ip link show
+
+# 2. Restore from Ansible backup (if available)
+ls /etc/network/interfaces.*
+cp /etc/network/interfaces.backup /etc/network/interfaces
+
+# 3. Restart networking
+systemctl restart networking
+
+# 4. If backup doesn't work, manually configure
+nano /etc/network/interfaces
+# Add working configuration based on actual interface names
+```
+
+### Safe Network Configuration
+Before enabling network configuration:
+1. **Always check existing interface names**: `ip link show`
+2. **Update defaults to match reality**: Edit `host-proxmox/defaults/main.yml`
+3. **Test in non-production first**: Use a test VM
+4. **Have console access ready**: Physical or IPMI access
+
 ## Container Management Architecture
 
 ### Ansible Execution Method
