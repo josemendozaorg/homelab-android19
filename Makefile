@@ -17,7 +17,7 @@ INVENTORY := inventory.yml
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
+        omarchy-template-setup omarchy-vm-create omarchy-configure omarchy-full-setup omarchy-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -123,24 +123,24 @@ proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infra
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
 
 # Omarchy Development VM
-omarchy-iso-setup: ## Download Omarchy ISO to Proxmox storage
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml
+omarchy-template-setup: ## Setup Omarchy VM template (ISO download + template creation)
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags iso,template
 
-omarchy-tf-plan: ## Plan Terraform changes for Omarchy VM
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform plan -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
-
-omarchy-tf-apply: omarchy-iso-setup ## Provision Omarchy VM with Terraform (downloads ISO first)
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+omarchy-vm-create: ## Create Omarchy VM from template
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags provision -e omarchy_create_vm=true
 
 omarchy-configure: ## Configure Omarchy VM post-installation
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-configure.yml
 
-omarchy-full-deploy: omarchy-tf-apply ## Complete Omarchy deployment (ISO + Terraform + initial config)
-	@echo "✅ Omarchy VM provisioned. Please complete manual installation via Proxmox console."
-	@echo "After installation, run 'make omarchy-configure' for final setup."
+omarchy-full-setup: omarchy-template-setup ## Complete Omarchy template setup (ISO + template VM)
+	@echo "✅ Omarchy template VM created. Next steps:"
+	@echo "1. Start VM 9001 from Proxmox console"
+	@echo "2. Complete Omarchy installation"
+	@echo "3. Convert to template: qm template 9001"
+	@echo "4. Create VMs with: make omarchy-vm-create"
 
-omarchy-destroy: ## Destroy Omarchy VM
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+omarchy-destroy: ## Remove Omarchy VM (ID: 101)
+	ssh proxmox@192.168.0.19 "qm destroy 101 --purge"
 
 
 # Complete Infrastructure Deployment
