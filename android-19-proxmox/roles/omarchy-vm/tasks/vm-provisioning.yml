@@ -1,0 +1,57 @@
+---
+# VM provisioning from template
+
+- name: Check if target VM already exists
+  ansible.builtin.command: qm status {{ omarchy_vm.id }}
+  register: vm_status
+  failed_when: false
+  changed_when: false
+
+- name: Check if template is available
+  ansible.builtin.command: >
+    qm config {{ omarchy_template_id }} | grep -q "^template: 1"
+  register: template_check
+  failed_when: false
+  when: vm_status.rc != 0
+
+- name: Clone VM from template
+  ansible.builtin.command: >
+    qm clone {{ omarchy_template_id }} {{ omarchy_vm.id }}
+    --name {{ omarchy_vm.name }}
+    --full
+  when:
+    - vm_status.rc != 0
+    - template_check.rc == 0
+  register: vm_cloned
+
+- name: Configure cloned VM network
+  ansible.builtin.command: >
+    qm set {{ omarchy_vm.id }}
+    --ipconfig0 ip={{ omarchy_vm.ip }}/24,gw={{ omarchy_vm.gateway }}
+    --nameserver {{ omarchy_vm.nameserver }}
+    --searchdomain {{ omarchy_vm.searchdomain }}
+  when: vm_cloned.changed | default(false)
+
+- name: Update VM description
+  ansible.builtin.command: >
+    qm set {{ omarchy_vm.id }}
+    --description "Omarchy development workstation cloned from template {{ omarchy_template_id }}"
+  when: vm_cloned.changed | default(false)
+
+- name: Start VM if requested
+  ansible.builtin.command: qm start {{ omarchy_vm.id }}
+  when:
+    - omarchy_vm.start_on_create | default(false)
+    - vm_cloned.changed | default(false)
+
+- name: Display VM status
+  ansible.builtin.debug:
+    msg: >
+      {% if vm_cloned.changed | default(false) %}
+      VM {{ omarchy_vm.id }} ({{ omarchy_vm.name }}) created from template
+      IP: {{ omarchy_vm.ip }}
+      {% elif vm_status.rc == 0 %}
+      VM {{ omarchy_vm.id }} already exists
+      {% else %}
+      Template {{ omarchy_template_id }} not ready. Complete template creation first.
+      {% endif %}

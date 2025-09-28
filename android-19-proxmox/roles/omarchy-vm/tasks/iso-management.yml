@@ -1,0 +1,43 @@
+---
+# ISO management tasks for Omarchy
+
+- name: Ensure ISO storage directory exists
+  ansible.builtin.file:
+    path: "{{ iso_storage_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Check if Omarchy ISO already exists
+  ansible.builtin.stat:
+    path: "{{ iso_storage_path }}/{{ omarchy_iso_name }}"
+  register: iso_file
+
+- name: Download Omarchy ISO to Proxmox storage
+  ansible.builtin.get_url:
+    url: "{{ omarchy_iso_url }}"
+    dest: "{{ iso_storage_path }}/{{ omarchy_iso_name }}"
+    mode: '0644'
+    timeout: 600
+  when: not iso_file.stat.exists
+  register: iso_download
+
+- name: Display ISO status
+  ansible.builtin.debug:
+    msg: >
+      {% if iso_download.changed | default(false) %}
+      Omarchy ISO downloaded successfully to {{ iso_storage_path }}/{{ omarchy_iso_name }}
+      {% else %}
+      Omarchy ISO already exists at {{ iso_storage_path }}/{{ omarchy_iso_name }}
+      {% endif %}
+
+- name: Verify ISO appears in Proxmox storage
+  ansible.builtin.command: pvesm list {{ proxmox_iso_storage }}
+  register: storage_list
+  changed_when: false
+
+- name: Confirm ISO is available
+  ansible.builtin.assert:
+    that:
+      - omarchy_iso_name in storage_list.stdout
+    fail_msg: "ISO not found in Proxmox storage {{ proxmox_iso_storage }}. Check storage configuration."
+    success_msg: "ISO successfully available in Proxmox storage {{ proxmox_iso_storage }}."

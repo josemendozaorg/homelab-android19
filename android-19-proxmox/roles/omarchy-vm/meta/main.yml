@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  author: homelab
+  description: Omarchy VM template and provisioning for Proxmox
+  company: homelab
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - proxmox
+    - vm
+    - omarchy
+    - archlinux
+    - template
+
+dependencies: []

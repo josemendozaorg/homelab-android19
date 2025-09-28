@@ -1,0 +1,21 @@
+---
+# Main tasks for Omarchy VM setup
+
+- name: Include ISO management tasks
+  include_tasks: iso-management.yml
+  tags:
+    - omarchy
+    - iso
+
+- name: Include template creation tasks
+  include_tasks: template-creation.yml
+  tags:
+    - omarchy
+    - template
+
+- name: Include VM provisioning tasks
+  include_tasks: vm-provisioning.yml
+  tags:
+    - omarchy
+    - provision
+  when: omarchy_create_vm | default(false)

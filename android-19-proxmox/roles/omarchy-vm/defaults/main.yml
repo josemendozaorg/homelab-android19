@@ -1,0 +1,33 @@
+---
+# Omarchy VM role defaults
+omarchy_iso_url: "https://iso.omarchy.org/omarchy-online.iso"
+omarchy_iso_name: "omarchy-online.iso"
+omarchy_template_name: "omarchy-template"
+omarchy_template_id: 9001  # High ID for template
+
+# Proxmox storage configuration
+iso_storage_path: "/var/lib/vz/template/iso"
+proxmox_iso_storage: "local"  # Storage for ISOs
+proxmox_vm_storage: "local-lvm"  # Storage for VM disks and templates
+
+# VM template specifications
+omarchy_template:
+  cores: 4
+  memory: 8192
+  disk_size: 60
+  network_bridge: "vmbr0"
+  bios: "ovmf"
+  machine: "q35"
+  boot: "order=scsi0;ide2"
+  scsihw: "virtio-scsi-single"
+  ostype: "l26"
+
+# VM creation from template
+omarchy_vm:
+  id: 101
+  name: "omarchy-dev"
+  ip: "192.168.0.101"
+  gateway: "192.168.0.1"
+  nameserver: "192.168.0.25"
+  searchdomain: "local"
+  start_on_create: false
