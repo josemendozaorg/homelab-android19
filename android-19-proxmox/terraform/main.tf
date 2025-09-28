@@ -7,12 +7,12 @@ locals {
     id => service
     if service.type == "container"
   }
-  # All VM services are managed by Terraform
-  terraform_vms = {
-    for id, service in local.catalog.services :
-    id => service
-    if service.type == "vm"
-  }
+  # VMs are managed by Ansible roles, not Terraform
+  # terraform_vms = {
+  #   for id, service in local.catalog.services :
+  #   id => service
+  #   if service.type == "vm"
+  # }
 }
 
 # Create all containers defined in the catalog
@@ -78,89 +78,11 @@ resource "proxmox_virtual_environment_container" "containers" {
   }
 }
 
-# Create all VMs defined in the catalog
-resource "proxmox_virtual_environment_vm" "vms" {
-  for_each = local.terraform_vms
+# VMs are managed by Ansible roles, not Terraform
+# This provides better control over template creation and VM provisioning
+# See: android-19-proxmox/roles/omarchy-vm/
 
-  node_name = local.catalog.physical.android19-proxmox.node_name
-  vm_id     = tonumber(each.key)
-  name      = each.value.name
-  started   = false  # Don't auto-start - manual installation required
-
-  description = each.value.description
-
-  # BIOS and boot configuration
-  bios = lookup(each.value, "bios", "ovmf")  # Default to UEFI
-
-  machine = lookup(each.value, "machine", "q35")  # Modern chipset
-
-  # Boot from ISO first, then disk
-  boot_order = ["ide2", "scsi0"]
-
-  # Enable QEMU guest agent if specified
-  agent {
-    enabled = lookup(each.value, "agent", false)
-  }
-
-  # CPU configuration
-  cpu {
-    cores   = lookup(each.value.resources, "cores", 2)
-    type    = "host"  # Pass through CPU features for better performance
-    sockets = 1
-  }
-
-  # Memory configuration
-  memory {
-    dedicated = lookup(each.value.resources, "memory", 4096)
-  }
-
-  # Primary disk
-  disk {
-    datastore_id = lookup(each.value, "storage", "local-lvm")
-    size         = lookup(each.value.resources, "disk", 32)
-    interface    = "scsi0"
-  }
-
-  # ISO for installation
-  cdrom {
-    enabled = true
-    file_id = "local:iso/${each.value.iso}"
-  }
-
-  # Network interface
-  network_device {
-    bridge = "vmbr0"
-    model  = "virtio"
-  }
-
-  # VGA display for desktop environment
-  vga {
-    type = "qxl"
-    memory = 32
-  }
-
-  # On boot behavior
-  on_boot = lookup(each.value, "onboot", false)
-
-  # Operating system type for optimization
-  operating_system {
-    type = "l26"  # Linux 2.6/3.x/4.x/5.x/6.x kernel
-  }
-
-  # Cloud-init configuration (even though Omarchy doesn't use it, keep for future)
-  initialization {
-    datastore_id = lookup(each.value, "storage", "local-lvm")
-
-    ip_config {
-      ipv4 {
-        address = "${each.value.ip}/24"
-        gateway = local.catalog.network.gateway
-      }
-    }
-
-    dns {
-      servers = [local.catalog.network.dns]
-    }
-  }
-}
+# resource "proxmox_virtual_environment_vm" "vms" {
+#   # VM provisioning moved to Ansible for better template management
+# }
 
