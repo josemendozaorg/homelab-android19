@@ -110,7 +110,7 @@ proxmox-host-api: ## Configure API tokens for automation
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 
-proxmox-services: deploy-lxc-adguard-dns ## Deploy all Proxmox services (orchestration)
+proxmox-services: deploy-proxmox-all ## Deploy all Proxmox services (orchestration)
 
 # Service-level orchestration (Terraform + Ansible)
 # Services depend on Proxmox host being properly configured
@@ -135,15 +135,9 @@ deploy-vm-omarchy-devmachine: proxmox-tf-init ## Deploy Omarchy development work
 # Group deployment targets
 deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs
 
-# Backward compatibility aliases
-adguard-service: deploy-lxc-adguard-dns ## Deploy AdGuard service (alias)
-omarchy-service: deploy-vm-omarchy-devmachine ## Deploy Omarchy service (alias)
-
 # Individual component deployment
 adguard-setup: ## Deploy AdGuard Home configuration only (Ansible)
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/adguard-setup.yml
-
-proxmox-adguard: deploy-lxc-adguard-dns ## Deploy AdGuard service (alias)
 
 
 proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure
@@ -198,7 +192,7 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	@echo "📋 Step 3/4: Deploy base Proxmox configuration"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 	@echo "📋 Step 4/4: Deploy all services"
-	$(MAKE) proxmox-services
+	$(MAKE) deploy-proxmox-all
 	@echo "✅ Complete Proxmox deployment finished!"
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 

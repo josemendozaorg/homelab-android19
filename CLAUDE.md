@@ -52,15 +52,9 @@ make setup-ssh
 - `make proxmox-services` - Deploy all Proxmox services
 
 ### Service-Level Deployment (Terraform + Ansible)
-#### New Naming Convention (Recommended)
 - `make deploy-lxc-adguard-dns` - Deploy AdGuard DNS server (LXC container)
 - `make deploy-vm-omarchy-devmachine` - Deploy Omarchy development workstation (VM)
 - `make deploy-proxmox-all` - Deploy all Proxmox VMs and LXCs
-
-#### Backward Compatibility Aliases
-- `make adguard-service` - Deploy AdGuard DNS service (alias)
-- `make omarchy-service` - Deploy Omarchy development VM (alias)
-- `make proxmox-adguard` - Deploy AdGuard service (alias)
 
 ### Proxmox Infrastructure (Terraform)
 - `make proxmox-tf-init` - Initialize Terraform for Proxmox

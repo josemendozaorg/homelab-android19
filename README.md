@@ -133,7 +133,7 @@ Ansible manages LXC containers through Proxmox, not direct SSH:
 make proxmox-full-deploy  # Does everything: Terraform + Ansible
 ```
 
-**Service-Level Deployment (New Naming Convention):**
+**Service-Level Deployment:**
 ```bash
 # Deploy individual services (Terraform + Ansible)
 make deploy-lxc-adguard-dns        # AdGuard DNS server (LXC)
@@ -141,10 +141,6 @@ make deploy-vm-omarchy-devmachine   # Omarchy development workstation (VM)
 
 # Deploy all services
 make deploy-proxmox-all
-
-# Backward compatibility aliases still work
-make adguard-service    # Alias for deploy-lxc-adguard-dns
-make omarchy-service    # Alias for deploy-vm-omarchy-devmachine
 ```
 
 **Step-by-Step Workflow:**
