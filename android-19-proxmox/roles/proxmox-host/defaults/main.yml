@@ -1,0 +1,140 @@
+---
+# Proxmox Host Configuration Defaults
+
+# Storage Configuration
+proxmox_storage:
+  # 4TB disk for VMs and Containers
+  vm_storage:
+    name: "vm-storage"
+    path: "/var/lib/vz"
+    device: "/dev/nvme1n1"  # Adjust based on actual device
+    filesystem: "ext4"
+    content:
+      - "images"     # VM disk images
+      - "rootdir"    # Container root filesystems
+      - "vztmpl"     # Container templates
+      - "iso"        # ISO images
+      - "snippets"   # Cloud-init snippets
+    nodes: "proxmox"
+    enabled: true
+
+  # Local storage configuration
+  local_storage:
+    name: "local"
+    path: "/var/lib/vz"
+    content:
+      - "iso"
+      - "vztmpl"
+      - "backup"
+      - "snippets"
+
+# Network Configuration
+proxmox_network:
+  bridges:
+    - name: "vmbr0"
+      interface: "eno1"  # Physical interface
+      address: "192.168.0.19/24"
+      gateway: "192.168.0.1"
+      bridge_ports: "eno1"
+      bridge_stp: "off"
+      bridge_fd: 0
+
+  # Optional: Additional bridges for isolated networks
+  # - name: "vmbr1"
+  #   address: "10.0.0.1/24"
+  #   bridge_stp: "off"
+  #   bridge_fd: 0
+
+# Container Templates
+proxmox_ct_templates:
+  - name: "debian-12-standard"
+    url: "http://download.proxmox.com/images/system/debian-12-standard_12.12-1_amd64.tar.zst"
+    storage: "local"
+
+  - name: "ubuntu-24.04-standard"
+    url: "http://download.proxmox.com/images/system/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
+    storage: "local"
+
+  - name: "alpine-3.20-default"
+    url: "http://download.proxmox.com/images/system/alpine-3.20-default_20240908_amd64.tar.xz"
+    storage: "local"
+
+# VM Templates/ISOs
+proxmox_vm_isos:
+  - name: "debian-12.8.0-amd64-netinst.iso"
+    url: "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.8.0-amd64-netinst.iso"
+    storage: "local"
+
+  - name: "ubuntu-24.04.1-live-server-amd64.iso"
+    url: "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-live-server-amd64.iso"
+    storage: "local"
+
+# API Configuration
+proxmox_api:
+  user: "terraform@pve"
+  token_id: "terraform-token"
+  token_comment: "Token for Terraform automation"
+  privileges:
+    - "VM.Allocate"
+    - "VM.Clone"
+    - "VM.Config.CDROM"
+    - "VM.Config.CPU"
+    - "VM.Config.Disk"
+    - "VM.Config.HWType"
+    - "VM.Config.Memory"
+    - "VM.Config.Network"
+    - "VM.Config.Options"
+    - "VM.Monitor"
+    - "VM.Audit"
+    - "VM.PowerMgmt"
+    - "Datastore.AllocateSpace"
+    - "Datastore.Audit"
+    - "Datastore.AllocateTemplate"
+    - "Sys.Audit"
+    - "Sys.Modify"
+    - "Pool.Allocate"
+
+# Cluster Configuration (for future expansion)
+proxmox_cluster:
+  name: "homelab"
+  enabled: false  # Set to true if configuring cluster
+
+# System Configuration
+proxmox_system:
+  # Update system packages
+  update_packages: true
+
+  # Enable required repositories
+  repositories:
+    - "pve-no-subscription"
+
+  # Disable enterprise repository if no subscription
+  disable_enterprise_repo: true
+
+  # System limits for better performance
+  sysctl_settings:
+    - { key: "vm.swappiness", value: "10" }
+    - { key: "fs.inotify.max_user_watches", value: "524288" }
+    - { key: "fs.inotify.max_user_instances", value: "512" }
+
+  # Enable PCI passthrough if needed
+  enable_iommu: false
+
+# Backup Configuration
+proxmox_backup:
+  enabled: true
+  storage: "local"
+  schedule: "sun 01:00"
+  mode: "snapshot"
+  compress: "zstd"
+  keep_daily: 7
+  keep_weekly: 4
+  keep_monthly: 3
+
+# Monitoring
+proxmox_monitoring:
+  enable_metrics: true
+  influxdb:
+    enabled: false
+    server: ""
+    port: 8086

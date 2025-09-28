@@ -1,0 +1,49 @@
+---
+# Backup configuration tasks for Proxmox Host
+
+- name: Configure backup jobs
+  block:
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: /var/lib/vz/dump
+        state: directory
+        mode: '0755'
+
+    - name: Check existing backup jobs
+      ansible.builtin.command: pvesh get /cluster/backup
+      register: backup_jobs
+      changed_when: false
+      failed_when: false
+
+    - name: Create default backup job
+      ansible.builtin.command: >
+        pvesh create /cluster/backup
+        --schedule "{{ proxmox_backup.schedule }}"
+        --storage {{ proxmox_backup.storage }}
+        --mode {{ proxmox_backup.mode }}
+        --compress {{ proxmox_backup.compress }}
+        --enabled 1
+        --all 1
+      when: backup_jobs.stdout == "[]" or backup_jobs.rc != 0
+      register: backup_creation
+
+    - name: Configure retention policy
+      ansible.builtin.lineinfile:
+        path: /etc/vzdump.conf
+        regexp: "^{{ item.key }}:"
+        line: "{{ item.key }}: {{ item.value }}"
+        create: yes
+      loop:
+        - { key: "prune-backups", value: "keep-daily={{ proxmox_backup.keep_daily }},keep-weekly={{ proxmox_backup.keep_weekly }},keep-monthly={{ proxmox_backup.keep_monthly }}" }
+        - { key: "compress", value: "{{ proxmox_backup.compress }}" }
+        - { key: "mode", value: "{{ proxmox_backup.mode }}" }
+
+- name: Display backup configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Backup configuration complete"
+      - "Schedule: {{ proxmox_backup.schedule }}"
+      - "Storage: {{ proxmox_backup.storage }}"
+      - "Mode: {{ proxmox_backup.mode }}"
+      - "Compression: {{ proxmox_backup.compress }}"
+      - "Retention: Daily={{ proxmox_backup.keep_daily }}, Weekly={{ proxmox_backup.keep_weekly }}, Monthly={{ proxmox_backup.keep_monthly }}"

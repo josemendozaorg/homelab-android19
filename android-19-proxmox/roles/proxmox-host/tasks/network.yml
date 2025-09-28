@@ -1,0 +1,84 @@
+---
+# Network configuration tasks for Proxmox Host
+
+- name: Configure network bridges
+  block:
+    - name: Check current network configuration
+      ansible.builtin.command: ip link show
+      register: network_links
+      changed_when: false
+
+    - name: Configure network interfaces file
+      ansible.builtin.template:
+        src: interfaces.j2
+        dest: /etc/network/interfaces
+        backup: yes
+        mode: '0644'
+      register: network_config
+
+    - name: Restart networking if configuration changed
+      ansible.builtin.systemd:
+        name: networking
+        state: restarted
+      when: network_config.changed
+      failed_when: false
+
+    - name: Apply network configuration with ifreload
+      ansible.builtin.command: ifreload -a
+      when: network_config.changed
+      failed_when: false
+
+- name: Configure firewall rules (if enabled)
+  block:
+    - name: Check if firewall is enabled
+      ansible.builtin.command: pve-firewall status
+      register: firewall_status
+      changed_when: false
+      failed_when: false
+
+    - name: Configure basic firewall rules
+      ansible.builtin.copy:
+        content: |
+          [RULES]
+          # Allow SSH
+          IN ACCEPT -p tcp -dport 22 -log nolog
+          # Allow Proxmox Web UI
+          IN ACCEPT -p tcp -dport 8006 -log nolog
+          # Allow VNC Console
+          IN ACCEPT -p tcp -dport 5900:5999 -log nolog
+          # Allow SPICE Console
+          IN ACCEPT -p tcp -dport 3128 -log nolog
+          # Allow API
+          IN ACCEPT -p tcp -dport 8007 -log nolog
+        dest: /etc/pve/firewall/cluster.fw
+        mode: '0640'
+      when: "'enabled' in firewall_status.stdout | default('')"
+
+- name: Configure DNS settings
+  block:
+    - name: Set hostname
+      ansible.builtin.hostname:
+        name: "{{ ansible_hostname }}"
+
+    - name: Configure /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1\t{{ ansible_hostname }}.local {{ ansible_hostname }}"
+        state: present
+
+    - name: Configure DNS resolvers
+      ansible.builtin.template:
+        src: resolv.conf.j2
+        dest: /etc/resolv.conf
+        mode: '0644'
+      when: proxmox_network.dns_servers is defined
+
+- name: Display network configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Network configuration complete"
+      - "Bridge: {{ item.name }} on {{ item.interface | default('no physical interface') }}"
+      - "IP: {{ item.address }}"
+      - "Gateway: {{ item.gateway | default('not configured') }}"
+  loop: "{{ proxmox_network.bridges }}"

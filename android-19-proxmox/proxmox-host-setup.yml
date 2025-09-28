@@ -1,0 +1,40 @@
+---
+- name: Proxmox Host Configuration
+  hosts: proxmox
+  gather_facts: yes
+  become: yes
+
+  roles:
+    - role: proxmox-host
+
+  pre_tasks:
+    - name: Verify running on Proxmox host
+      ansible.builtin.stat:
+        path: /etc/pve
+      register: pve_check
+      failed_when: not pve_check.stat.exists
+      tags: always
+
+    - name: Display Proxmox version
+      ansible.builtin.command: pveversion
+      register: pve_version
+      changed_when: false
+      tags: always
+
+    - name: Show Proxmox version
+      ansible.builtin.debug:
+        msg: "Proxmox version: {{ pve_version.stdout }}"
+      tags: always
+
+  post_tasks:
+    - name: Configuration summary
+      ansible.builtin.debug:
+        msg:
+          - "Proxmox host configuration complete"
+          - "Host: {{ ansible_hostname }}"
+          - "IP: {{ ansible_default_ipv4.address }}"
+          - "Storage configured: vm-storage (4TB)"
+          - "Templates ready for deployment"
+          - "API tokens configured for automation"
+          - "Backup schedule configured"
+      tags: always

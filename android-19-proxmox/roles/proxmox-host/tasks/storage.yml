@@ -1,0 +1,103 @@
+---
+# Storage configuration tasks for Proxmox Host
+
+- name: Check if storage disk exists
+  ansible.builtin.stat:
+    path: "{{ proxmox_storage.vm_storage.device }}"
+  register: storage_disk
+  when: proxmox_storage.vm_storage.enabled | default(true)
+
+- name: Display storage disk status
+  ansible.builtin.debug:
+    msg: >
+      {% if storage_disk.stat.exists | default(false) %}
+      Storage disk {{ proxmox_storage.vm_storage.device }} found
+      {% else %}
+      Storage disk {{ proxmox_storage.vm_storage.device }} not found. Please verify the device path.
+      {% endif %}
+  when: proxmox_storage.vm_storage.enabled | default(true)
+
+- name: Configure VM storage (4TB disk)
+  when:
+    - proxmox_storage.vm_storage.enabled | default(true)
+    - storage_disk.stat.exists | default(false)
+  block:
+    - name: Check if disk is already formatted
+      ansible.builtin.command: blkid {{ proxmox_storage.vm_storage.device }}
+      register: disk_format
+      failed_when: false
+      changed_when: false
+
+    - name: Format disk with ext4 (if not already formatted)
+      ansible.builtin.command: mkfs.{{ proxmox_storage.vm_storage.filesystem }} {{ proxmox_storage.vm_storage.device }}
+      when: disk_format.rc != 0
+
+    - name: Create mount point for VM storage
+      ansible.builtin.file:
+        path: "{{ proxmox_storage.vm_storage.path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Get disk UUID
+      ansible.builtin.command: blkid -s UUID -o value {{ proxmox_storage.vm_storage.device }}
+      register: disk_uuid
+      changed_when: false
+
+    - name: Mount VM storage disk
+      ansible.posix.mount:
+        path: "{{ proxmox_storage.vm_storage.path }}"
+        src: "UUID={{ disk_uuid.stdout }}"
+        fstype: "{{ proxmox_storage.vm_storage.filesystem }}"
+        opts: defaults
+        state: mounted
+
+    - name: Create storage directories
+      ansible.builtin.file:
+        path: "{{ proxmox_storage.vm_storage.path }}/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - images
+        - template
+        - template/cache
+        - template/iso
+        - dump
+        - snippets
+
+- name: Configure Proxmox storage pools
+  block:
+    - name: Check if storage already exists
+      ansible.builtin.command: pvesm status
+      register: storage_status
+      changed_when: false
+
+    - name: Remove default local-lvm if using dedicated storage
+      ansible.builtin.command: pvesm remove local-lvm
+      when:
+        - proxmox_storage.vm_storage.enabled | default(true)
+        - "'local-lvm' in storage_status.stdout"
+      failed_when: false
+
+    - name: Add VM storage to Proxmox
+      ansible.builtin.command: >
+        pvesm add dir {{ proxmox_storage.vm_storage.name }}
+        --path {{ proxmox_storage.vm_storage.path }}
+        --content {{ proxmox_storage.vm_storage.content | join(',') }}
+        --nodes {{ proxmox_storage.vm_storage.nodes }}
+      when:
+        - proxmox_storage.vm_storage.enabled | default(true)
+        - proxmox_storage.vm_storage.name not in storage_status.stdout
+
+    - name: Update local storage configuration
+      ansible.builtin.command: >
+        pvesm set local
+        --content {{ proxmox_storage.local_storage.content | join(',') }}
+      register: local_storage_update
+      changed_when: "'update storage' in local_storage_update.stdout"
+
+- name: Display storage configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Storage configuration complete"
+      - "VM Storage: {{ proxmox_storage.vm_storage.name }} at {{ proxmox_storage.vm_storage.path }}"
+      - "Content types: {{ proxmox_storage.vm_storage.content | join(', ') }}"

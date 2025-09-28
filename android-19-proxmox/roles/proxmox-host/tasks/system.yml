@@ -1,0 +1,101 @@
+---
+# System configuration tasks for Proxmox Host
+
+- name: Configure repositories
+  block:
+    - name: Disable enterprise repository (no subscription)
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list.d/pve-enterprise.list
+        regexp: '^(deb.*)$'
+        replace: '#\1'
+      when: proxmox_system.disable_enterprise_repo | default(true)
+
+    - name: Enable no-subscription repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://download.proxmox.com/debian/pve {{ ansible_distribution_release }} pve-no-subscription"
+        state: present
+        filename: pve-no-subscription
+      when: "'pve-no-subscription' in proxmox_system.repositories"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+- name: Update system packages
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: yes
+  when: proxmox_system.update_packages | default(true)
+
+- name: Install useful packages
+  ansible.builtin.apt:
+    name:
+      - htop
+      - iotop
+      - vim
+      - curl
+      - wget
+      - git
+      - screen
+      - tmux
+      - net-tools
+      - nfs-common
+      - python3-pip
+    state: present
+
+- name: Configure system limits
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop: "{{ proxmox_system.sysctl_settings }}"
+
+- name: Configure IOMMU for PCI passthrough
+  when: proxmox_system.enable_iommu | default(false)
+  block:
+    - name: Enable IOMMU in GRUB
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"'
+        backup: yes
+      register: grub_config
+
+    - name: Update GRUB
+      ansible.builtin.command: update-grub
+      when: grub_config.changed
+
+    - name: Load VFIO modules
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+        create: yes
+      loop:
+        - vfio
+        - vfio_iommu_type1
+        - vfio_pci
+        - vfio_virqfd
+
+- name: Configure log rotation
+  ansible.builtin.copy:
+    content: |
+      /var/log/pveproxy/access.log {
+          daily
+          rotate 7
+          compress
+          missingok
+          notifempty
+      }
+    dest: /etc/logrotate.d/pveproxy
+    mode: '0644'
+
+- name: Display system configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "System configuration complete"
+      - "Repositories configured: {{ proxmox_system.repositories | join(', ') }}"
+      - "System updated: {{ proxmox_system.update_packages | default(true) }}"
+      - "IOMMU enabled: {{ proxmox_system.enable_iommu | default(false) }}"

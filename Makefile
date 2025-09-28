@@ -15,6 +15,7 @@ INVENTORY := inventory.yml
         test-ping test-ping-bastion test-ping-proxmox \
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
+        proxmox-host-setup proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
@@ -94,6 +95,18 @@ bastion-deploy: ## Deploy configuration to bastion host
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml
 
 # Android #19 Proxmox
+proxmox-host-setup: ## Configure Proxmox host (storage, network, templates, API)
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml
+
+proxmox-host-storage: ## Configure Proxmox storage only
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --tags storage
+
+proxmox-host-templates: ## Download container and VM templates
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --tags templates
+
+proxmox-host-api: ## Configure API tokens for automation
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --tags api
+
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 

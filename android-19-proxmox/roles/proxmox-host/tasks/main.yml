@@ -1,0 +1,39 @@
+---
+# Main tasks for Proxmox Host Configuration
+
+- name: System configuration
+  include_tasks: system.yml
+  tags:
+    - proxmox
+    - system
+
+- name: Storage configuration
+  include_tasks: storage.yml
+  tags:
+    - proxmox
+    - storage
+
+- name: Network configuration
+  include_tasks: network.yml
+  tags:
+    - proxmox
+    - network
+
+- name: Template management
+  include_tasks: templates.yml
+  tags:
+    - proxmox
+    - templates
+
+- name: API token configuration
+  include_tasks: api-tokens.yml
+  tags:
+    - proxmox
+    - api
+
+- name: Backup configuration
+  include_tasks: backup.yml
+  tags:
+    - proxmox
+    - backup
+  when: proxmox_backup.enabled | default(true)
