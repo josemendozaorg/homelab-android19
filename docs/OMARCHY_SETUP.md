@@ -15,51 +15,61 @@ This guide covers the deployment of an Omarchy (Arch Linux + Hyprland) developme
 ## Quick Start
 
 ```bash
-# Setup Omarchy template (ISO download + template VM creation)
-make omarchy-full-setup
+# Complete deployment (Terraform provisioning + Ansible configuration)
+make omarchy-full-deploy
 
-# After manual OS installation and template conversion:
-make omarchy-vm-create
-
-# Configure the VM post-installation
+# After manual OS installation:
 make omarchy-configure
 ```
 
 ## Detailed Setup Process
 
-### 1. Setup Omarchy Template
+### 1. Download Omarchy ISO
 
 ```bash
-make omarchy-template-setup
+make omarchy-iso-setup
 ```
 
-This command:
-- Downloads the Omarchy ISO (1.4GB) from https://iso.omarchy.org/
-- Creates a template VM (ID: 9001) with optimal settings:
-  - 4 cores, 8GB RAM, 60GB disk
-  - UEFI boot with q35 chipset
-  - ISO mounted for installation
+Downloads the Omarchy ISO (1.4GB) from https://iso.omarchy.org/ to Proxmox storage.
 
-### 2. Complete Template Installation
-
-The template VM is created but not started. You need to manually:
-1. Access Proxmox web UI at https://192.168.0.19:8006
-2. Start VM 9001 (omarchy-template)
-3. Complete Omarchy installation via console
-4. After installation, shut down the VM
-5. Convert to template: `qm template 9001`
-
-### 3. Create VMs from Template
+### 2. Plan Terraform Changes
 
 ```bash
-make omarchy-vm-create
+make omarchy-tf-plan
 ```
 
-This creates VM 101 (omarchy-dev) from the template with:
+Review the planned VM creation with:
+- VM ID: 101
 - IP: 192.168.0.101
-- Network configuration via cloud-init
+- Resources: 4 cores, 8GB RAM, 60GB disk
+- UEFI boot with q35 chipset
 
-### 4. Post-Installation Configuration
+### 3. Provision VM with Terraform
+
+```bash
+make omarchy-tf-apply
+```
+
+Creates the VM in Proxmox with the ISO mounted for installation.
+
+### 4. Configure VM with Ansible
+
+```bash
+make omarchy-configure
+```
+
+Configures VM optimizations and displays installation instructions.
+
+### 5. Manual OS Installation
+
+Complete the Omarchy installation:
+1. Access Proxmox web UI at https://192.168.0.19:8006
+2. Start VM 101 (omarchy-dev)
+3. Complete Omarchy installation via console
+4. Install QEMU guest agent in the VM
+5. Verify network access
+
+### 6. Post-Installation Configuration
 
 After OS installation completes:
 
@@ -119,23 +129,25 @@ The VM is defined in `android-19-proxmox/infrastructure-catalog.yml`:
 - Type: VM (not container)
 - Network: 192.168.0.101/24
 
-### Ansible Role Provisioning
+### Terraform Provisioning
 
-Located in `android-19-proxmox/roles/omarchy-dev-vm/`:
-- **ISO Management**: Downloads Omarchy ISO to Proxmox storage
-- **Template Creation**: Creates template VM with optimal settings
-- **VM Provisioning**: Clones VMs from template with cloud-init
-
-### Template-Based Workflow
-
-1. **Template Creation**: One-time setup of base template VM
-2. **VM Cloning**: Fast creation of VMs from template
-3. **Benefits**: Consistent configuration, faster deployment, template reuse
+Located in `android-19-proxmox/terraform/main.tf`:
+- **VM Creation**: Creates VM with optimal hardware settings
+- **ISO Mounting**: Mounts Omarchy ISO for installation
+- **Network Configuration**: Configures cloud-init with static IP
 
 ### Ansible Configuration
 
-- `omarchy-setup.yml`: Main playbook using omarchy-vm role
-- `omarchy-configure.yml`: Post-installation optimization and tuning
+Located in `android-19-proxmox/roles/omarchy-dev-vm/`:
+- **ISO Management**: Downloads Omarchy ISO to Proxmox storage
+- **VM Configuration**: Post-provisioning optimization and setup
+
+### Workflow Architecture
+
+1. **Terraform**: Provisions VM infrastructure on Proxmox
+2. **Ansible**: Configures VM settings and downloads ISO
+3. **Manual**: Complete OS installation via console
+4. **Benefits**: Separation of concerns, infrastructure as code
 
 ## Troubleshooting
 
