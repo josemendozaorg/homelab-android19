@@ -38,6 +38,9 @@ Old laptop configured with CloudFlare as gateway from internet to internal home 
 
 - `android-16-bastion/` - Configuration and documentation for Android #16 bastion host
 - `android-19-proxmox/` - Configuration and documentation for Android #19 Proxmox server
+  - `terraform/` - Infrastructure as Code for container/VM provisioning
+  - `roles/` - Ansible roles for service configuration
+  - `infrastructure-catalog.yml` - Service definitions and configuration
 
 ## Repository Content
 
@@ -48,3 +51,71 @@ This repository aims to contain:
 - Automation scripts
 - Infrastructure as Code
 - Home lab documentation
+
+## Getting Started
+
+### Prerequisites
+1. Docker and Docker Compose installed
+2. SSH key authentication to Proxmox (see [SSH Setup Guide](docs/SSH_SETUP.md))
+3. Proxmox API token for Terraform
+
+### Quick Start
+```bash
+# 1. Set up SSH keys (if not already done)
+ssh-copy-id root@192.168.0.19
+
+# 2. Build development environment
+make env-setup
+
+# 3. Test connectivity
+make test-ping
+
+# 4. Deploy everything (Terraform + Ansible)
+make proxmox-full-deploy
+```
+
+### Troubleshooting
+- **SSH Permission Denied**: See [SSH Setup Guide](docs/SSH_SETUP.md)
+- **Terraform API Issues**: Check your API token in `terraform/terraform.tfvars`
+- **Docker Issues**: Ensure Docker is running and you have proper permissions
+
+## Architecture
+
+### Infrastructure Management
+This homelab uses a **two-stage approach**:
+
+1. **Terraform**: Provisions infrastructure (containers, VMs, networking)
+2. **Ansible**: Configures services and applications
+
+### Container Management
+Ansible manages LXC containers through Proxmox, not direct SSH:
+
+```
+[Ansible] → SSH → [Proxmox Host] → pct exec → [Container]
+                  (192.168.0.19)              (125, 130, etc.)
+```
+
+**Why this approach?**
+- **Lightweight**: Containers don't need SSH servers
+- **Secure**: No SSH key management per container
+- **Native**: Uses Proxmox's built-in container tools
+- **Simple**: One SSH connection manages all containers
+
+### Workflow
+
+**One-Command Deployment:**
+```bash
+make proxmox-full-deploy  # Does everything: Terraform + Ansible
+```
+
+**Step-by-Step Workflow:**
+```bash
+# 1. Provision infrastructure
+make proxmox-tf-apply
+
+# 2. Configure services
+make proxmox-services
+
+# 3. Validate deployment
+make test-ping
+```

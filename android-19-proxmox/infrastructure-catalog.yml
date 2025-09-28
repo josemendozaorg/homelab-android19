@@ -15,24 +15,47 @@
 # 4. Update role to use: catalog.services[ID]
 
 # Services (both containers and VMs - unified to prevent ID conflicts)
-# Only services with Ansible implementations should be listed here
+# All services are provisioned by Terraform
 services:
   125:
     name: "adguard"
     type: "container"
     ip: "192.168.0.25"
     description: "AdGuard Home DNS server"
+    template: "debian-12-standard_12.12-1_amd64.tar.zst"
+    resources:
+      cores: 2
+      memory: 1024
+      disk: 16
+    storage: "local-lvm"
+
+  130:
+    name: "test-nginx"
+    type: "container"
+    ip: "192.168.0.30"
+    description: "Test container for Terraform provisioning"
+    template: "debian-12-standard_12.12-1_amd64.tar.zst"
+    resources:
+      cores: 1
+      memory: 512
+      disk: 8
+    storage: "local-lvm"
 
 # Physical Infrastructure
 physical:
-  android16-bastion: "192.168.0.10"
-  android19-proxmox: "192.168.0.19"
+  android16-bastion:
+    ip: "192.168.0.10"
+
+  android19-proxmox:
+    ip: "192.168.0.19"
+    node_name: "proxmox"
+    api_port: 8006
 
 # Network Configuration
 network:
   subnet: "192.168.0.0/24"
   gateway: "192.168.0.1"
-  dns: "192.168.0.25"
+  dns: "192.168.0.25"  # AdGuard Home DNS server
 
   # IP Range Allocation Strategy
   ranges:

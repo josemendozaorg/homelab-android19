@@ -25,6 +25,8 @@ secrets/
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
+terraform.tfvars
+*.auto.tfvars
 
 # Ansible
 *.retry

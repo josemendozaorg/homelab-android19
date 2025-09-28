@@ -2,7 +2,7 @@
 # See: https://www.gnu.org/software/make/manual/make.html
 
 # Variables
-DOCKER_COMPOSE := docker-compose
+DOCKER_COMPOSE := docker compose
 ANSIBLE_EXEC := $(DOCKER_COMPOSE) exec -T homelab-dev
 ANSIBLE_INTERACTIVE := $(DOCKER_COMPOSE) exec homelab-dev
 INVENTORY := inventory.yml
@@ -13,8 +13,10 @@ INVENTORY := inventory.yml
 # Declare phony targets
 .PHONY: help env-all env-setup env-shell env-clean env-check \
         test-ping test-ping-bastion test-ping-proxmox \
+        setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard \
+        proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         all-deploy all-ping
 
 # Help target with color output
@@ -34,6 +36,9 @@ help: ## Show available commands
 	@echo "Android #19 Proxmox (proxmox-*):"
 	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
 	@echo ""
+	@echo "Proxmox Terraform (proxmox-tf-*):"
+	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
+	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
 
@@ -44,6 +49,10 @@ help-section:
 	      in_section && /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Environment
+setup-ssh: ## Set up SSH key authentication for Ansible
+	@bash scripts/setup-ssh.sh
+
+
 env-all: env-setup test-ping ## Build environment and test connections
 
 env-setup: ## Build and start development environment
@@ -78,21 +87,55 @@ bastion-setup-sudo: ## Configure passwordless sudo on bastion (run once)
 	$(ANSIBLE_INTERACTIVE) ansible-playbook --ask-become-pass android-16-bastion/setup.yml
 
 bastion-deploy: ## Deploy configuration to bastion host
-	$(ANSIBLE_EXEC) ansible-playbook android-16-bastion/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml
 
 # Android #19 Proxmox
 proxmox-deploy: ## Deploy base configuration to Proxmox server
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 
 proxmox-services: ## Deploy all Proxmox services
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
 
 proxmox-adguard: ## Deploy AdGuard Home service only
-	$(ANSIBLE_EXEC) ansible-playbook android-19-proxmox/services.yml --tags adguard
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml --tags adguard
+
+
+proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform init"
+
+proxmox-tf-plan: ## Show Terraform execution plan for Proxmox
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform plan"
+
+proxmox-tf-apply: ## Apply Terraform configuration for Proxmox
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
+
+proxmox-tf-destroy: ## Destroy Terraform-managed Proxmox infrastructure
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform destroy -auto-approve"
+
+proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
+
+proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infrastructure
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
+
+
+# Complete Infrastructure Deployment
+proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansible configure
+	@echo "🚀 Starting complete Proxmox infrastructure deployment..."
+	@echo "📋 Step 1/4: Initialize Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform init"
+	@echo "📋 Step 2/4: Apply Terraform configuration"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
+	@echo "📋 Step 3/4: Deploy base Proxmox configuration"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
+	@echo "📋 Step 4/4: Configure all services"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
+	@echo "✅ Complete Proxmox deployment finished!"
+	@echo "🌐 Run 'make test-ping' to validate deployment"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
-	$(ANSIBLE_EXEC) ansible-playbook android-16-bastion/playbook.yml android-19-proxmox/playbook.yml
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml android-19-proxmox/playbook.yml
 
 all-ping: test-ping ## Test connection to all machines (alias)
 

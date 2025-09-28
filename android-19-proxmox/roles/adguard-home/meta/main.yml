@@ -1,6 +1,6 @@
 galaxy_info:
   author: Homelab Team
-  description: Install AdGuard Home LXC container using community script
+  description: Configure AdGuard Home DNS server (container provisioned by Terraform)
   license: MIT
   min_ansible_version: 2.9
   platforms:

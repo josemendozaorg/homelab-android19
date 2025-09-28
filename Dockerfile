@@ -12,7 +12,17 @@ RUN apt-get update && apt-get install -y \
     wget \
     vim \
     make \
+    gnupg \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Terraform
+RUN wget -O- https://apt.releases.hashicorp.com/gpg | \
+    gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com bookworm main" | \
+    tee /etc/apt/sources.list.d/hashicorp.list && \
+    apt-get update && apt-get install -y terraform && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment and install Python dependencies
 RUN python3 -m venv /opt/venv
@@ -30,5 +40,18 @@ WORKDIR /workspace
 # Set up SSH directory
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 
+# Create entrypoint script to handle SSH setup
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'if [ -d "/tmp/.ssh" ]; then' >> /entrypoint.sh && \
+    echo '    cp -r /tmp/.ssh/* /root/.ssh/ 2>/dev/null || true' >> /entrypoint.sh && \
+    echo '    chmod 700 /root/.ssh' >> /entrypoint.sh && \
+    echo '    chmod 600 /root/.ssh/* 2>/dev/null || true' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'exec "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Default command
-CMD ["bash"]
+CMD ["tail", "-f", "/dev/null"]
