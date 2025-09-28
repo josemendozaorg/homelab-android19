@@ -1,0 +1,47 @@
+---
+# VM configuration tasks for Omarchy Dev VM (post-Terraform provisioning)
+
+- name: Check if Omarchy VM exists
+  ansible.builtin.command: qm status {{ omarchy_vm.id }}
+  register: vm_status
+  changed_when: false
+  failed_when: false
+
+- name: Display VM status
+  ansible.builtin.debug:
+    msg: >
+      {% if vm_status.rc == 0 %}
+      VM {{ omarchy_vm.id }} ({{ omarchy_vm.name }}) exists. Status: {{ vm_status.stdout }}
+      {% else %}
+      VM {{ omarchy_vm.id }} does not exist. Run Terraform provisioning first.
+      {% endif %}
+
+- name: Configure VM optimizations (only if VM exists)
+  when: vm_status.rc == 0
+  block:
+    - name: Enable QEMU guest agent
+      ansible.builtin.command: qm set {{ omarchy_vm.id }} --agent 1
+      register: agent_enable
+      changed_when: "'update VM' in agent_enable.stdout"
+
+    - name: Set CPU type to host for better performance
+      ansible.builtin.command: qm set {{ omarchy_vm.id }} --cpu host
+      register: cpu_set
+      changed_when: "'update VM' in cpu_set.stdout"
+
+    - name: Enable balloon device for dynamic memory
+      ansible.builtin.command: qm set {{ omarchy_vm.id }} --balloon {{ omarchy_vm_balloon | default(4096) }}
+      register: balloon_set
+      changed_when: "'update VM' in balloon_set.stdout"
+
+    - name: Display manual installation instructions
+      ansible.builtin.debug:
+        msg:
+          - "VM {{ omarchy_vm.id }} ({{ omarchy_vm.name }}) is ready for installation"
+          - "Manual steps required:"
+          - "1. Start VM: qm start {{ omarchy_vm.id }}"
+          - "2. Access Proxmox console for {{ omarchy_vm.name }}"
+          - "3. Complete Omarchy installation"
+          - "4. Install QEMU guest agent: pacman -S qemu-guest-agent"
+          - "5. Enable agent: systemctl enable --now qemu-ga"
+          - "6. Reboot and verify SSH access at {{ omarchy_vm.ip }}"

@@ -1,5 +1,5 @@
 ---
-- name: Setup Omarchy Dev VM template and provisioning
+- name: Configure Omarchy Dev VM (post-Terraform provisioning)
   hosts: proxmox
   gather_facts: no
 
@@ -13,10 +13,10 @@
     - name: Display setup summary
       ansible.builtin.debug:
         msg:
-          - "Omarchy VM setup complete"
-          - "Template ID: {{ omarchy_template_id | default(9001) }}"
+          - "Omarchy Dev VM configuration complete"
           - "VM ID: {{ omarchy_vm.id | default(101) }}"
+          - "IP Address: {{ omarchy_vm.ip | default('192.168.0.101') }}"
           - "Next steps:"
-          - "1. If template not created: Start VM {{ omarchy_template_id | default(9001) }} and install Omarchy"
-          - "2. After installation: Convert to template with 'qm template {{ omarchy_template_id | default(9001) }}'"
-          - "3. Create VMs from template: Run with -e omarchy_create_vm=true"
+          - "1. VM should be provisioned by Terraform first"
+          - "2. Start VM and complete Omarchy installation manually"
+          - "3. Install QEMU guest agent for better integration"
