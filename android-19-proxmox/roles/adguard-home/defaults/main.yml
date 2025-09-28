@@ -19,11 +19,112 @@ adguard_dns_port: 53
 adguard_admin_username: admin
 adguard_admin_password: homelab123
 
-# DNS settings
+# DNS settings - Industry best practices for homelab
 adguard_upstream_dns:
+  # Privacy-focused primary DNS
+  - "1.1.1.1"          # Cloudflare - Fast, privacy-focused
+  - "1.0.0.1"          # Cloudflare secondary
+  # Security-focused DNS with malware protection
+  - "9.9.9.9"          # Quad9 - Blocks malicious domains
+  - "149.112.112.112"  # Quad9 secondary
+  # Reliable fallback
+  - "8.8.8.8"          # Google DNS (fallback)
+
+# DNS over HTTPS/TLS for enhanced privacy (optional but recommended)
+adguard_upstream_dns_secure:
+  - "https://cloudflare-dns.com/dns-query"
+  - "https://dns.quad9.net/dns-query"
+  - "tls://1.1.1.1"
+  - "tls://9.9.9.9"
+
+# Homelab-specific DNS settings
+adguard_bootstrap_dns:
   - "1.1.1.1"
   - "8.8.8.8"
-  - "9.9.9.9"
+
+# Query logging and statistics
+adguard_querylog_enabled: true
+adguard_querylog_interval: "24h"
+adguard_statistics_interval: "24h"
+
+# Security and filtering settings
+adguard_filtering_enabled: true
+adguard_safebrowsing_enabled: true
+adguard_parental_enabled: false  # Set to true if needed
+adguard_safesearch_enabled: false  # Set to true for family environments
+
+# Performance settings for homelab
+adguard_blocked_response_ttl: 300
+adguard_cache_size: 4194304  # 4MB cache
+adguard_cache_ttl_min: 60
+adguard_cache_ttl_max: 86400
+
+# Industry-standard blocklists for homelab security
+adguard_filter_lists:
+  # Core AdGuard filters
+  - name: "AdGuard Base Filter"
+    url: "https://filters.adtidy.org/extension/edge/filters/2.txt"
+    enabled: true
+  - name: "AdGuard Mobile Ads Filter"
+    url: "https://filters.adtidy.org/extension/edge/filters/11.txt"
+    enabled: true
+
+  # Security-focused lists
+  - name: "Malware Domains"
+    url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+    enabled: true
+  - name: "Dan Pollock's hosts file"
+    url: "https://someonewhocares.org/hosts/zero/hosts"
+    enabled: true
+
+  # Privacy protection
+  - name: "EasyPrivacy"
+    url: "https://easylist.to/easylist/easyprivacy.txt"
+    enabled: true
+  - name: "AdGuard Tracking Protection"
+    url: "https://filters.adtidy.org/extension/edge/filters/3.txt"
+    enabled: true
+
+  # Regional and supplementary (optional)
+  - name: "EasyList"
+    url: "https://easylist.to/easylist/easylist.txt"
+    enabled: true
+
+# Local DNS rewrites for homelab infrastructure
+adguard_dns_rewrites:
+  # Internal homelab domains
+  - domain: "proxmox.homelab"
+    ip: "{{ catalog.physical['android19-proxmox'].ip }}"
+  - domain: "pve.homelab"
+    ip: "{{ catalog.physical['android19-proxmox'].ip }}"
+  - domain: "adguard.homelab"
+    ip: "{{ adguard_static_ip }}"
+  - domain: "bastion.homelab"
+    ip: "{{ catalog.physical['android16-bastion'].ip }}"
+
+  # Service-specific domains for easy access
+  - domain: "dns.homelab"
+    ip: "{{ adguard_static_ip }}"
+
+# Custom filtering rules for homelab
+adguard_custom_filtering_rules:
+  # Allow local network ranges
+  - "@@||192.168.0.0/24^"
+  - "@@||10.0.0.0/8^"
+  - "@@||172.16.0.0/12^"
+
+  # Block common tracking and telemetry
+  - "||google-analytics.com^"
+  - "||googletagmanager.com^"
+  - "||facebook.com/tr/*"
+
+  # Allow essential services
+  - "@@||github.com^"
+  - "@@||docker.io^"
+  - "@@||registry-1.docker.io^"
+
+# Client identification settings
+adguard_clients_persistent: true
 
 # Bind addresses
 adguard_web_bind: "0.0.0.0"

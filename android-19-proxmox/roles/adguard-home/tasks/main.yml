@@ -21,9 +21,9 @@
   retries: 15
   delay: 2
 
-- name: Check if AdGuard Home is installed
-  shell: pct exec {{ container_id }} -- systemctl status AdGuardHome
-  register: adguard_service_status
+- name: Check if AdGuard Home binary exists
+  shell: pct exec {{ container_id }} -- test -f /opt/AdGuardHome/AdGuardHome
+  register: adguard_binary_exists
   failed_when: false
   changed_when: false
 
@@ -36,13 +36,38 @@
       curl -s -S -L https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh | sh
     "
   register: adguard_installation
-  when: adguard_service_status.rc != 0
+  when: adguard_binary_exists.rc != 0
 
-- name: Enable and start AdGuard Home service
+- name: Enable AdGuard Home service (but don't start yet)
+  shell: pct exec {{ container_id }} -- systemctl enable AdGuardHome
+  when: adguard_binary_exists.rc != 0
+
+- name: Check if AdGuard Home configuration file exists
+  shell: pct exec {{ container_id }} -- test -f /opt/AdGuardHome/AdGuardHome.yaml
+  register: config_exists
+  failed_when: false
+  changed_when: false
+
+- name: Stop AdGuard Home service before configuration (if running)
+  shell: pct exec {{ container_id }} -- systemctl stop AdGuardHome
+  failed_when: false
+  changed_when: false
+
+- name: Generate minimal AdGuard Home configuration on Proxmox host
+  template:
+    src: AdGuardHome-minimal.yaml.j2
+    dest: /tmp/adguard_config.yaml
+
+- name: Copy configuration file to container
   shell: |
-    pct exec {{ container_id }} -- systemctl enable AdGuardHome
-    pct exec {{ container_id }} -- systemctl start AdGuardHome
-  when: adguard_service_status.rc != 0
+    pct push {{ container_id }} /tmp/adguard_config.yaml /opt/AdGuardHome/AdGuardHome.yaml
+    pct exec {{ container_id }} -- chown root:root /opt/AdGuardHome/AdGuardHome.yaml
+    pct exec {{ container_id }} -- chmod 600 /opt/AdGuardHome/AdGuardHome.yaml
+    rm -f /tmp/adguard_config.yaml
+  register: config_deployed
+
+- name: Start AdGuard Home service with headless configuration
+  shell: pct exec {{ container_id }} -- systemctl start AdGuardHome
 
 - name: Wait for AdGuard Home web interface
   wait_for:
@@ -51,74 +76,74 @@
     timeout: 30
   delegate_to: localhost
 
-- name: Wait for container initialization
-  pause:
-    seconds: 10
+- name: Wait for AdGuard Home service to be ready
+  shell: pct exec {{ container_id }} -- systemctl is-active AdGuardHome
+  register: service_status
+  until: service_status.stdout == "active"
+  retries: 30
+  delay: 2
+
+- name: Test AdGuard Home API responsiveness
+  uri:
+    url: "http://{{ adguard_static_ip }}:{{ adguard_web_port }}/control/status"
+    method: GET
+    status_code: [200, 401]  # 401 means API is working but needs auth
+    follow_redirects: safe
+  delegate_to: localhost
+  register: api_status
+  until: api_status.status in [200, 401]
+  retries: 10
+  delay: 2
+  failed_when: false
 
 - name: Get AdGuard container information
   shell: |
-    CONTAINER_ID=$(pct list | grep -i adguard | awk '{print $1}' | head -1)
-    if [ -n "$CONTAINER_ID" ]; then
-      echo "Container ID: $CONTAINER_ID"
-      echo "Container Status: $(pct status $CONTAINER_ID)"
-      CONTAINER_IP=$(pct exec $CONTAINER_ID -- hostname -I 2>/dev/null | awk '{print $1}' || echo "IP retrieval failed")
-      echo "Container IP: $CONTAINER_IP"
-      echo "Web Interface: http://$CONTAINER_IP:{{ adguard_web_port }}"
-      echo "DNS Server: $CONTAINER_IP:{{ adguard_dns_port }}"
-    else
-      echo "No AdGuard container found"
-      exit 1
-    fi
+    CONTAINER_ID={{ container_id }}
+    echo "Container ID: $CONTAINER_ID"
+    echo "Container Status: $(pct status $CONTAINER_ID)"
+    echo "Container IP: {{ adguard_static_ip }}"
+    echo "Web Interface: http://{{ adguard_static_ip }}:{{ adguard_web_port }}"
+    echo "DNS Server: {{ adguard_static_ip }}:{{ adguard_dns_port }}"
   register: container_info
   changed_when: false
 
-- name: Check if AdGuard Home needs initial configuration
-  uri:
-    url: "http://{{ adguard_static_ip }}:{{ adguard_web_port }}/"
-    method: GET
-    status_code: [200, 302]
-  delegate_to: localhost
-  register: adguard_status
+- name: Test DNS functionality
+  shell: pct exec {{ container_id }} -- nslookup google.com 127.0.0.1
+  register: dns_test
   failed_when: false
+  changed_when: false
 
-- name: Configure AdGuard Home via API (if not already configured)
-  uri:
-    url: "http://{{ adguard_static_ip }}:{{ adguard_web_port }}/control/install/configure"
-    method: POST
-    body_format: json
-    body:
-      web:
-        ip: "{{ adguard_web_bind }}"
-        port: "{{ adguard_web_port }}"
-        status: ""
-      dns:
-        ip: "{{ adguard_dns_bind }}"
-        port: "{{ adguard_dns_port }}"
-        status: ""
-        autofix: false
-      username: "{{ adguard_admin_username }}"
-      password: "{{ adguard_admin_password }}"
-    status_code: 200
-  delegate_to: localhost
-  register: adguard_config
-  failed_when: false
-  when: "'install.html' in (adguard_status.content | default(''))"
-
-- name: Display AdGuard Home installation summary
+- name: Display AdGuard Home configuration summary
   debug:
     msg:
-      - "🎉 AdGuard Home installation completed!"
+      - "🎉 AdGuard Home installation and configuration completed!"
       - "{{ container_info.stdout_lines if container_info is defined else ['Container ID: ' + container_id, 'Container Status: running', 'Container IP: ' + adguard_static_ip + ' (static)', 'Web Interface: http://' + adguard_static_ip + ':' + (adguard_web_port | string), 'DNS Server: ' + adguard_static_ip + ':' + (adguard_dns_port | string)] }}"
       - ""
       - "🔐 Admin Configuration:"
       - "Username: {{ adguard_admin_username }}"
       - "Password: {{ adguard_admin_password }}"
       - ""
+      - "🛡️ Headless Configuration Applied:"
+      - "• {{ adguard_filter_lists | length }} security and privacy filter lists configured"
+      - "• {{ adguard_dns_rewrites | length }} homelab DNS rewrites configured"
+      - "• {{ adguard_custom_filtering_rules | length }} custom filtering rules applied"
+      - "• Privacy-focused upstream DNS: {{ adguard_upstream_dns[:2] | join(', ') }}"
+      - "• Security DNS with malware protection: {{ adguard_upstream_dns[2:4] | join(', ') }}"
+      - ""
       - "📋 Configuration Status:"
-      - "Configuration completed - ready to use"
+      - "✅ DNS filtering: {{ 'Enabled' if adguard_filtering_enabled else 'Disabled' }}"
+      - "✅ Safe browsing: {{ 'Enabled' if adguard_safebrowsing_enabled else 'Disabled' }}"
+      - "✅ Query logging: {{ 'Enabled' if adguard_querylog_enabled else 'Disabled' }}"
+      - "✅ Statistics: {{ adguard_statistics_interval }} retention"
+      - "✅ Cache size: {{ (adguard_cache_size / 1024 / 1024) | int }}MB"
+      - "✅ DNS Test: {{ 'PASS' if dns_test.rc == 0 else 'FAIL' }}"
+      - ""
+      - "🌐 Homelab DNS Domains:"
+      - "{% for rewrite in adguard_dns_rewrites %}  • {{ rewrite.domain }} → {{ rewrite.ip }}
+{% endfor %}"
       - ""
       - "📋 Next steps:"
-      - "1. Login to web interface with credentials above"
-      - "2. Add custom DNS rewrites as needed"
-      - "3. Configure additional filters if desired"
-      - "4. Update your router/DHCP to use AdGuard as DNS server"
+      - "1. Update router/DHCP to use {{ adguard_static_ip }} as primary DNS"
+      - "2. Test DNS resolution: nslookup proxmox.homelab {{ adguard_static_ip }}"
+      - "3. Monitor blocking effectiveness in web interface"
+      - "4. Consider enabling parental controls if needed"
