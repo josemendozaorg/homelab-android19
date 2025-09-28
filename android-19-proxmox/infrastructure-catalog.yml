@@ -27,7 +27,7 @@ services:
       cores: 2
       memory: 1024
       disk: 16
-    storage: "local-lvm"
+    storage: "vm-storage"
 
   130:
     name: "test-nginx"
@@ -39,7 +39,7 @@ services:
       cores: 1
       memory: 512
       disk: 8
-    storage: "local-lvm"
+    storage: "vm-storage"
 
   101:
     name: "omarchy-dev"
@@ -51,7 +51,7 @@ services:
       cores: 4
       memory: 8192
       disk: 60
-    storage: "local-lvm"
+    storage: "vm-storage"
     boot_order: "scsi0"
     bios: "ovmf"  # UEFI boot
     machine: "q35"  # Modern chipset

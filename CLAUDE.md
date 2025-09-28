@@ -117,6 +117,8 @@ Service deployment targets follow a structured naming pattern:
   - **LXC containers**: Uses Proxmox container initialization (SSH keys, user accounts)
   - **VMs**: Uses full cloud-init (custom scripts, packages, services)
 - **Proxmox**: Virtualization platform for VMs and LXC containers
+  - **Storage**: ZFS pool on 4TB NVMe disk for VM/container storage
+  - **Benefits**: Compression, snapshots, data integrity, performance
 
 ## Important Files
 - `Makefile` - Main automation interface with all commands

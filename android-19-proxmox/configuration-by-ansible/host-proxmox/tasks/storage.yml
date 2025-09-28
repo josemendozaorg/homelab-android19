@@ -17,52 +17,33 @@
       {% endif %}
   when: proxmox_storage.vm_storage.enabled | default(true)
 
-- name: Configure VM storage (4TB disk)
+- name: Configure ZFS storage for VMs (4TB disk)
   when:
     - proxmox_storage.vm_storage.enabled | default(true)
     - storage_disk.stat.exists | default(false)
+    - proxmox_storage.vm_storage.type == "zfspool"
   block:
-    - name: Check if disk is already formatted
-      ansible.builtin.command: blkid {{ proxmox_storage.vm_storage.device }}
-      register: disk_format
+    - name: Check if ZFS pool already exists
+      ansible.builtin.command: zpool list {{ proxmox_storage.vm_storage.pool_name }}
+      register: zpool_check
       failed_when: false
       changed_when: false
 
-    - name: Format disk with ext4 (if not already formatted)
-      ansible.builtin.command: mkfs.{{ proxmox_storage.vm_storage.filesystem }} {{ proxmox_storage.vm_storage.device }}
-      when: disk_format.rc != 0
+    - name: Create ZFS pool for VM storage
+      ansible.builtin.command: >
+        zpool create
+        -o ashift={{ proxmox_storage.vm_storage.ashift }}
+        -O compression={{ proxmox_storage.vm_storage.compression }}
+        -O atime=off
+        -O relatime=on
+        {{ proxmox_storage.vm_storage.pool_name }}
+        {{ proxmox_storage.vm_storage.device }}
+      when: zpool_check.rc != 0
 
-    - name: Create mount point for VM storage
-      ansible.builtin.file:
-        path: "{{ proxmox_storage.vm_storage.path }}"
-        state: directory
-        mode: '0755'
-
-    - name: Get disk UUID
-      ansible.builtin.command: blkid -s UUID -o value {{ proxmox_storage.vm_storage.device }}
-      register: disk_uuid
+    - name: Get ZFS pool status
+      ansible.builtin.command: zpool status {{ proxmox_storage.vm_storage.pool_name }}
+      register: zpool_status
       changed_when: false
-
-    - name: Mount VM storage disk
-      ansible.posix.mount:
-        path: "{{ proxmox_storage.vm_storage.path }}"
-        src: "UUID={{ disk_uuid.stdout }}"
-        fstype: "{{ proxmox_storage.vm_storage.filesystem }}"
-        opts: defaults
-        state: mounted
-
-    - name: Create storage directories
-      ansible.builtin.file:
-        path: "{{ proxmox_storage.vm_storage.path }}/{{ item }}"
-        state: directory
-        mode: '0755'
-      loop:
-        - images
-        - template
-        - template/cache
-        - template/iso
-        - dump
-        - snippets
 
 - name: Configure Proxmox storage pools
   block:
@@ -78,14 +59,15 @@
         - "'local-lvm' in storage_status.stdout"
       failed_when: false
 
-    - name: Add VM storage to Proxmox
+    - name: Add ZFS storage pool to Proxmox
       ansible.builtin.command: >
-        pvesm add dir {{ proxmox_storage.vm_storage.name }}
-        --path {{ proxmox_storage.vm_storage.path }}
+        pvesm add zfspool {{ proxmox_storage.vm_storage.name }}
+        --pool {{ proxmox_storage.vm_storage.pool_name }}
         --content {{ proxmox_storage.vm_storage.content | join(',') }}
         --nodes {{ proxmox_storage.vm_storage.nodes }}
       when:
         - proxmox_storage.vm_storage.enabled | default(true)
+        - proxmox_storage.vm_storage.type == "zfspool"
         - proxmox_storage.vm_storage.name not in storage_status.stdout
 
     - name: Update local storage configuration
@@ -99,5 +81,6 @@
   ansible.builtin.debug:
     msg:
       - "Storage configuration complete"
-      - "VM Storage: {{ proxmox_storage.vm_storage.name }} at {{ proxmox_storage.vm_storage.path }}"
+      - "{% if proxmox_storage.vm_storage.type == 'zfspool' %}ZFS Pool: {{ proxmox_storage.vm_storage.pool_name }} ({{ proxmox_storage.vm_storage.name }}){% else %}VM Storage: {{ proxmox_storage.vm_storage.name }}{% endif %}"
       - "Content types: {{ proxmox_storage.vm_storage.content | join(', ') }}"
+      - "{% if proxmox_storage.vm_storage.type == 'zfspool' %}Compression: {{ proxmox_storage.vm_storage.compression }}{% endif %}"

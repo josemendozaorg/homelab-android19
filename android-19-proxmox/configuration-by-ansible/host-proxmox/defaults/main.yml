@@ -3,19 +3,18 @@
 
 # Storage Configuration
 proxmox_storage:
-  # 4TB disk for VMs and Containers
+  # 4TB disk for VMs and Containers (ZFS)
   vm_storage:
     name: "vm-storage"
-    path: "/mnt/vm-storage"
+    type: "zfspool"
+    pool_name: "vm-pool"
     device: "/dev/nvme1n1p1"  # 3.6TB partition on 4TB NVMe disk
-    filesystem: "ext4"
     content:
       - "images"     # VM disk images
       - "rootdir"    # Container root filesystems
-      - "vztmpl"     # Container templates
-      - "iso"        # ISO images
-      - "snippets"   # Cloud-init snippets
     nodes: "proxmox"
+    compression: "lz4"        # Enable compression
+    ashift: "12"              # 4K sectors
     enabled: true
 
   # Local storage configuration
