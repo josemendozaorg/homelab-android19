@@ -16,7 +16,7 @@ INVENTORY := inventory.yml
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-host-setup proxmox-host-storage proxmox-host-templates proxmox-host-api \
-        proxmox-deploy proxmox-services adguard-setup proxmox-adguard \
+        proxmox-deploy proxmox-services adguard-service omarchy-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         all-deploy all-ping
@@ -75,7 +75,7 @@ env-check: ## Validate Ansible configuration
 	$(ANSIBLE_EXEC) ansible-inventory --list --inventory $(INVENTORY)
 	$(ANSIBLE_EXEC) ansible-playbook --syntax-check android-16-bastion/playbook.yml
 	$(ANSIBLE_EXEC) ansible-playbook --syntax-check android-19-proxmox/playbook.yml
-	$(ANSIBLE_EXEC) ansible-playbook --syntax-check android-19-proxmox/services.yml
+	$(ANSIBLE_EXEC) ansible-playbook --syntax-check android-19-proxmox/adguard-setup.yml
 
 # Testing
 test-ping: ## Test connection to all machines
@@ -110,42 +110,61 @@ proxmox-host-api: ## Configure API tokens for automation
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
 
-proxmox-services: ## Deploy all Proxmox services (orchestration)
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
+proxmox-services: adguard-service ## Deploy all Proxmox services (orchestration)
 
-adguard-setup: ## Deploy AdGuard Home service
+# Service-level orchestration (Terraform + Ansible)
+adguard-service: ## Deploy AdGuard service (Terraform + Ansible)
+	@echo "🚀 Deploying AdGuard service..."
+	@echo "📋 Step 1/2: Provisioning container with Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_container.containers[\\\"125\\\"]"
+	@echo "📋 Step 2/2: Configuring AdGuard with Ansible"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/adguard-setup.yml
+	@echo "✅ AdGuard service deployment complete!"
+
+omarchy-service: ## Deploy Omarchy service (Terraform + Ansible)
+	@echo "🚀 Deploying Omarchy development VM service..."
+	@echo "📋 Step 1/3: Download ISO"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags iso
+	@echo "📋 Step 2/3: Provisioning VM with Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+	@echo "📋 Step 3/3: Initial configuration with Ansible"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags configure
+	@echo "✅ Omarchy service deployment complete! Complete OS installation manually."
+
+# Individual component deployment
+adguard-setup: ## Deploy AdGuard Home configuration only (Ansible)
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/adguard-setup.yml
 
-proxmox-adguard: adguard-setup ## Deploy AdGuard Home service (alias)
+proxmox-adguard: adguard-service ## Deploy AdGuard service (alias)
 
 
 proxmox-tf-init: ## Initialize Terraform for Proxmox infrastructure
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform init"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform init"
 
 proxmox-tf-plan: ## Show Terraform execution plan for Proxmox
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform plan"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform plan"
 
 proxmox-tf-apply: ## Apply Terraform configuration for Proxmox
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve"
 
 proxmox-tf-destroy: ## Destroy Terraform-managed Proxmox infrastructure
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform destroy -auto-approve"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve"
 
 proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform show && echo '=== OUTPUTS ===' && terraform output"
 
 proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infrastructure
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && ./rebuild-state.sh"
 
 # Omarchy
 omarchy-iso-setup: ## Download Omarchy ISO to Proxmox storage
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags iso
 
 omarchy-tf-plan: ## Plan Terraform changes for Omarchy VM
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform plan -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform plan -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 
 omarchy-tf-apply: omarchy-iso-setup ## Provision Omarchy VM with Terraform (downloads ISO first)
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 
 omarchy-configure: ## Configure Omarchy VM post-provisioning
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags configure
@@ -158,20 +177,20 @@ omarchy-full-deploy: omarchy-tf-apply omarchy-configure ## Complete Omarchy depl
 	@echo "4. Verify SSH access at 192.168.0.101"
 
 omarchy-destroy: ## Destroy Omarchy VM with Terraform
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 
 
 # Complete Infrastructure Deployment
 proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansible configure
 	@echo "🚀 Starting complete Proxmox infrastructure deployment..."
 	@echo "📋 Step 1/4: Initialize Terraform"
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform init"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform init"
 	@echo "📋 Step 2/4: Apply Terraform configuration"
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve"
 	@echo "📋 Step 3/4: Deploy base Proxmox configuration"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/playbook.yml
-	@echo "📋 Step 4/4: Configure all services"
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/services.yml
+	@echo "📋 Step 4/4: Deploy all services"
+	$(MAKE) proxmox-services
 	@echo "✅ Complete Proxmox deployment finished!"
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 

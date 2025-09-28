@@ -47,9 +47,14 @@ make setup-ssh
 
 ### Machine-Specific Deployment
 - `make bastion-deploy` - Deploy configuration to Android #16 bastion
+- `make proxmox-host-setup` - Configure Proxmox host infrastructure
 - `make proxmox-deploy` - Deploy base configuration to Android #19 Proxmox
 - `make proxmox-services` - Deploy all Proxmox services
-- `make proxmox-adguard` - Deploy AdGuard Home service only
+
+### Service-Level Deployment (Terraform + Ansible)
+- `make adguard-service` - Deploy AdGuard DNS service (provision + configure)
+- `make omarchy-service` - Deploy Omarchy development VM (provision + configure)
+- `make proxmox-adguard` - Deploy AdGuard service (alias)
 
 ### Proxmox Infrastructure (Terraform)
 - `make proxmox-tf-init` - Initialize Terraform for Proxmox
@@ -66,11 +71,21 @@ make setup-ssh
 
 ### Directory Structure
 - `android-16-bastion/` - Bastion host configuration and Ansible playbooks
-- `android-19-proxmox/` - Proxmox server configuration, Ansible playbooks, and Terraform
-  - `terraform/` - Infrastructure as Code for VM/container provisioning
+- `android-19-proxmox/` - Proxmox server configuration with separated concerns
+  - `provisioning-by-terraform/` - Infrastructure as Code for VM/container provisioning
+  - `configuration-by-ansible/` - Ansible roles for service configuration
+    - `host-*/` - Physical machine roles (host-proxmox)
+    - `lxc-*/` - LXC container roles (lxc-adguard)
+    - `vm-*/` - Virtual machine roles (vm-omarchy-dev)
   - `infrastructure-catalog.yml` - Service definitions and configuration
 - `scripts/` - Helper scripts (SSH setup, etc.)
 - `docs/` - Documentation including SSH setup guide
+
+### Role Naming Convention
+All Ansible roles follow a prefixed naming pattern:
+- **host-*** - Physical machine roles (e.g., host-proxmox)
+- **lxc-*** - LXC container roles (e.g., lxc-adguard)
+- **vm-*** - Virtual machine roles (e.g., vm-omarchy-dev)
 
 ### Infrastructure Flow
 1. **Terraform Provisioning**: Create VMs/containers on Proxmox with cloud-init

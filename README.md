@@ -38,8 +38,11 @@ Old laptop configured with CloudFlare as gateway from internet to internal home 
 
 - `android-16-bastion/` - Configuration and documentation for Android #16 bastion host
 - `android-19-proxmox/` - Configuration and documentation for Android #19 Proxmox server
-  - `terraform/` - Infrastructure as Code for container/VM provisioning
-  - `roles/` - Ansible roles for service configuration
+  - `provisioning-by-terraform/` - Infrastructure as Code for container/VM provisioning
+  - `configuration-by-ansible/` - Ansible roles for service configuration
+    - `host-*/` - Physical machine roles (host-proxmox)
+    - `lxc-*/` - LXC container roles (lxc-adguard)
+    - `vm-*/` - Virtual machine roles (vm-omarchy-dev)
   - `infrastructure-catalog.yml` - Service definitions and configuration
 
 ## Repository Content
@@ -82,10 +85,17 @@ make proxmox-full-deploy
 ## Architecture
 
 ### Infrastructure Management
-This homelab uses a **two-stage approach**:
+This homelab uses a **service-oriented approach** with clear separation:
 
-1. **Terraform**: Provisions infrastructure (containers, VMs, networking)
-2. **Ansible**: Configures services and applications
+1. **Terraform** (`provisioning-by-terraform/`): Provisions infrastructure (containers, VMs, networking)
+2. **Ansible** (`configuration-by-ansible/`): Configures services and applications
+3. **Makefile**: Orchestrates services combining both Terraform and Ansible
+
+### Role Naming Convention
+All Ansible roles follow a prefixed naming pattern:
+- **host-*** - Physical machine roles (e.g., host-proxmox)
+- **lxc-*** - LXC container roles (e.g., lxc-adguard)
+- **vm-*** - Virtual machine roles (e.g., vm-omarchy-dev)
 
 ### Container Management
 Ansible manages LXC containers through Proxmox, not direct SSH:
@@ -108,14 +118,27 @@ Ansible manages LXC containers through Proxmox, not direct SSH:
 make proxmox-full-deploy  # Does everything: Terraform + Ansible
 ```
 
+**Service-Level Deployment:**
+```bash
+# Deploy individual services (Terraform + Ansible)
+make adguard-service    # DNS server
+make omarchy-service    # Development VM
+
+# Or deploy all services
+make proxmox-services
+```
+
 **Step-by-Step Workflow:**
 ```bash
-# 1. Provision infrastructure
+# 1. Setup Proxmox host infrastructure
+make proxmox-host-setup
+
+# 2. Provision infrastructure
 make proxmox-tf-apply
 
-# 2. Configure services
+# 3. Configure services
 make proxmox-services
 
-# 3. Validate deployment
+# 4. Validate deployment
 make test-ping
 ```

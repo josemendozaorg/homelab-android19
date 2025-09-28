@@ -4,4 +4,4 @@
   gather_facts: no
 
   roles:
-    - role: adguard-home
+    - role: configuration-by-ansible/lxc-adguard
