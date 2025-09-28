@@ -1,0 +1,77 @@
+---
+- name: Prepare Proxmox host for Omarchy VM
+  hosts: proxmox
+  gather_facts: no
+  vars:
+    omarchy_iso_url: "https://iso.omarchy.org/omarchy-online.iso"
+    omarchy_iso_name: "omarchy-online.iso"
+    iso_storage_path: "/var/lib/vz/template/iso"
+
+  tasks:
+    - name: Ensure ISO storage directory exists
+      ansible.builtin.file:
+        path: "{{ iso_storage_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if Omarchy ISO already exists
+      ansible.builtin.stat:
+        path: "{{ iso_storage_path }}/{{ omarchy_iso_name }}"
+      register: iso_file
+
+    - name: Download Omarchy ISO to Proxmox storage
+      ansible.builtin.get_url:
+        url: "{{ omarchy_iso_url }}"
+        dest: "{{ iso_storage_path }}/{{ omarchy_iso_name }}"
+        mode: '0644'
+        timeout: 600
+      when: not iso_file.stat.exists
+      register: iso_download
+
+    - name: Display ISO download status
+      ansible.builtin.debug:
+        msg: >
+          {% if iso_download.changed %}
+          Omarchy ISO downloaded successfully to {{ iso_storage_path }}/{{ omarchy_iso_name }}
+          {% else %}
+          Omarchy ISO already exists at {{ iso_storage_path }}/{{ omarchy_iso_name }}
+          {% endif %}
+      when: iso_download is defined
+
+    - name: Verify ISO is accessible in Proxmox storage
+      ansible.builtin.command: pvesm list local
+      register: storage_list
+      changed_when: false
+
+    - name: Check if Omarchy ISO appears in storage
+      ansible.builtin.debug:
+        msg: "ISO available in Proxmox storage"
+      when: omarchy_iso_name in storage_list.stdout
+
+- name: Post-installation configuration for Omarchy VM
+  hosts: proxmox
+  gather_facts: no
+  vars:
+    vm_id: 101
+    vm_name: "omarchy-dev"
+
+  tasks:
+    - name: Check if VM exists
+      ansible.builtin.command: qm status {{ vm_id }}
+      register: vm_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display VM status
+      ansible.builtin.debug:
+        msg: >
+          {% if vm_status.rc == 0 %}
+          VM {{ vm_id }} ({{ vm_name }}) exists. Status: {{ vm_status.stdout }}
+          Please complete manual Omarchy installation via Proxmox console.
+          After installation:
+          1. Ensure SSH is enabled
+          2. Configure network if needed
+          3. Run 'make omarchy-configure' for additional setup
+          {% else %}
+          VM {{ vm_id }} does not exist yet. Run 'make omarchy-tf-apply' first.
+          {% endif %}
