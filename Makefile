@@ -139,6 +139,18 @@ deploy-vm-omarchy-devmachine: proxmox-tf-init ## Deploy Omarchy development work
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml --tags configure
 	@echo "✅ Omarchy development workstation deployment complete! Complete OS installation manually."
 
+omarchy-start: ## Start Omarchy VM
+	@echo "🚀 Starting Omarchy VM..."
+	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm start 101" --inventory $(INVENTORY)
+
+omarchy-stop: ## Stop Omarchy VM
+	@echo "🛑 Stopping Omarchy VM..."
+	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm stop 101" --inventory $(INVENTORY)
+
+omarchy-status: ## Check Omarchy VM status
+	@echo "📊 Checking Omarchy VM status..."
+	$(ANSIBLE_EXEC) ansible proxmox -m shell -a "qm status 101 && echo '---' && qm config 101 | grep -E 'cores|memory|balloon|boot'" --inventory $(INVENTORY)
+
 # Group deployment targets
 deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs
 

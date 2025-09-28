@@ -1,0 +1,119 @@
+{
+    "additional-repositories": [],
+    "archinstall-language": "English",
+    "audio_config": {
+        "audio": "pulseaudio"
+    },
+    "bootloader": "Grub",
+    "config_version": "2.8.0",
+    "debug": false,
+    "disk_config": {
+        "config_type": "default_layout",
+        "device_modifications": [
+            {
+                "device": "/dev/sda",
+                "partitions": [
+                    {
+                        "btrfs": [],
+                        "dev_path": null,
+                        "flags": [
+                            "Boot"
+                        ],
+                        "fs_type": "fat32",
+                        "mount_options": [],
+                        "mountpoint": "/boot",
+                        "obj_id": "boot-partition",
+                        "size": {
+                            "sector_size": null,
+                            "total_size": 1073741824,
+                            "unit": "B"
+                        },
+                        "start": {
+                            "sector_size": null,
+                            "total_size": 1048576,
+                            "unit": "B"
+                        },
+                        "type": "primary"
+                    },
+                    {
+                        "btrfs": [],
+                        "dev_path": null,
+                        "flags": [],
+                        "fs_type": "ext4",
+                        "mount_options": [],
+                        "mountpoint": "/",
+                        "obj_id": "root-partition",
+                        "size": {
+                            "sector_size": null,
+                            "total_size": null,
+                            "unit": "B"
+                        },
+                        "start": {
+                            "sector_size": null,
+                            "total_size": 1074790400,
+                            "unit": "B"
+                        },
+                        "type": "primary"
+                    }
+                ],
+                "wipe": true
+            }
+        ]
+    },
+    "disk_encryption": {
+        "encryption_type": "luks",
+        "partitions": [
+            "root-partition"
+        ]
+    },
+    "hostname": "omarchy-dev",
+    "kernels": [
+        "linux"
+    ],
+    "locale_config": {
+        "kb_layout": "us",
+        "sys_enc": "UTF-8",
+        "sys_lang": "en_US"
+    },
+    "mirror_config": {
+        "custom_mirrors": [],
+        "mirror_regions": {
+            "Worldwide": [
+                "https://geo.mirror.pkgbuild.com/$repo/os/$arch"
+            ]
+        }
+    },
+    "network_config": {
+        "type": "nm"
+    },
+    "no_pkg_lookups": false,
+    "ntp": true,
+    "offline": false,
+    "packages": [
+        "openssh",
+        "git",
+        "wget",
+        "curl",
+        "vim",
+        "base-devel"
+    ],
+    "parallel downloads": 0,
+    "profile_config": {
+        "gfx_driver": "Auto-detect",
+        "greeter": "lightdm-gtk-greeter",
+        "profile": {
+            "custom_settings": {
+                "lightdm": true
+            },
+            "details": [
+                "Hyprland"
+            ],
+            "main": "Desktop"
+        }
+    },
+    "script": "guided",
+    "silent": false,
+    "swap": true,
+    "timezone": "UTC",
+    "version": "2.8.0"
+}

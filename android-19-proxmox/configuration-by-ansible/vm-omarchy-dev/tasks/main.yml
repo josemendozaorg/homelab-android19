@@ -13,6 +13,13 @@
     - omarchy
     - configure
 
+- name: Include automated installation
+  include_tasks: automated-installation.yml
+  tags:
+    - omarchy
+    - install
+    - automated
+
 - name: Include remote desktop setup
   include_tasks: remote-desktop.yml
   tags:

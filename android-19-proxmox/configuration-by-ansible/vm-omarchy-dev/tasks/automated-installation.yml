@@ -1,0 +1,80 @@
+---
+# Automated Omarchy VM Installation Strategy
+#
+# This task implements a two-stage automated installation approach:
+# Stage 1: Install base Arch Linux via archinstall configuration
+# Stage 2: Install Omarchy via automation script once system is accessible
+#
+# NOTE: This is experimental and requires specific boot order configuration
+
+- name: Automated Omarchy Installation (Experimental)
+  block:
+    - name: Check if VM is already installed
+      ansible.builtin.command: >
+        qm guest ping {{ omarchy_vm.id }}
+      register: vm_ping_check
+      failed_when: false
+      changed_when: false
+      delegate_to: "{{ groups['proxmox'][0] }}"
+
+    - name: Display installation status
+      ansible.builtin.debug:
+        msg: |
+          VM Installation Status:
+          {% if vm_ping_check.rc == 0 %}
+          ✅ VM appears to be running - Omarchy may already be installed
+          {% else %}
+          🔄 VM not responding - Installation may be needed
+
+          MANUAL INSTALLATION REQUIRED:
+          1. Start VM: qm start {{ omarchy_vm.id }}
+          2. Connect to VM console via Proxmox web UI
+          3. Follow Omarchy installation guide:
+             - Boot from Omarchy ISO
+             - Configure disk encryption (required)
+             - Set up user account
+             - Run: wget -qO- https://omarchy.org/install | bash
+
+          AUTOMATED OPTIONS (Advanced):
+          - Use archinstall config file for base Arch
+          - Then run Omarchy script via SSH
+          {% endif %}
+
+  when: omarchy_automated_install | default(false)
+
+- name: Configure VM for installation
+  block:
+    - name: Set boot order for installation
+      ansible.builtin.command: >
+        qm set {{ omarchy_vm.id }}
+        --boot order=ide3;scsi0
+      register: boot_order_result
+      changed_when: "'update' in boot_order_result.stdout"
+      delegate_to: "{{ groups['proxmox'][0] }}"
+
+    - name: Display installation instructions
+      ansible.builtin.debug:
+        msg: |
+          🚀 Omarchy VM Ready for Installation
+
+          VM ID: {{ omarchy_vm.id }}
+          IP Address: {{ omarchy_vm.ip }}
+          Memory: 38GB (with balloon)
+          CPU Cores: 32 (full host power)
+          Disk: 200GB ZFS storage
+
+          INSTALLATION STEPS:
+          1. Start VM: make omarchy-start (or qm start {{ omarchy_vm.id }})
+          2. Connect to console via Proxmox web UI ({{ ansible_default_ipv4.address }}:8006)
+          3. Boot from Omarchy ISO (should be automatic)
+          4. Follow installation wizard:
+             - Enable disk encryption (required for Omarchy)
+             - Create user account
+             - Configure networking (IP: {{ omarchy_vm.ip }})
+          5. After reboot, run: wget -qO- https://omarchy.org/install | bash
+
+          REMOTE DESKTOP:
+          - Google Remote Desktop automation available after installation
+          - Run: ansible-playbook vm-omarchy-configure.yml --tags remote-desktop
+
+          ALTERNATIVE: Use archinstall config for fully automated base installation
