@@ -28,21 +28,8 @@ proxmox_storage:
       - "snippets"
 
 # Network Configuration
-proxmox_network:
-  bridges:
-    - name: "vmbr0"
-      interface: "eno1"  # Physical interface
-      address: "192.168.0.19/24"
-      gateway: "192.168.0.1"
-      bridge_ports: "eno1"
-      bridge_stp: "off"
-      bridge_fd: 0
-
-  # Optional: Additional bridges for isolated networks
-  # - name: "vmbr1"
-  #   address: "10.0.0.1/24"
-  #   bridge_stp: "off"
-  #   bridge_fd: 0
+# Note: Proxmox creates vmbr0 bridge automatically during installation
+# No need to manage network configuration via Ansible
 
 # Container Templates
 proxmox_ct_templates:

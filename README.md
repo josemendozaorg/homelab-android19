@@ -82,51 +82,29 @@ make proxmox-full-deploy
 - **Terraform API Issues**: Check your API token in `terraform/terraform.tfvars`
 - **Docker Issues**: Ensure Docker is running and you have proper permissions
 
-## ⚠️ CRITICAL SAFETY WARNING
+## ⚠️ INFRASTRUCTURE SAFETY
 
-### Network Configuration Risk
-**EXTREME CAUTION**: Proxmox network configuration can cause **complete remote lockout**!
+### Network Configuration
+**Network bridges are managed by Proxmox installation** - no Ansible configuration needed.
 
-**What Happened**: Ansible overwrote `/etc/network/interfaces` assuming interface name `eno1`, but the actual interface had a different name. Network restart with invalid config = total loss of SSH and web access.
+**Previous Issue**: Attempted to manage network configuration via Ansible, which caused complete remote lockout when interface names didn't match (assumed `eno1` vs actual `enp11s0/enp12s0`).
 
-**Current Status**: Network configuration is **DISABLED** in the codebase to prevent this.
+**Current Approach**: Let Proxmox handle network configuration during installation. The `vmbr0` bridge is created automatically and works correctly.
 
-**Recovery**: Requires **physical console access** to restore network configuration from backup.
+**Lesson**: Don't try to automate what's already working. Proxmox installation handles network setup properly.
 
-**Lesson**: Always verify actual interface names (`ip link show`) before any network configuration changes on production systems.
+### Safety Procedures
 
-### Safety Procedures Implemented
-
-**1. Preflight Checks System**
-- Automatic interface validation before network changes
-- Current configuration backup with timestamps
-- Display of current vs proposed changes
-- Mandatory user confirmation for critical operations
-
-**2. Safe Mode Commands**
-Use these commands instead of direct configuration:
-
+**1. Configuration Validation**
 ```bash
 # Validate configuration without making changes
 make proxmox-host-check                    # Check all host configuration
-make proxmox-host-network-check           # Check only network configuration
-
-# Apply configuration with safety checks
-make proxmox-host-network-safe            # Network config with mandatory verification
 ```
 
-**3. Emergency Recovery**
-If you lose remote access:
-1. **Physical console access required**
-2. Restore backup: `cp /etc/network/interfaces.backup.TIMESTAMP /etc/network/interfaces`
-3. Restart networking: `systemctl restart networking`
-4. Verify connectivity: `ip addr show`
-
-**4. Best Practices**
+**2. Best Practices**
 - Always run `make proxmox-host-check` first to validate changes
-- Verify interface names with: `ansible proxmox -m shell -a "ip link show"`
 - Never disable preflight checks (`proxmox_preflight_checks: false`)
-- Ensure physical/console access is available before network changes
+- Let Proxmox manage its own network configuration
 
 ## Architecture
 

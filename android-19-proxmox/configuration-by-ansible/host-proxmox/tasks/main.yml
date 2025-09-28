@@ -21,19 +21,8 @@
     - proxmox
     - storage
 
-- name: Network configuration (DISABLED - use network-safe instead)
-  include_tasks: network.yml
-  tags:
-    - proxmox
-    - network
-  when: false  # Disabled until we can safely configure networking
-
-- name: Safe network configuration
-  include_tasks: network-safe.yml
-  tags:
-    - proxmox
-    - network-safe
-    - safety
+# Network configuration is handled by Proxmox installation
+# No need to manage bridges - they're created automatically during Proxmox setup
 
 - name: Template management
   include_tasks: templates.yml

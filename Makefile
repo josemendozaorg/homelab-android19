@@ -15,7 +15,7 @@ INVENTORY := inventory.yml
         test-ping test-ping-bastion test-ping-proxmox \
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
-        proxmox-host-setup proxmox-host-check proxmox-host-network-safe proxmox-host-network-check \
+        proxmox-host-setup proxmox-host-check \
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service omarchy-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
@@ -103,16 +103,7 @@ proxmox-host-check: ## SAFE MODE: Validate Proxmox host configuration without ma
 	@echo "🔍 Running Proxmox host configuration in CHECK MODE (no changes made)"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --check --diff
 
-proxmox-host-network-safe: ## SAFE MODE: Configure network with mandatory safety checks
-	@echo "⚠️  CRITICAL: This will run network configuration with safety checks"
-	@echo "   - Preflight validation will run first"
-	@echo "   - Manual confirmation required"
-	@echo "   - Backup created automatically"
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --tags network-safe
-
-proxmox-host-network-check: ## SAFE MODE: Validate network configuration without applying
-	@echo "🔍 Validating network configuration (no changes made)"
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --tags network-safe --check --diff
+# Network configuration removed - Proxmox handles this during installation
 
 proxmox-host-storage: ## Configure Proxmox storage only
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/proxmox-host-setup.yml --tags storage

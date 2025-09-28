@@ -31,45 +31,18 @@
         remote_src: yes
       changed_when: true
 
-    - name: Verify expected interface exists
-      ansible.builtin.stat:
-        path: "/sys/class/net/{{ item.interface }}"
-      register: interface_check
-      loop: "{{ proxmox_network.bridges }}"
-      when: item.interface is defined
-
-    - name: ABORT if interface doesn't exist
-      ansible.builtin.fail:
+    - name: Display network status (informational only)
+      ansible.builtin.debug:
         msg: |
-          CRITICAL ERROR: Interface '{{ item.item.interface }}' does not exist!
-          Detected interfaces: {{ actual_interfaces.stdout_lines | join(', ') }}
-
-          TO FIX:
-          1. Update host-proxmox/defaults/main.yml with correct interface name
-          2. Verify with: ansible proxmox -m shell -a "ip link show"
-          3. Re-run after fixing configuration
-      loop: "{{ interface_check.results }}"
-      when:
-        - item.item.interface is defined
-        - not item.stat.exists
-
-    - name: Display safety summary
-      ansible.builtin.pause:
-        prompt: |
-          ⚠️  NETWORK CONFIGURATION CHECK ⚠️
+          ℹ️  NETWORK STATUS (Proxmox manages network configuration)
 
           Current Working Config:
           {{ active_config.stdout }}
 
-          Proposed Changes:
-          - Will modify: /etc/network/interfaces
-          - Will restart: networking service
-          - Risk Level: CRITICAL (can cause lockout)
+          Network bridges are managed by Proxmox installation.
+          No network configuration changes will be made via Ansible.
 
           Backup created: /etc/network/interfaces.backup.{{ ansible_date_time.epoch }}
-
-          Press ENTER to continue or Ctrl+C to abort
-        seconds: 10
 
 - name: Pre-flight Storage Safety Checks
   when: proxmox_storage.vm_storage.enabled | default(false)
