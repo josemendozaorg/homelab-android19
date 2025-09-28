@@ -1,5 +1,5 @@
 ---
-# Omarchy VM role defaults
+# Omarchy Dev VM role defaults
 omarchy_iso_url: "https://iso.omarchy.org/omarchy-online.iso"
 omarchy_iso_name: "omarchy-online.iso"
 omarchy_template_name: "omarchy-template"

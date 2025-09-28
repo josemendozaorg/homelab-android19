@@ -15,61 +15,51 @@ This guide covers the deployment of an Omarchy (Arch Linux + Hyprland) developme
 ## Quick Start
 
 ```bash
-# Complete deployment (ISO download + VM provisioning)
-make omarchy-full-deploy
+# Setup Omarchy template (ISO download + template VM creation)
+make omarchy-full-setup
 
-# After manual OS installation, configure the VM
+# After manual OS installation and template conversion:
+make omarchy-vm-create
+
+# Configure the VM post-installation
 make omarchy-configure
 ```
 
 ## Detailed Setup Process
 
-### 1. Download Omarchy ISO to Proxmox
+### 1. Setup Omarchy Template
 
 ```bash
-make omarchy-iso-setup
+make omarchy-template-setup
 ```
 
-This downloads the Omarchy ISO (1.4GB) from https://iso.omarchy.org/ to the Proxmox ISO storage.
+This command:
+- Downloads the Omarchy ISO (1.4GB) from https://iso.omarchy.org/
+- Creates a template VM (ID: 9001) with optimal settings:
+  - 4 cores, 8GB RAM, 60GB disk
+  - UEFI boot with q35 chipset
+  - ISO mounted for installation
 
-### 2. Plan Infrastructure Changes
+### 2. Complete Template Installation
 
-```bash
-make omarchy-tf-plan
-```
-
-Review the planned VM creation with:
-- VM ID: 101
-- IP: 192.168.0.101
-- Resources: 4 cores, 8GB RAM, 60GB disk
-- UEFI boot with q35 chipset
-
-### 3. Provision the VM
-
-```bash
-make omarchy-tf-apply
-```
-
-This creates the VM in Proxmox with the ISO mounted for installation.
-
-### 4. Manual OS Installation
-
+The template VM is created but not started. You need to manually:
 1. Access Proxmox web UI at https://192.168.0.19:8006
-2. Select VM 101 (omarchy-dev)
-3. Open Console
-4. Start the VM
-5. Follow Omarchy installation wizard:
-   - Select installation type
-   - Configure disk partitioning
-   - Set up user account
-   - Complete installation
+2. Start VM 9001 (omarchy-template)
+3. Complete Omarchy installation via console
+4. After installation, shut down the VM
+5. Convert to template: `qm template 9001`
 
-**Important Notes:**
-- Disable Secure Boot and TPM in BIOS if needed
-- The installation process is interactive
-- Network will be configured via cloud-init (192.168.0.101)
+### 3. Create VMs from Template
 
-### 5. Post-Installation Configuration
+```bash
+make omarchy-vm-create
+```
+
+This creates VM 101 (omarchy-dev) from the template with:
+- IP: 192.168.0.101
+- Network configuration via cloud-init
+
+### 4. Post-Installation Configuration
 
 After OS installation completes:
 
@@ -124,23 +114,28 @@ make omarchy-destroy
 ### Infrastructure Definition
 
 The VM is defined in `android-19-proxmox/infrastructure-catalog.yml`:
-- ID: 101 (matching IP last octet)
+- Template ID: 9001 (omarchy-template)
+- VM ID: 101 (omarchy-dev, matching IP last octet)
 - Type: VM (not container)
 - Network: 192.168.0.101/24
 
-### Terraform Provisioning
+### Ansible Role Provisioning
 
-Located in `android-19-proxmox/terraform/main.tf`:
-- Resource: `proxmox_virtual_environment_vm`
-- Configured for UEFI boot
-- Virtio network driver for performance
-- QXL graphics for desktop environment
+Located in `android-19-proxmox/roles/omarchy-dev-vm/`:
+- **ISO Management**: Downloads Omarchy ISO to Proxmox storage
+- **Template Creation**: Creates template VM with optimal settings
+- **VM Provisioning**: Clones VMs from template with cloud-init
+
+### Template-Based Workflow
+
+1. **Template Creation**: One-time setup of base template VM
+2. **VM Cloning**: Fast creation of VMs from template
+3. **Benefits**: Consistent configuration, faster deployment, template reuse
 
 ### Ansible Configuration
 
-Two playbooks handle setup:
-- `omarchy-setup.yml`: ISO download to Proxmox
-- `omarchy-configure.yml`: Post-installation optimization
+- `omarchy-setup.yml`: Main playbook using omarchy-vm role
+- `omarchy-configure.yml`: Post-installation optimization and tuning
 
 ## Troubleshooting
 

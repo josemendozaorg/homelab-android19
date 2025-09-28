@@ -1,10 +1,10 @@
 ---
-- name: Setup Omarchy VM template and provisioning
+- name: Setup Omarchy Dev VM template and provisioning
   hosts: proxmox
   gather_facts: no
 
   roles:
-    - role: omarchy-vm
+    - role: omarchy-dev-vm
       tags:
         - omarchy
         - always

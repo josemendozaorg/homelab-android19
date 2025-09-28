@@ -80,7 +80,7 @@ resource "proxmox_virtual_environment_container" "containers" {
 
 # VMs are managed by Ansible roles, not Terraform
 # This provides better control over template creation and VM provisioning
-# See: android-19-proxmox/roles/omarchy-vm/
+# See: android-19-proxmox/roles/omarchy-dev-vm/
 
 # resource "proxmox_virtual_environment_vm" "vms" {
 #   # VM provisioning moved to Ansible for better template management
