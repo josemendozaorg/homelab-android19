@@ -17,6 +17,7 @@ INVENTORY := inventory.yml
         bastion-setup-sudo bastion-deploy \
         proxmox-deploy proxmox-services proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
+        omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -38,6 +39,9 @@ help: ## Show available commands
 	@echo ""
 	@echo "Proxmox Terraform (proxmox-tf-*):"
 	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
+	@echo ""
+	@echo "Omarchy Dev VM (omarchy-*):"
+	@$(MAKE) -s help-section SECTION="Omarchy"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -117,6 +121,26 @@ proxmox-tf-show: ## Show current Terraform state and outputs for Proxmox
 
 proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infrastructure
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && ./rebuild-state.sh"
+
+# Omarchy Development VM
+omarchy-iso-setup: ## Download Omarchy ISO to Proxmox storage
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-setup.yml
+
+omarchy-tf-plan: ## Plan Terraform changes for Omarchy VM
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform plan -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+
+omarchy-tf-apply: omarchy-iso-setup ## Provision Omarchy VM with Terraform (downloads ISO first)
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+
+omarchy-configure: ## Configure Omarchy VM post-installation
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-configure.yml
+
+omarchy-full-deploy: omarchy-tf-apply ## Complete Omarchy deployment (ISO + Terraform + initial config)
+	@echo "✅ Omarchy VM provisioned. Please complete manual installation via Proxmox console."
+	@echo "After installation, run 'make omarchy-configure' for final setup."
+
+omarchy-destroy: ## Destroy Omarchy VM
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 
 
 # Complete Infrastructure Deployment
