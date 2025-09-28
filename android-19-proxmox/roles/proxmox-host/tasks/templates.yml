@@ -3,6 +3,11 @@
 
 - name: Download container templates
   block:
+    - name: Update Proxmox template list
+      ansible.builtin.command: pveam update
+      register: template_update
+      changed_when: template_update.rc == 0
+
     - name: Check existing container templates
       ansible.builtin.command: pveam list {{ item.storage }}
       register: existing_templates

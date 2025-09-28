@@ -8,6 +8,35 @@
     - role: proxmox-host
 
   pre_tasks:
+    - name: Check SSH connectivity first
+      ansible.builtin.ping:
+      register: ping_result
+      ignore_errors: yes
+      tags: always
+
+    - name: Display SSH setup instructions if connection fails
+      ansible.builtin.fail:
+        msg: |
+          ❌ SSH CONNECTION FAILED to Proxmox ({{ ansible_host }})
+
+          To fix this, run these commands on your LOCAL machine:
+
+          1. Generate SSH key (skip if you have one):
+             ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+
+          2. Copy SSH key to Proxmox:
+             ssh-copy-id root@{{ ansible_host }}
+
+          3. Test the connection:
+             ssh root@{{ ansible_host }} "echo 'SSH working!'"
+
+          4. Retry this command:
+             make proxmox-host-setup
+
+          For more details, see: docs/SSH_SETUP.md
+      when: ping_result is failed
+      tags: always
+
     - name: Verify running on Proxmox host
       ansible.builtin.stat:
         path: /etc/pve
