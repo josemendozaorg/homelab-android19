@@ -45,12 +45,12 @@ services:
     name: "omarchy-dev"
     type: "vm"
     ip: "192.168.0.101"
-    description: "Omarchy (Arch Linux + Hyprland) development workstation"
+    description: "Omarchy (Arch Linux + Hyprland) development workstation - High performance configuration"
     iso: "omarchy-3.0.1.iso"
     resources:
-      cores: 4
-      memory: 8192
-      disk: 60
+      cores: 32      # Full CPU power (AMD Ryzen 9 9950X3D: 16 cores + SMT = 32 threads)
+      memory: 38912  # 40% of host RAM (~38GB of 92GB available)
+      disk: 200      # 200GB disk for development work and projects
     storage: "vm-storage"
     boot_order: "scsi0"
     bios: "ovmf"  # UEFI boot

@@ -14,7 +14,7 @@ omarchy_vm:
   ip: "192.168.0.101"
 
 # Optional configuration
-omarchy_vm_balloon: 4096  # Memory ballooning for dynamic allocation
+omarchy_vm_balloon: 38912  # Memory ballooning for dynamic allocation (40% of host RAM)
 omarchy_vm_start_on_configure: false  # Start VM during configuration
 omarchy_vm_wait_for_network: false  # Wait for VM network to be available
 omarchy_vm_install_agent: false  # Try to install QEMU guest agent via qm guest exec
