@@ -28,6 +28,7 @@
         --users {{ proxmox_api.user }}
         --roles TerraformRole
       register: acl_modify
+      failed_when: false
       changed_when: "'update acl' in acl_modify.stdout | default('')"
 
 - name: Generate API token
@@ -48,7 +49,7 @@
 
     - name: Extract token value
       set_fact:
-        api_token_value: "{{ token_output.stdout | regex_search('value: (.+)', '\\1') | first }}"
+        api_token_value: "{{ token_output.stdout | regex_search('value: (.+)', '\\1') | default([]) | first | default('') }}"
       when: token_output.changed
 
     - name: Save token to file (for reference)
