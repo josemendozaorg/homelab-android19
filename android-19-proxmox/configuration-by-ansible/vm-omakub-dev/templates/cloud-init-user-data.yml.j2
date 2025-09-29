@@ -93,28 +93,54 @@ runcmd:
   - chmod +x /home/{{ cloud_init_user }}/install-omakub.sh
   - chown {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}/install-omakub.sh
 
-  # Create systemd service to run Omakub installation after desktop starts
+  # Fix SSH configuration to allow password authentication
+  - sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+  - sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+  # Enable automatic login for dev user to trigger Omakub installation
   - |
-    cat > /etc/systemd/system/omakub-install.service << 'EOF'
+    mkdir -p /etc/gdm3
+    cat > /etc/gdm3/custom.conf << 'EOF'
+    [daemon]
+    AutomaticLoginEnable=true
+    AutomaticLogin={{ cloud_init_user }}
+    EOF
+
+  # Create user systemd service to run Omakub after GUI login
+  - |
+    mkdir -p /home/{{ cloud_init_user }}/.config/systemd/user
+    cat > /home/{{ cloud_init_user }}/.config/systemd/user/omakub-install.service << 'EOF'
     [Unit]
     Description=Omakub Installation Service
     After=graphical-session.target
-    Wants=graphical-session.target
 
     [Service]
     Type=oneshot
-    User={{ cloud_init_user }}
-    Group={{ cloud_init_user }}
-    WorkingDirectory=/home/{{ cloud_init_user }}
-    ExecStart=/home/{{ cloud_init_user }}/install-omakub.sh
-    StandardOutput=append:/home/{{ cloud_init_user }}/omakub.log
-    StandardError=append:/home/{{ cloud_init_user }}/omakub.log
+    WorkingDirectory=%h
+    ExecStart=%h/install-omakub.sh
+    StandardOutput=append:%h/omakub.log
+    StandardError=append:%h/omakub.log
 
     [Install]
-    WantedBy=graphical.target
+    WantedBy=default.target
     EOF
 
-  - systemctl enable omakub-install.service
+  - chown -R {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}/.config
+
+  # Create script to run Omakub installation on first login
+  - |
+    cat > /home/{{ cloud_init_user }}/.profile_omakub << 'EOF'
+    # Auto-run Omakub installation on first login
+    if [ ! -f "$HOME/.omakub-completed" ]; then
+        echo "$(date): Starting Omakub installation on first login" >> "$HOME/omakub.log"
+        systemctl --user enable omakub-install.service
+        systemctl --user start omakub-install.service
+        touch "$HOME/.omakub-completed"
+    fi
+    EOF
+
+  - echo '. ~/.profile_omakub' >> /home/{{ cloud_init_user }}/.profile
+  - chown {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}/.profile_omakub /home/{{ cloud_init_user }}/.profile
 
 # Final message
 final_message: |
