@@ -1,0 +1,7 @@
+---
+- name: Omakub Dev VM Setup
+  hosts: proxmox
+  gather_facts: yes
+
+  roles:
+    - role: configuration-by-ansible/vm-omakub-dev

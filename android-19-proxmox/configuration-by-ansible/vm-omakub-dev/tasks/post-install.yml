@@ -1,0 +1,185 @@
+---
+# Post-Installation Configuration for Omakub VM
+
+- name: Display post-installation status
+  ansible.builtin.debug:
+    msg: |
+      🔧 POST-INSTALLATION: Final Configuration
+
+      This stage will:
+      1. Verify Ubuntu installation
+      2. Check system services
+      3. Validate Omakub installation
+      4. Generate final status report
+
+- name: Final system configuration
+  block:
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for:
+        host: "{{ omakub_vm.ip }}"
+        port: 22
+        timeout: "{{ ssh_wait_timeout }}"
+        delay: 30
+      delegate_to: localhost
+      when: omakub_vm_wait_for_network | default(false)
+
+    - name: Test SSH connection to Ubuntu system
+      ansible.builtin.ping:
+      delegate_to: "{{ omakub_vm.ip }}"
+      vars:
+        ansible_user: "{{ ubuntu_user }}"
+        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      when: omakub_vm_wait_for_network | default(false)
+
+    - name: Verify Ubuntu installation
+      ansible.builtin.command: uname -a
+      register: ubuntu_verify
+      delegate_to: "{{ omakub_vm.ip }}"
+      vars:
+        ansible_user: "{{ ubuntu_user }}"
+        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      when: omakub_vm_wait_for_network | default(false)
+
+- name: Generate system information report
+  block:
+    - name: Gather system information
+      ansible.builtin.setup:
+      delegate_to: "{{ omakub_vm.ip }}"
+      vars:
+        ansible_user: "{{ ubuntu_user }}"
+        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      register: system_facts
+      when: omakub_vm_wait_for_network | default(false)
+
+    - name: Check Omakub installation
+      ansible.builtin.shell: |
+        if [ -d "$HOME/.local/share/omakub" ]; then
+          echo "Omakub installed at: $HOME/.local/share/omakub"
+          ls -la "$HOME/.local/share/omakub" | head -5
+        else
+          echo "Omakub not yet installed"
+        fi
+      register: omakub_check
+      delegate_to: "{{ omakub_vm.ip }}"
+      vars:
+        ansible_user: "{{ ubuntu_user }}"
+        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      when: omakub_vm_wait_for_network | default(false)
+
+    - name: Check installed development tools
+      ansible.builtin.shell: |
+        echo "=== Development Tools Check ==="
+        command -v code >/dev/null 2>&1 && echo "✅ VS Code installed" || echo "❌ VS Code not found"
+        command -v nvim >/dev/null 2>&1 && echo "✅ Neovim installed" || echo "❌ Neovim not found"
+        command -v alacritty >/dev/null 2>&1 && echo "✅ Alacritty installed" || echo "❌ Alacritty not found"
+        command -v zellij >/dev/null 2>&1 && echo "✅ Zellij installed" || echo "❌ Zellij not found"
+        command -v eza >/dev/null 2>&1 && echo "✅ eza installed" || echo "❌ eza not found"
+        command -v fzf >/dev/null 2>&1 && echo "✅ fzf installed" || echo "❌ fzf not found"
+        command -v rg >/dev/null 2>&1 && echo "✅ ripgrep installed" || echo "❌ ripgrep not found"
+        echo "=== End Tools Check ==="
+      register: dev_tools_check
+      delegate_to: "{{ omakub_vm.ip }}"
+      vars:
+        ansible_user: "{{ ubuntu_user }}"
+        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      when: omakub_vm_wait_for_network | default(false)
+
+- name: Display installation completion report
+  ansible.builtin.debug:
+    msg: |
+      🎉 OMAKUB VM INSTALLATION COMPLETE!
+
+      ════════════════════════════════════════════════════════════
+
+      📊 SYSTEM INFORMATION:
+      {% if system_facts is defined -%}
+      - Hostname: {{ system_facts.ansible_facts.ansible_hostname }}
+      - OS: {{ system_facts.ansible_facts.ansible_distribution }} {{ system_facts.ansible_facts.ansible_distribution_version }}
+      - Kernel: {{ system_facts.ansible_facts.ansible_kernel }}
+      - Architecture: {{ system_facts.ansible_facts.ansible_architecture }}
+      - Memory: {{ (system_facts.ansible_facts.ansible_memtotal_mb / 1024) | round(1) }}GB
+      - CPU Cores: {{ system_facts.ansible_facts.ansible_processor_vcpus }}
+      {% else -%}
+      - System information available after SSH connection
+      {% endif -%}
+
+      🔗 CONNECTION INFORMATION:
+      - SSH Access: ssh {{ ubuntu_user }}@{{ omakub_vm.ip }}
+      - Password: {{ ubuntu_password }}
+      - VM ID: {{ omakub_vm.id }}
+      - VM Name: {{ omakub_vm.name }}
+
+      📦 OMAKUB STATUS:
+      {% if omakub_check is defined -%}
+      {{ omakub_check.stdout }}
+      {% else -%}
+      - Manual verification required via desktop console
+      {% endif -%}
+
+      🛠️ DEVELOPMENT TOOLS:
+      {% if dev_tools_check is defined -%}
+      {{ dev_tools_check.stdout }}
+      {% else -%}
+      - Tool verification available after Omakub installation
+      {% endif -%}
+
+      🎯 NEXT STEPS:
+      1. If Ubuntu installation is complete:
+         - Set screen resolution to 1920x1080, scaling 200%
+         - Open terminal (Ctrl+Alt+T)
+         - Run: wget -qO- https://omakub.org/install | bash
+         - Approve 4 GNOME extension confirmations
+         - Log out and log back in
+
+      2. If Omakub installation is complete:
+         - Explore Alacritty terminal with Zellij
+         - Try VS Code and Neovim editors
+         - Configure git with your preferences
+         - Start developing!
+
+      ════════════════════════════════════════════════════════════
+
+      ✅ Omakub development workstation is ready for use!
+  when: omakub_guided_install | default(true)
+
+- name: Save installation details to file
+  ansible.builtin.copy:
+    content: |
+      Omakub VM Installation Report
+      ============================
+
+      Installation Date: {{ ansible_date_time.iso8601 }}
+      VM ID: {{ omakub_vm.id }}
+      VM Name: {{ omakub_vm.name }}
+      IP Address: {{ omakub_vm.ip }}
+
+      System Information:
+      {% if system_facts is defined -%}
+      - OS: {{ system_facts.ansible_facts.ansible_distribution }} {{ system_facts.ansible_facts.ansible_distribution_version }}
+      - Kernel: {{ system_facts.ansible_facts.ansible_kernel }}
+      - Memory: {{ (system_facts.ansible_facts.ansible_memtotal_mb / 1024) | round(1) }}GB
+      - CPU Cores: {{ system_facts.ansible_facts.ansible_processor_vcpus }}
+      {% endif -%}
+
+      Credentials:
+      - Username: {{ ubuntu_user }}
+      - Password: {{ ubuntu_password }}
+
+      SSH Access:
+      ssh {{ ubuntu_user }}@{{ omakub_vm.ip }}
+
+      Installation Method: Manual Ubuntu + Omakub script
+
+      Next Steps:
+      1. Complete Ubuntu desktop installation
+      2. Run Omakub install script in terminal
+      3. Configure development environment
+
+    dest: "/tmp/omakub-vm-{{ omakub_vm.id }}-installation-report.txt"
+    mode: '0644'
+  delegate_to: localhost

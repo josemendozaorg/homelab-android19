@@ -1,0 +1,17 @@
+---
+# Omakub Dev VM Installation (Manual Ubuntu + Omakub)
+#
+# This provides simple guidance for interactive installation using the official
+# Ubuntu Desktop ISO, followed by automated Omakub setup.
+
+- name: Include ISO management tasks
+  include_tasks: iso-management.yml
+  tags: [iso, download]
+
+- name: Include installation guidance tasks
+  include_tasks: installation-guidance.yml
+  tags: [install, guidance]
+
+- name: Include post-installation configuration
+  include_tasks: post-install.yml
+  tags: [post-install, configure]

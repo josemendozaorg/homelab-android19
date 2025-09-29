@@ -1,0 +1,57 @@
+---
+# ISO Management for Omakub Installation
+# Downloads Ubuntu Desktop ISO for manual installation
+
+- name: Check if Ubuntu Desktop ISO already exists
+  ansible.builtin.stat:
+    path: "{{ iso_storage_path }}/{{ ubuntu_iso_name }}"
+  register: ubuntu_iso_file
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Display ISO status
+  ansible.builtin.debug:
+    msg: |
+      📦 Ubuntu Desktop ISO Status:
+      - ISO Path: {{ iso_storage_path }}/{{ ubuntu_iso_name }}
+      - ISO URL: {{ ubuntu_iso_url }}
+      - Status: {{ 'Available' if ubuntu_iso_file.stat.exists else 'Missing - will download' }}
+      {% if ubuntu_iso_file.stat.exists -%}
+      - Size: {{ (ubuntu_iso_file.stat.size / 1024 / 1024 / 1024) | round(2) }}GB
+      {% endif -%}
+
+- name: Create ISO storage directory
+  ansible.builtin.file:
+    path: "{{ iso_storage_path }}"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Download Ubuntu Desktop ISO to Proxmox storage (background)
+  ansible.builtin.shell: |
+    nohup wget -O "{{ iso_storage_path }}/{{ ubuntu_iso_name }}.tmp" "{{ ubuntu_iso_url }}" > /tmp/ubuntu-iso-download.log 2>&1 && \
+    mv "{{ iso_storage_path }}/{{ ubuntu_iso_name }}.tmp" "{{ iso_storage_path }}/{{ ubuntu_iso_name }}" &
+  register: iso_download_start
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  when: not ubuntu_iso_file.stat.exists
+
+- name: Wait for ISO download to complete
+  ansible.builtin.wait_for:
+    path: "{{ iso_storage_path }}/{{ ubuntu_iso_name }}"
+    timeout: 3600  # 60 minutes timeout for Ubuntu ISO download (large file)
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  when: not ubuntu_iso_file.stat.exists
+
+- name: Verify ISO download
+  ansible.builtin.stat:
+    path: "{{ iso_storage_path }}/{{ ubuntu_iso_name }}"
+  register: iso_download_verify
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Display download completion
+  ansible.builtin.debug:
+    msg: |
+      ✅ Ubuntu Desktop ISO Download Complete
+      - Path: {{ iso_storage_path }}/{{ ubuntu_iso_name }}
+      - Size: {{ (iso_download_verify.stat.size / 1024 / 1024 / 1024) | round(2) }}GB
+      - Ready for VM installation
+  when: iso_download_verify.stat.exists

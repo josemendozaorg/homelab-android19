@@ -22,6 +22,7 @@ INVENTORY := inventory.yml
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         omarchy-start omarchy-stop omarchy-status \
         deploy-vm-omarchy-devmachine-automated omarchy-automated-start omarchy-automated-stop omarchy-automated-status omarchy-automated-destroy \
+        deploy-vm-omakub-devmachine omakub-start omakub-stop omakub-status omakub-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -179,6 +180,31 @@ omarchy-automated-status: ## Check Automated Omarchy VM status
 
 omarchy-automated-destroy: ## Destroy Automated Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"102\\\"]"
+
+deploy-vm-omakub-devmachine: proxmox-tf-init ## Deploy Omakub development workstation (VM)
+	@echo "🚀 Deploying Omakub development workstation (Ubuntu + GNOME)..."
+	@echo "📋 Step 1/3: Download Ubuntu Desktop ISO"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omakub-setup.yml --tags iso
+	@echo "📋 Step 2/3: Provisioning VM with Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
+	@echo "📋 Step 3/3: Initial configuration with Ansible"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omakub-setup.yml --tags install
+	@echo "✅ Omakub development workstation deployment complete! Complete Ubuntu + Omakub installation manually."
+
+omakub-start: ## Start Omakub VM
+	@echo "🚀 Starting Omakub VM..."
+	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm start 103" --inventory $(INVENTORY)
+
+omakub-stop: ## Stop Omakub VM
+	@echo "🛑 Stopping Omakub VM..."
+	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm stop 103" --inventory $(INVENTORY)
+
+omakub-status: ## Check Omakub VM status
+	@echo "📊 Checking Omakub VM status..."
+	$(ANSIBLE_EXEC) ansible proxmox -m shell -a "qm status 103 && echo '---' && qm config 103 | grep -E 'cores|memory|balloon|boot'" --inventory $(INVENTORY)
+
+omakub-destroy: ## Destroy Omakub VM with Terraform
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
 
 # Group deployment targets
 deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs

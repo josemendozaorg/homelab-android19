@@ -76,6 +76,23 @@ services:
     agent: true  # Enable QEMU guest agent
     onboot: false  # Don't auto-start on Proxmox boot
 
+  103:
+    name: "omakub-dev"
+    type: "vm"
+    ip: "192.168.0.103"
+    description: "Omakub (Ubuntu 24.04 + GNOME) development workstation - Manual installation via Ubuntu Desktop ISO"
+    iso: "ubuntu-24.04.1-desktop-amd64.iso"
+    resources:
+      cores: 16      # 16 cores for Ubuntu development work
+      memory: 32768  # 32GB RAM for desktop environment + development
+      disk: 100      # 100GB disk for Ubuntu + Omakub tools
+    storage: "vm-storage"
+    boot_order: "ide2;scsi0"
+    bios: "ovmf"  # UEFI boot
+    machine: "q35"  # Modern chipset
+    agent: true  # Enable QEMU guest agent
+    onboot: false  # Don't auto-start on Proxmox boot
+
 # Physical Infrastructure
 physical:
   android16-bastion:
