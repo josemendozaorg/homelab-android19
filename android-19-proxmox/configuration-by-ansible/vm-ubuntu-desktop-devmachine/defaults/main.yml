@@ -1,0 +1,44 @@
+---
+# Ubuntu Desktop Dev Machine role defaults
+# Simple approach: Ubuntu Desktop ISO + post-install automation
+
+# Ubuntu Desktop ISO configuration
+ubuntu_desktop_iso_url: "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso"
+ubuntu_desktop_iso_name: "ubuntu-24.04.1-desktop-amd64.iso"
+
+# Proxmox storage configuration
+iso_storage_path: "/var/lib/vz/template/iso"
+proxmox_iso_storage: "local"
+
+# VM configuration (matches infrastructure-catalog.yml service 103)
+ubuntu_vm:
+  id: 103
+  name: "ubuntu-desktop-dev"
+  ip: "192.168.0.103"
+  storage: "vm-storage"
+
+# VM Resources (from infrastructure-catalog.yml)
+ubuntu_vm_cores: 32       # Full CPU power (AMD Ryzen 9 9950X3D: 32 threads)
+ubuntu_vm_memory: 38912   # 40% of host RAM (~38GB of 92GB available)
+ubuntu_vm_disk_size: 150  # 150GB disk for Ubuntu + development tools
+
+# User Configuration
+dev_user: "dev"
+dev_password: "dev"
+dev_hostname: "ubuntu-desktop-dev"
+
+# Git Configuration
+git_user_name: "Dev User"
+git_user_email: "josephrichard7@gmail.com"
+
+# Network Configuration (static IP as per infrastructure-catalog.yml)
+network_config:
+  interface: "enp0s3"  # Common Ubuntu Desktop interface name
+  ip_address: "192.168.0.103"
+  gateway: "192.168.0.1"
+  dns_servers:
+    - "192.168.0.25"  # AdGuard DNS
+    - "1.1.1.1"       # Cloudflare fallback
+
+# SSH Key Configuration
+ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC1OCW64ttYxGvEw/euqFViKrbgmTUJIC4kJE15xmtl0Y+hkNrVgj3lWlVSPn5NChdOMAtF2ZG4neZAonpQgCaTu5Mv3AGRAagGZvrTGHJouVBjvJYozl5p2Vh0S9g2EJ43j1tFw+zSOrBIa9/3SFaTiyslxGMBQBtFNNk4f++LCx0Z6A+ZfcXHFp4ukxgNPC3msAJ7RDUZelSVCrXrKEf4r7JaIGKqhfUMKtoCCpzFBC5imEYzZQn8dVoi9GEtKKUqk1NuyVIdQG1mIJW2f9FR3Goq4yM1JjcOYdfg20YtGekW8DlU40JjPOP/zodJim69nMajm0VNxA3KgrGz3n7Pwrp+ufS/KLvuGHmRvRsHG/3ai9mlPIVfkYO02WKwSpxEr/QGtCDcszsZoi6Du05EK1t0hgObEqfiHcLKJhscKo5MxEJK/lff0gKfGQvr7CPIcaBHwSXYrzk277+1yStrxKUhmf9NIDau5q0MMa42CaGYeFWnxsbajzdtrvITEjWTeOE2PbldwHnNZg2u0OG2XQfRIUsKXk68apPODHo6FWGHf2OSJIK7H5YLhxRpUhl5UDK6NcqqKxo5Ds0iL4fGvc1LLSac/+UY+ENzTicIHmmJE49vzQIVqjXBc8Yx3/r4jDW+RobWi9AvqU8BNIz2sSyKqOldXmgPvQqn0qXb2w== ubuntu@DESKTOP-L6O6BMA"

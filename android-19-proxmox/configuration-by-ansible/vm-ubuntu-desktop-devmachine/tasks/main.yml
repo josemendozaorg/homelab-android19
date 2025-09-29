@@ -1,0 +1,53 @@
+---
+# Ubuntu Desktop Dev Machine Role
+# Simple approach: Download Ubuntu Desktop ISO + create VM for manual install + setup post-install automation
+
+- name: Display Ubuntu Desktop VM setup
+  ansible.builtin.debug:
+    msg: |
+      🖥️ Ubuntu Desktop Development Machine Setup
+
+      VM Details:
+      - VM ID: {{ ubuntu_vm.id }}
+      - VM Name: {{ ubuntu_vm.name }}
+      - IP Address: {{ ubuntu_vm.ip }}
+      - User: {{ dev_user }}
+
+      Features:
+      - Ubuntu 24.04.1 Desktop installation via ISO
+      - Static IP configuration ({{ ubuntu_vm.ip }})
+      - SSH access with key authentication
+      - {{ ubuntu_vm_cores }} CPU cores, {{ (ubuntu_vm_memory / 1024) | round(1) }}GB RAM
+      - First-login Omakub installation script
+
+      Method: ISO-based installation + post-install automation
+
+- name: Include Ubuntu Desktop ISO download tasks
+  include_tasks: iso-download.yml
+  tags: [iso, download]
+
+- name: Include post-install setup tasks
+  include_tasks: post-install-setup.yml
+  tags: [post-install, setup]
+
+- name: Display installation instructions
+  ansible.builtin.debug:
+    msg: |
+      ✅ Ubuntu Desktop ISO ready for VM installation
+
+      📋 Next Steps:
+      1. Create VM using Terraform (or manually in Proxmox)
+      2. Boot VM from Ubuntu Desktop ISO
+      3. Complete Ubuntu installation manually:
+         - Choose "Something else" for partitioning
+         - Set hostname: {{ dev_hostname }}
+         - Create user: {{ dev_user }} / {{ dev_password }}
+         - Enable "Log in automatically"
+      4. After first boot, run post-install script:
+         - SSH: ssh {{ dev_user }}@{{ ubuntu_vm.ip }}
+         - Or use desktop terminal
+      5. Omakub will install automatically on first GUI login
+
+      📁 ISO Location: {{ iso_storage_path }}/{{ ubuntu_desktop_iso_name }}
+      🎯 Static IP: {{ ubuntu_vm.ip }}
+      🔑 SSH access configured automatically

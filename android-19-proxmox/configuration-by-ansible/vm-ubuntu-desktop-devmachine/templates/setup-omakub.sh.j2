@@ -1,0 +1,48 @@
+#!/bin/bash
+# Omakub Setup Script - First Login Installation
+
+echo "🎯 Setting up Omakub first-login installation..."
+
+# Create Omakub installation script that runs on first GUI login
+cat > ~/.omakub-first-login.sh << 'EOF'
+#!/bin/bash
+# Omakub installation script - runs on first GUI login
+
+OMAKUB_LOG="$HOME/omakub-install.log"
+
+if [ ! -f "$HOME/.omakub-completed" ]; then
+    echo "$(date): Starting Omakub installation on first GUI login" | tee -a "$OMAKUB_LOG"
+
+    # Ensure we're in a GUI session
+    if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        echo "$(date): GUI session detected, proceeding with Omakub installation" | tee -a "$OMAKUB_LOG"
+
+        # Download and run Omakub
+        cd "$HOME"
+        wget -qO- https://omakub.org/install | bash 2>&1 | tee -a "$OMAKUB_LOG"
+
+        # Mark as completed
+        touch "$HOME/.omakub-completed"
+        echo "$(date): Omakub installation completed" | tee -a "$OMAKUB_LOG"
+
+        # Show notification
+        notify-send "Omakub Installation" "Development environment setup complete!" 2>/dev/null || true
+    else
+        echo "$(date): No GUI session detected, skipping Omakub installation" | tee -a "$OMAKUB_LOG"
+    fi
+fi
+EOF
+
+chmod +x ~/.omakub-first-login.sh
+
+# Add to .profile for automatic execution on login
+if ! grep -q ".omakub-first-login.sh" ~/.profile 2>/dev/null; then
+    echo "" >> ~/.profile
+    echo "# Auto-run Omakub installation on first GUI login" >> ~/.profile
+    echo "~/.omakub-first-login.sh &" >> ~/.profile
+fi
+
+echo "✅ Omakub first-login script configured"
+echo "  Script: ~/.omakub-first-login.sh"
+echo "  Log: ~/omakub-install.log"
+echo "  Will run automatically on next GUI login"
