@@ -12,5 +12,14 @@ all:
           ansible_host: 192.168.0.19
           ansible_user: root
           ansible_python_interpreter: /usr/bin/python3
+    development_vms:
+      hosts:
+        omakub-dev:
+          ansible_host: 192.168.0.103
+          ansible_user: dev
+          ansible_python_interpreter: /usr/bin/python3.12
+          vm_id: 103
+          vm_type: omakub
+          description: "Omakub (Ubuntu 24.04 + GNOME) development workstation"
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

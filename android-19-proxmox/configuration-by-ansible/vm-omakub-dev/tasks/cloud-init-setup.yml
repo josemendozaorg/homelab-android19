@@ -49,9 +49,9 @@
           gateway4: {{ network_config.gateway }}
           nameservers:
             addresses:
-{% for dns in network_config.dns_servers %}
+              {% for dns in network_config.dns_servers -%}
               - {{ dns }}
-{% endfor %}
+              {% endfor %}
     dest: "/tmp/cloud-init-omakub-{{ omakub_vm.id }}/network-config"
     mode: '0644'
 

@@ -64,32 +64,56 @@
 
 - name: Import cloud image as VM disk template
   ansible.builtin.shell: |
+    set -e  # Exit on any error
+
     # Check if VM template already exists
     if qm status 9103 2>/dev/null; then
-      echo "Template VM 9103 already exists, skipping import"
-    else
-      echo "Creating template VM 9103 for cloud image import..."
-
-      # Create a minimal VM for template
-      qm create 9103 --name omakub-template --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
-
-      # Import the cloud image as the main disk
-      qm importdisk 9103 "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}" {{ omakub_vm.storage | default('local-lvm') }}
-
-      # Attach the imported disk to the VM
-      qm set 9103 --scsihw virtio-scsi-pci --scsi0 {{ omakub_vm.storage | default('local-lvm') }}:vm-9103-disk-0
-
-      # Add cloud-init drive
-      qm set 9103 --ide2 {{ omakub_vm.storage | default('local-lvm') }}:cloudinit
-
-      # Set boot order
-      qm set 9103 --boot c --bootdisk scsi0
-
-      # Convert to template
-      qm template 9103
-
-      echo "Template VM 9103 created successfully"
+      echo "Template VM 9103 already exists, removing it to recreate..."
+      qm destroy 9103 --skiplock || true
+      sleep 2
     fi
+
+    echo "Creating template VM 9103 for cloud image import..."
+
+    # Create a minimal VM for template with UEFI boot
+    qm create 9103 \
+      --name omakub-template \
+      --memory 2048 \
+      --cores 2 \
+      --net0 virtio,bridge=vmbr0 \
+      --bios ovmf \
+      --machine q35 \
+      --ostype l26
+
+    # Add EFI disk first (raw format for ZFS compatibility)
+    qm set 9103 --efidisk0 {{ omakub_vm.storage | default('vm-storage') }}:1,efitype=4m
+
+    # Import the cloud image as the main disk
+    echo "Importing cloud image disk..."
+    qm importdisk 9103 "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}" {{ omakub_vm.storage | default('vm-storage') }}
+
+    # Find the latest disk (should be vm-9103-disk-1 since EFI is disk-0)
+    MAIN_DISK="{{ omakub_vm.storage | default('vm-storage') }}:vm-9103-disk-1"
+
+    # Attach the imported disk to the VM with proper SCSI controller
+    qm set 9103 --scsihw virtio-scsi-pci --scsi0 "$MAIN_DISK"
+
+    # Add cloud-init drive
+    qm set 9103 --ide2 {{ omakub_vm.storage | default('vm-storage') }}:cloudinit
+
+    # Set boot order to boot from main disk first
+    qm set 9103 --boot order=scsi0
+
+    # Enable qemu guest agent
+    qm set 9103 --agent enabled=1
+
+    echo "Template VM 9103 configuration before templating:"
+    qm config 9103
+
+    # Convert to template
+    qm template 9103
+
+    echo "Template VM 9103 created successfully with UEFI support and proper disk configuration"
   register: cloud_image_import
   when: ubuntu_cloud_image_final_stat.stat.exists
 
@@ -103,12 +127,12 @@
       📁 Location: {{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}
       📊 Size: {{ (ubuntu_cloud_image_final_stat.stat.size / 1024 / 1024) | round(1) }}MB
 
-      {% if ubuntu_cloud_download_result is defined -%}
+      {% if ubuntu_cloud_download_result is defined and ubuntu_cloud_download_result.stdout is defined -%}
       📥 Download results:
       {{ ubuntu_cloud_download_result.stdout }}
       {% endif -%}
 
-      {% if cloud_image_import is defined -%}
+      {% if cloud_image_import is defined and cloud_image_import.stdout is defined -%}
       🔧 Template import status:
       {{ cloud_image_import.stdout }}
       {% endif -%}

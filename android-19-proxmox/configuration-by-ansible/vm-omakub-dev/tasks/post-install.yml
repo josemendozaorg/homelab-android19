@@ -27,8 +27,8 @@
       ansible.builtin.ping:
       delegate_to: "{{ omakub_vm.ip }}"
       vars:
-        ansible_user: "{{ ubuntu_user }}"
-        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_user: "{{ cloud_init_user }}"
+        ansible_ssh_pass: "{{ cloud_init_password }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
       when: omakub_vm_wait_for_network | default(false)
 
@@ -37,8 +37,8 @@
       register: ubuntu_verify
       delegate_to: "{{ omakub_vm.ip }}"
       vars:
-        ansible_user: "{{ ubuntu_user }}"
-        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_user: "{{ cloud_init_user }}"
+        ansible_ssh_pass: "{{ cloud_init_password }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
       when: omakub_vm_wait_for_network | default(false)
 
@@ -48,8 +48,8 @@
       ansible.builtin.setup:
       delegate_to: "{{ omakub_vm.ip }}"
       vars:
-        ansible_user: "{{ ubuntu_user }}"
-        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_user: "{{ cloud_init_user }}"
+        ansible_ssh_pass: "{{ cloud_init_password }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
       register: system_facts
       when: omakub_vm_wait_for_network | default(false)
@@ -65,8 +65,8 @@
       register: omakub_check
       delegate_to: "{{ omakub_vm.ip }}"
       vars:
-        ansible_user: "{{ ubuntu_user }}"
-        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_user: "{{ cloud_init_user }}"
+        ansible_ssh_pass: "{{ cloud_init_password }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
       when: omakub_vm_wait_for_network | default(false)
 
@@ -84,8 +84,8 @@
       register: dev_tools_check
       delegate_to: "{{ omakub_vm.ip }}"
       vars:
-        ansible_user: "{{ ubuntu_user }}"
-        ansible_ssh_pass: "{{ ubuntu_password }}"
+        ansible_user: "{{ cloud_init_user }}"
+        ansible_ssh_pass: "{{ cloud_init_password }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
       when: omakub_vm_wait_for_network | default(false)
 
@@ -97,7 +97,7 @@
       ════════════════════════════════════════════════════════════
 
       📊 SYSTEM INFORMATION:
-      {% if system_facts is defined -%}
+      {% if system_facts is defined and system_facts.ansible_facts is defined -%}
       - Hostname: {{ system_facts.ansible_facts.ansible_hostname }}
       - OS: {{ system_facts.ansible_facts.ansible_distribution }} {{ system_facts.ansible_facts.ansible_distribution_version }}
       - Kernel: {{ system_facts.ansible_facts.ansible_kernel }}
@@ -109,20 +109,20 @@
       {% endif -%}
 
       🔗 CONNECTION INFORMATION:
-      - SSH Access: ssh {{ ubuntu_user }}@{{ omakub_vm.ip }}
-      - Password: {{ ubuntu_password }}
+      - SSH Access: ssh {{ cloud_init_user }}@{{ omakub_vm.ip }}
+      - Password: {{ cloud_init_password }}
       - VM ID: {{ omakub_vm.id }}
       - VM Name: {{ omakub_vm.name }}
 
       📦 OMAKUB STATUS:
-      {% if omakub_check is defined -%}
+      {% if omakub_check is defined and omakub_check.stdout is defined -%}
       {{ omakub_check.stdout }}
       {% else -%}
       - Manual verification required via desktop console
       {% endif -%}
 
       🛠️ DEVELOPMENT TOOLS:
-      {% if dev_tools_check is defined -%}
+      {% if dev_tools_check is defined and dev_tools_check.stdout is defined -%}
       {{ dev_tools_check.stdout }}
       {% else -%}
       - Tool verification available after Omakub installation
@@ -159,7 +159,7 @@
       IP Address: {{ omakub_vm.ip }}
 
       System Information:
-      {% if system_facts is defined -%}
+      {% if system_facts is defined and system_facts.ansible_facts is defined -%}
       - OS: {{ system_facts.ansible_facts.ansible_distribution }} {{ system_facts.ansible_facts.ansible_distribution_version }}
       - Kernel: {{ system_facts.ansible_facts.ansible_kernel }}
       - Memory: {{ (system_facts.ansible_facts.ansible_memtotal_mb / 1024) | round(1) }}GB
@@ -167,11 +167,11 @@
       {% endif -%}
 
       Credentials:
-      - Username: {{ ubuntu_user }}
-      - Password: {{ ubuntu_password }}
+      - Username: {{ cloud_init_user }}
+      - Password: {{ cloud_init_password }}
 
       SSH Access:
-      ssh {{ ubuntu_user }}@{{ omakub_vm.ip }}
+      ssh {{ cloud_init_user }}@{{ omakub_vm.ip }}
 
       Installation Method: Manual Ubuntu + Omakub script
 

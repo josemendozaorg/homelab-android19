@@ -133,6 +133,16 @@ resource "proxmox_virtual_environment_vm" "vms" {
     full = lookup(each.value, "cloud_init", false) ? true : null
   }
 
+  # Disk configuration for cloned VMs (resize cloned disk)
+  dynamic "disk" {
+    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    content {
+      datastore_id = lookup(each.value, "storage", "vm-storage")
+      size         = lookup(each.value.resources, "disk", 150)
+      interface    = "scsi0"
+    }
+  }
+
   # ISO for installation (skip for cloud images)
   dynamic "cdrom" {
     for_each = lookup(each.value, "iso", null) != null ? [1] : []
