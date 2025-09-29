@@ -1,12 +1,11 @@
 ---
 # Omakub Dev VM role defaults
-ubuntu_iso_url: "https://releases.ubuntu.com/24.04/ubuntu-24.04.1-desktop-amd64.iso"
-ubuntu_iso_name: "ubuntu-24.04.1-desktop-amd64.iso"
+ubuntu_cloud_image_url: "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img"
+ubuntu_cloud_image_name: "ubuntu-24.04-server-cloudimg-amd64.img"
 omakub_install_script_url: "https://omakub.org/install"
 
 # Proxmox storage configuration
-iso_storage_path: "/var/lib/vz/template/iso"
-proxmox_iso_storage: "local"  # Storage for ISOs
+cloud_image_storage_path: "/var/lib/vz/template/iso"
 
 # VM configuration (VM provisioned by Terraform)
 omakub_vm:
@@ -14,10 +13,10 @@ omakub_vm:
   name: "omakub-dev"
   ip: "192.168.0.103"
 
-# VM Resources (high-performance configuration)
-omakub_vm_balloon: 32768  # Memory ballooning (32GB RAM)
-omakub_vm_cores: 16       # 16 cores for development work
-omakub_vm_disk_size: 100  # 100GB disk for Ubuntu + development
+# VM Resources (full performance configuration as per requirements)
+omakub_vm_balloon: 39829  # 40% of 92GB host RAM with ballooning
+omakub_vm_cores: 32       # Full CPU power (32 threads)
+omakub_vm_disk_size: 150  # 150GB disk for Ubuntu + Omakub + desktop
 
 # Optional configuration
 omakub_vm_start_on_configure: false  # Start VM during configuration
@@ -27,33 +26,39 @@ omakub_vm_enable_backup: false  # Create backup schedule
 omakub_vm_backup_schedule: "sun 03:00"  # Backup schedule time
 omakub_vm_backup_storage: "local"  # Storage for backups
 
-# User Configuration for Ubuntu/Omakub
-ubuntu_user: "dev"
-ubuntu_password: "dev"
-ubuntu_hostname: "omakub-dev"
-ubuntu_timezone: "UTC"
+# Cloud-init User Configuration
+cloud_init_user: "dev"
+cloud_init_password: "dev"
+cloud_init_hostname: "omakub-dev"
+cloud_init_timezone: "UTC"
 
 # Git Configuration for Omakub
 git_user_name: "Dev User"
 git_user_email: "josephrichard7@gmail.com"
 
-# Installation Configuration (Manual via Ubuntu Desktop ISO)
-omakub_guided_install: true  # Show interactive installation guidance
+# Network Configuration (static IP)
+network_config:
+  interface: "enp6s18"
+  ip_address: "192.168.0.103"
+  netmask: "255.255.255.0"
+  gateway: "192.168.0.1"
+  dns_servers:
+    - "192.168.0.25"  # AdGuard DNS
+    - "1.1.1.1"       # Cloudflare fallback
 
-# Network Configuration
-ubuntu_network_interface: "enp6s18"  # Standard VM interface
-ubuntu_enable_dhcp: true
+# Desktop Configuration for Omakub
+desktop_packages:
+  - "ubuntu-desktop-minimal"
+  - "gnome-shell"
+  - "gdm3"
+  - "firefox"
+  - "software-properties-common"
+  - "curl"
+  - "wget"
+  - "git"
 
-# Desktop Configuration
-ubuntu_desktop_environment: "gnome"  # GNOME desktop (required for Omakub)
-ubuntu_screen_resolution: "1920x1080"  # Default resolution
-ubuntu_scale_factor: 200  # Recommended 200% scaling
-
-# Installation Timeouts
-ubuntu_install_timeout: 2400  # 40 minutes for Ubuntu installation
-omakub_install_timeout: 1800  # 30 minutes for Omakub script
-vm_boot_timeout: 300  # 5 minutes for VM to boot
-
-# SSH Configuration
+# Installation Configuration (Automated via cloud-init)
+cloud_init_wait_for_completion: true
+cloud_init_timeout: 3600  # 60 minutes for full setup
 ssh_wait_timeout: 600  # 10 minutes to wait for SSH
 ssh_retry_interval: 30  # Check SSH every 30 seconds

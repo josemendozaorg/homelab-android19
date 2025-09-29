@@ -1,17 +1,17 @@
 ---
-# Omakub Dev VM Installation (Manual Ubuntu + Omakub)
+# Omakub Dev VM Installation (Automated Ubuntu + Omakub via cloud-init)
 #
-# This provides simple guidance for interactive installation using the official
-# Ubuntu Desktop ISO, followed by automated Omakub setup.
+# This provides fully automated installation using Ubuntu cloud image and cloud-init
+# for headless Ubuntu + Omakub setup without manual intervention.
 
-- name: Include ISO management tasks
-  include_tasks: iso-management.yml
-  tags: [iso, download]
+- name: Include cloud image management tasks
+  include_tasks: cloud-image-management.yml
+  tags: [cloud-init, download]
 
-- name: Include installation guidance tasks
-  include_tasks: installation-guidance.yml
-  tags: [install, guidance]
+- name: Include cloud-init configuration tasks
+  include_tasks: cloud-init-setup.yml
+  tags: [cloud-init, configure]
 
-- name: Include post-installation configuration
+- name: Include post-installation verification
   include_tasks: post-install.yml
-  tags: [post-install, configure]
+  tags: [post-install, verify]

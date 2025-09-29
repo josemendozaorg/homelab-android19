@@ -1,0 +1,135 @@
+---
+# Cloud Image Management for Omakub VM
+
+- name: Display cloud image download status
+  ansible.builtin.debug:
+    msg: |
+      🔧 CLOUD IMAGE MANAGEMENT: Ubuntu Cloud Image Download
+
+      This stage will:
+      1. Download Ubuntu 24.04 cloud image (if not present)
+      2. Verify image integrity
+      3. Prepare image for cloud-init usage
+
+      Image: {{ ubuntu_cloud_image_name }}
+      URL: {{ ubuntu_cloud_image_url }}
+
+- name: Check if Ubuntu cloud image already exists
+  ansible.builtin.stat:
+    path: "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}"
+  register: ubuntu_cloud_image_stat
+
+- name: Download Ubuntu cloud image (background)
+  ansible.builtin.shell: |
+    echo "Starting Ubuntu cloud image download..."
+    nohup wget -c "{{ ubuntu_cloud_image_url }}" \
+      -O "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}.tmp" \
+      > /var/log/ubuntu-cloud-image-download.log 2>&1 && \
+    mv "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}.tmp" \
+      "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}" &
+    echo $! > /var/run/ubuntu-cloud-image-download.pid
+  register: ubuntu_cloud_download_start
+  when: not ubuntu_cloud_image_stat.stat.exists
+
+- name: Wait for Ubuntu cloud image download completion
+  ansible.builtin.shell: |
+    if [ -f /var/run/ubuntu-cloud-image-download.pid ]; then
+      PID=$(cat /var/run/ubuntu-cloud-image-download.pid)
+      if kill -0 $PID 2>/dev/null; then
+        echo "Download still in progress (PID: $PID)"
+        tail -f /var/log/ubuntu-cloud-image-download.log &
+        TAIL_PID=$!
+        while kill -0 $PID 2>/dev/null; do
+          sleep 10
+        done
+        kill $TAIL_PID 2>/dev/null || true
+        rm -f /var/run/ubuntu-cloud-image-download.pid
+      fi
+    fi
+
+    if [ -f "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}" ]; then
+      SIZE=$(du -h "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}" | cut -f1)
+      echo "Download complete: {{ ubuntu_cloud_image_name }} ($SIZE)"
+    else
+      echo "Error: Ubuntu cloud image download failed"
+      exit 1
+    fi
+  register: ubuntu_cloud_download_result
+  when: not ubuntu_cloud_image_stat.stat.exists
+
+- name: Verify Ubuntu cloud image file
+  ansible.builtin.stat:
+    path: "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}"
+  register: ubuntu_cloud_image_final_stat
+
+- name: Import cloud image as VM disk template
+  ansible.builtin.shell: |
+    # Check if VM template already exists
+    if qm status 9103 2>/dev/null; then
+      echo "Template VM 9103 already exists, skipping import"
+    else
+      echo "Creating template VM 9103 for cloud image import..."
+
+      # Create a minimal VM for template
+      qm create 9103 --name omakub-template --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+
+      # Import the cloud image as the main disk
+      qm importdisk 9103 "{{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}" {{ omakub_vm.storage | default('local-lvm') }}
+
+      # Attach the imported disk to the VM
+      qm set 9103 --scsihw virtio-scsi-pci --scsi0 {{ omakub_vm.storage | default('local-lvm') }}:vm-9103-disk-0
+
+      # Add cloud-init drive
+      qm set 9103 --ide2 {{ omakub_vm.storage | default('local-lvm') }}:cloudinit
+
+      # Set boot order
+      qm set 9103 --boot c --bootdisk scsi0
+
+      # Convert to template
+      qm template 9103
+
+      echo "Template VM 9103 created successfully"
+    fi
+  register: cloud_image_import
+  when: ubuntu_cloud_image_final_stat.stat.exists
+
+- name: Display cloud image download results
+  ansible.builtin.debug:
+    msg: |
+      📦 UBUNTU CLOUD IMAGE STATUS:
+
+      {% if ubuntu_cloud_image_final_stat.stat.exists -%}
+      ✅ Ubuntu cloud image ready: {{ ubuntu_cloud_image_name }}
+      📁 Location: {{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}
+      📊 Size: {{ (ubuntu_cloud_image_final_stat.stat.size / 1024 / 1024) | round(1) }}MB
+
+      {% if ubuntu_cloud_download_result is defined -%}
+      📥 Download results:
+      {{ ubuntu_cloud_download_result.stdout }}
+      {% endif -%}
+
+      {% if cloud_image_import is defined -%}
+      🔧 Template import status:
+      {{ cloud_image_import.stdout }}
+      {% endif -%}
+
+      🎯 READY FOR: Cloud-init VM provisioning with Terraform
+      {% else -%}
+      ❌ Ubuntu cloud image not found or download failed
+      📁 Expected location: {{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}
+
+      ⚠️  Please check download logs: /var/log/ubuntu-cloud-image-download.log
+      {% endif -%}
+
+- name: Fail if Ubuntu cloud image not available
+  ansible.builtin.fail:
+    msg: |
+      Ubuntu cloud image download failed or file not accessible.
+
+      Expected: {{ cloud_image_storage_path }}/{{ ubuntu_cloud_image_name }}
+
+      Please check:
+      1. Network connectivity to {{ ubuntu_cloud_image_url }}
+      2. Disk space in {{ cloud_image_storage_path }}
+      3. Download logs: /var/log/ubuntu-cloud-image-download.log
+  when: not ubuntu_cloud_image_final_stat.stat.exists

@@ -1,0 +1,133 @@
+#cloud-config
+# Cloud-init configuration for Omakub Development VM
+# Fully automated Ubuntu 24.04 + Omakub setup
+
+# Hostname and timezone
+hostname: {{ cloud_init_hostname }}
+timezone: {{ cloud_init_timezone }}
+
+# User configuration
+users:
+  - name: {{ cloud_init_user }}
+    plain_text_passwd: {{ cloud_init_password }}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [sudo, adm, cdrom, dip, plugdev, lpadmin, sambashare]
+    shell: /bin/bash
+    lock_passwd: false
+    ssh_authorized_keys: []
+
+# SSH configuration
+ssh_pwauth: true
+disable_root: true
+
+# Package updates and installation
+package_update: true
+package_upgrade: true
+
+# Install required packages for Ubuntu desktop and Omakub
+packages:
+{% for package in desktop_packages %}
+  - {{ package }}
+{% endfor %}
+
+# Network configuration (static IP)
+write_files:
+  - path: /etc/netplan/01-netcfg.yaml
+    content: |
+      network:
+        version: 2
+        renderer: networkd
+        ethernets:
+          {{ network_config.interface }}:
+            addresses:
+              - {{ network_config.ip_address }}/24
+            gateway4: {{ network_config.gateway }}
+            nameservers:
+              addresses:
+{% for dns in network_config.dns_servers %}
+                - {{ dns }}
+{% endfor %}
+    permissions: '0644'
+
+  - path: /home/{{ cloud_init_user }}/install-omakub.sh
+    content: |
+      #!/bin/bash
+      set -e
+
+      echo "=== Omakub Installation Script ===" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+      echo "Starting at: $(date)" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+
+      # Wait for desktop session to be available
+      echo "Waiting for GNOME desktop to be ready..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+      sleep 60
+
+      # Configure git before Omakub installation
+      echo "Configuring git..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+      git config --global user.name "{{ git_user_name }}"
+      git config --global user.email "{{ git_user_email }}"
+
+      # Download and run Omakub installation script
+      echo "Downloading Omakub installation script..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+      cd /home/{{ cloud_init_user }}
+
+      # Set environment for headless installation
+      export DEBIAN_FRONTEND=noninteractive
+      export OMAKUB_FIRST_RUN_COMPLETE=true
+
+      # Download and run Omakub with automatic yes responses
+      echo "Running Omakub installation (headless mode)..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+      wget -qO- {{ omakub_install_script_url }} | bash 2>&1 | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+
+      echo "Omakub installation completed at: $(date)" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+
+      # Change ownership of installation log
+      chown {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}/omakub-install.log
+
+      echo "=== Omakub Installation Complete ===" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
+    permissions: '0755'
+    owner: '{{ cloud_init_user }}:{{ cloud_init_user }}'
+
+# Run commands during cloud-init
+runcmd:
+  # Apply network configuration
+  - netplan apply
+
+  # Enable and start display manager for desktop
+  - systemctl enable gdm3
+  - systemctl set-default graphical.target
+
+  # Wait for network to be fully ready
+  - sleep 30
+
+  # Run Omakub installation as the user (in background to avoid cloud-init timeout)
+  - sudo -u {{ cloud_init_user }} nohup /home/{{ cloud_init_user }}/install-omakub.sh > /home/{{ cloud_init_user }}/omakub-install.log 2>&1 &
+
+# Final message
+final_message: |
+  Cloud-init setup complete for Omakub development VM!
+
+  VM Details:
+  - Hostname: {{ cloud_init_hostname }}
+  - User: {{ cloud_init_user }}
+  - IP: {{ network_config.ip_address }}
+
+  Omakub installation is running in the background.
+  Check /home/{{ cloud_init_user }}/omakub-install.log for progress.
+
+  SSH Access: ssh {{ cloud_init_user }}@{{ network_config.ip_address }}
+  Desktop: Access via Proxmox console or VNC
+
+  System ready for development work!
+
+# Set system locale
+locale: en_US.UTF-8
+
+# Set keyboard layout
+keyboard:
+  layout: us
+
+# Power state after completion
+power_state:
+  mode: reboot
+  delay: 60
+  message: "Rebooting after cloud-init setup completion"

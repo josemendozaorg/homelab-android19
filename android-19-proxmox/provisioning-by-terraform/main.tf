@@ -115,11 +115,22 @@ resource "proxmox_virtual_environment_vm" "vms" {
     floating  = lookup(each.value.resources, "memory", 4096)  # Enable balloon memory
   }
 
-  # Primary disk
-  disk {
-    datastore_id = lookup(each.value, "storage", "local")
-    size         = lookup(each.value.resources, "disk", 32)
-    interface    = "scsi0"
+  # Primary disk - clone from template for cloud-init VMs, blank disk for ISO VMs
+  dynamic "disk" {
+    for_each = lookup(each.value, "cloud_init", false) ? [] : [1]
+    content {
+      datastore_id = lookup(each.value, "storage", "local")
+      size         = lookup(each.value.resources, "disk", 32)
+      interface    = "scsi0"
+    }
+  }
+
+  # Clone configuration for cloud-init VMs
+  clone {
+    vm_id = lookup(each.value, "cloud_init", false) ? (
+      each.value.name == "omakub-dev" ? 9103 : 9102  # Template VM IDs
+    ) : null
+    full = lookup(each.value, "cloud_init", false) ? true : null
   }
 
   # ISO for installation (skip for cloud images)

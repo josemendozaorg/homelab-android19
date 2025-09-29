@@ -1,0 +1,165 @@
+---
+# Cloud-init Setup for Omakub VM
+
+- name: Display cloud-init setup status
+  ansible.builtin.debug:
+    msg: |
+      🔧 CLOUD-INIT SETUP: Automated Ubuntu + Omakub Configuration
+
+      This stage will:
+      1. Generate cloud-init user-data configuration
+      2. Create cloud-init ISO for VM provisioning
+      3. Verify cloud-init configuration integrity
+
+      VM Details:
+      - VM ID: {{ omakub_vm.id }}
+      - VM Name: {{ omakub_vm.name }}
+      - IP Address: {{ omakub_vm.ip }}
+      - User: {{ cloud_init_user }}
+
+- name: Create cloud-init directory for Omakub VM
+  ansible.builtin.file:
+    path: "/tmp/cloud-init-omakub-{{ omakub_vm.id }}"
+    state: directory
+    mode: '0755'
+
+- name: Generate cloud-init user-data configuration
+  ansible.builtin.template:
+    src: cloud-init-user-data.yml.j2
+    dest: "/tmp/cloud-init-omakub-{{ omakub_vm.id }}/user-data"
+    mode: '0644'
+  register: cloud_init_user_data
+
+- name: Create cloud-init meta-data configuration
+  ansible.builtin.copy:
+    content: |
+      instance-id: omakub-vm-{{ omakub_vm.id }}
+      local-hostname: {{ cloud_init_hostname }}
+    dest: "/tmp/cloud-init-omakub-{{ omakub_vm.id }}/meta-data"
+    mode: '0644'
+
+- name: Generate cloud-init network configuration
+  ansible.builtin.copy:
+    content: |
+      version: 2
+      ethernets:
+        {{ network_config.interface }}:
+          addresses:
+            - {{ network_config.ip_address }}/24
+          gateway4: {{ network_config.gateway }}
+          nameservers:
+            addresses:
+{% for dns in network_config.dns_servers %}
+              - {{ dns }}
+{% endfor %}
+    dest: "/tmp/cloud-init-omakub-{{ omakub_vm.id }}/network-config"
+    mode: '0644'
+
+- name: Generate checksum of cloud-init configuration files
+  ansible.builtin.shell: |
+    cd "/tmp/cloud-init-omakub-{{ omakub_vm.id }}"
+    # Create checksum of all configuration files to detect changes
+    cat user-data meta-data network-config | sha256sum | cut -d' ' -f1
+  register: cloud_init_config_checksum
+
+- name: Check if existing ISO matches current configuration
+  ansible.builtin.shell: |
+    ISO_PATH="{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso"
+    CHECKSUM_FILE="{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.checksum"
+
+    if [ -f "$ISO_PATH" ] && [ -f "$CHECKSUM_FILE" ]; then
+      STORED_CHECKSUM=$(cat "$CHECKSUM_FILE")
+      CURRENT_CHECKSUM="{{ cloud_init_config_checksum.stdout }}"
+
+      if [ "$STORED_CHECKSUM" = "$CURRENT_CHECKSUM" ]; then
+        echo "ISO_CURRENT"
+      else
+        echo "ISO_OUTDATED"
+      fi
+    else
+      echo "ISO_MISSING"
+    fi
+  register: cloud_init_iso_status
+
+- name: Create cloud-init ISO image (only if changed or missing)
+  ansible.builtin.shell: |
+    cd "/tmp/cloud-init-omakub-{{ omakub_vm.id }}"
+
+    echo "Configuration changed - rebuilding cloud-init ISO..."
+
+    # Remove old ISO if it exists
+    rm -f "{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso"
+
+    # Create cloud-init ISO using genisoimage (compatible with cloud-init)
+    genisoimage -output "cloud-init-omakub-{{ omakub_vm.id }}.iso" \
+                -volid cidata \
+                -joliet \
+                -rock \
+                user-data meta-data network-config
+
+    # Move to Proxmox ISO storage
+    mv "cloud-init-omakub-{{ omakub_vm.id }}.iso" "{{ cloud_image_storage_path }}/"
+
+    # Store checksum for future comparisons
+    echo "{{ cloud_init_config_checksum.stdout }}" > "{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.checksum"
+
+    # Verify ISO was created successfully
+    if [ -f "{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso" ]; then
+      SIZE=$(du -h "{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso" | cut -f1)
+      echo "Cloud-init ISO rebuilt: cloud-init-omakub-{{ omakub_vm.id }}.iso ($SIZE)"
+    else
+      echo "Error: Failed to create cloud-init ISO"
+      exit 1
+    fi
+  register: cloud_init_iso_creation
+  when: cloud_init_iso_status.stdout != "ISO_CURRENT"
+
+- name: Display ISO status (unchanged)
+  ansible.builtin.debug:
+    msg: |
+      ✅ Cloud-init ISO already up-to-date
+      📁 Location: {{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso
+      🔍 Checksum: {{ cloud_init_config_checksum.stdout[:16] }}...
+      ⏭️  Skipping rebuild - no configuration changes detected
+  when: cloud_init_iso_status.stdout == "ISO_CURRENT"
+
+- name: Verify cloud-init configuration
+  ansible.builtin.shell: |
+    echo "=== Cloud-init Configuration Verification ==="
+    echo "User-data size: $(wc -l < /tmp/cloud-init-omakub-{{ omakub_vm.id }}/user-data) lines"
+    echo "Meta-data content:"
+    cat "/tmp/cloud-init-omakub-{{ omakub_vm.id }}/meta-data"
+    echo
+    echo "Network config summary:"
+    grep -E "(addresses|gateway4|nameservers)" "/tmp/cloud-init-omakub-{{ omakub_vm.id }}/network-config" || true
+    echo
+    echo "ISO file location: {{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso"
+    ls -lh "{{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso"
+  register: cloud_init_verification
+
+- name: Display cloud-init setup results
+  ansible.builtin.debug:
+    msg: |
+      📦 CLOUD-INIT CONFIGURATION COMPLETE:
+
+      ✅ Cloud-init ISO created: cloud-init-omakub-{{ omakub_vm.id }}.iso
+      📁 Location: {{ cloud_image_storage_path }}/cloud-init-omakub-{{ omakub_vm.id }}.iso
+
+      🔧 Configuration Details:
+      {{ cloud_init_verification.stdout }}
+
+      🎯 AUTOMATED FEATURES CONFIGURED:
+      - Headless Ubuntu 24.04 installation
+      - Static IP configuration ({{ network_config.ip_address }})
+      - User account: {{ cloud_init_user }}/{{ cloud_init_password }}
+      - GNOME desktop environment
+      - Git configuration ({{ git_user_email }})
+      - Automatic Omakub installation script
+      - Background Omakub setup after first boot
+
+      ⚡ READY FOR: Terraform VM provisioning with cloud-init
+
+- name: Clean up temporary cloud-init directory
+  ansible.builtin.file:
+    path: "/tmp/cloud-init-omakub-{{ omakub_vm.id }}"
+    state: absent
