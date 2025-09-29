@@ -1,7 +1,0 @@
----
-- name: Ubuntu Desktop Dev Machine Setup
-  hosts: proxmox
-  gather_facts: yes
-
-  roles:
-    - role: configuration-by-ansible/vm-ubuntu-desktop-devmachine

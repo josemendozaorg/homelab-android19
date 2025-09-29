@@ -22,8 +22,7 @@ INVENTORY := inventory.yml
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         omarchy-start omarchy-stop omarchy-status \
         deploy-vm-omarchy-devmachine-automated omarchy-automated-start omarchy-automated-stop omarchy-automated-status omarchy-automated-destroy \
-        deploy-vm-ubuntu-desktop-devmachine deploy-vm-omakub-devmachine omakub-start omakub-stop omakub-status omakub-destroy \
-        omakub-ssh-test omakub-ansible-test omakub-ssh-shell omakub-info \
+        deploy-vm-ubuntu-desktop-devmachine \
         all-deploy all-ping
 
 # Help target with color output
@@ -49,8 +48,8 @@ help: ## Show available commands
 	@echo "Omarchy Dev VM (omarchy-*):"
 	@$(MAKE) -s help-section SECTION="Omarchy"
 	@echo ""
-	@echo "Omakub Dev VM (omakub-*):"
-	@$(MAKE) -s help-section SECTION="Omakub"
+	@echo "Ubuntu Desktop Dev VM:"
+	@$(MAKE) -s help-section SECTION="Ubuntu Desktop"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -185,65 +184,16 @@ omarchy-automated-status: ## Check Automated Omarchy VM status
 omarchy-automated-destroy: ## Destroy Automated Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"102\\\"]"
 
-# Omakub
+# Ubuntu Desktop
 deploy-vm-ubuntu-desktop-devmachine: ## Deploy Ubuntu Desktop development workstation (manual install + automation)
 	@echo "🖥️ Preparing Ubuntu Desktop development workstation..."
-	@echo "📋 Step 1/2: Download Ubuntu Desktop ISO and create post-install scripts"
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/ubuntu-desktop-setup.yml
-	@echo "📋 Step 2/2: Manual steps required:"
-	@echo "  1. Create VM in Proxmox with Ubuntu Desktop ISO"
-	@echo "  2. Install Ubuntu Desktop with user 'dev' / password 'dev'"
-	@echo "  3. Run post-install script: wget http://192.168.0.19:8080/ubuntu-post-install/ubuntu-post-install.sh && bash ubuntu-post-install.sh"
-	@echo "  4. Reboot and login - Omakub will install automatically"
-	@echo "✅ Ubuntu Desktop ISO and automation scripts ready!"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/ubuntu-desktop-dev-setup.yml
 
 # Legacy omakub command - redirect to new approach
 deploy-vm-omakub-devmachine: deploy-vm-ubuntu-desktop-devmachine ## Deploy development workstation (redirects to Ubuntu Desktop approach)
 
-omakub-start: ## Start Omakub VM
-	@echo "🚀 Starting Omakub VM..."
-	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm start 103" --inventory $(INVENTORY)
-
-omakub-stop: ## Stop Omakub VM
-	@echo "🛑 Stopping Omakub VM..."
-	$(ANSIBLE_EXEC) ansible proxmox -m command -a "qm stop 103" --inventory $(INVENTORY)
-
-omakub-status: ## Check Omakub VM status
-	@echo "📊 Checking Omakub VM status..."
-	$(ANSIBLE_EXEC) ansible proxmox -m shell -a "qm status 103 && echo '---' && qm config 103 | grep -E 'cores|memory|balloon|boot'" --inventory $(INVENTORY)
-
-omakub-destroy: ## Destroy Omakub VM with Terraform
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
-
-omakub-ssh-test: ## Test SSH connectivity to Omakub VM (both key and password auth)
-	@echo "🔑 Testing SSH key authentication..."
-	$(ANSIBLE_EXEC) ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 dev@192.168.0.103 'echo "✅ SSH key auth: SUCCESS" && whoami'
-	@echo "🔐 Testing SSH password authentication..."
-	$(ANSIBLE_EXEC) sshpass -p 'dev' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 dev@192.168.0.103 'echo "✅ SSH password auth: SUCCESS" && whoami'
-
-omakub-ansible-test: ## Test Ansible connectivity to Omakub VM
-	@echo "🤖 Testing Ansible connectivity to Omakub VM..."
-	$(ANSIBLE_EXEC) ansible development_vms -m ping --inventory $(INVENTORY)
-	$(ANSIBLE_EXEC) ansible omakub-dev -m shell -a 'uname -a && echo "Ansible management working!"' --inventory $(INVENTORY)
-
-omakub-ssh-shell: ## Open interactive SSH shell to Omakub VM
-	@echo "🐚 Opening SSH shell to Omakub VM (dev@192.168.0.103)..."
-	$(ANSIBLE_INTERACTIVE) ssh -o StrictHostKeyChecking=no dev@192.168.0.103
-
-omakub-info: ## Display Omakub VM connection information
-	@echo "📊 OMAKUB VM CONNECTION INFORMATION"
-	@echo "=================================="
-	@echo "SSH Key Auth:      ssh dev@192.168.0.103"
-	@echo "SSH Password Auth: sshpass -p 'dev' ssh dev@192.168.0.103"
-	@echo "Ansible Group:     development_vms"
-	@echo "Ansible Host:      omakub-dev"
-	@echo "VM ID:             103"
-	@echo "IP Address:        192.168.0.103"
-	@echo ""
-	@echo "Test commands:"
-	@echo "  make omakub-ssh-test     # Test SSH authentication"
-	@echo "  make omakub-ansible-test # Test Ansible connectivity"
-	@echo "  make omakub-ssh-shell    # Open SSH shell"
+# Ubuntu Desktop VM commands have been simplified - only deployment command needed
+# After deployment, use standard SSH and Proxmox console for VM management
 
 # Group deployment targets
 deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs
