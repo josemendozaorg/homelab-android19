@@ -41,40 +41,6 @@ services:
       disk: 8
     storage: "vm-storage"
 
-  101:
-    name: "omarchy-dev"
-    type: "vm"
-    ip: "192.168.0.101"
-    description: "Omarchy (Arch Linux + Hyprland) development workstation - Manual installation via Omarchy ISO"
-    iso: "omarchy-3.0.1.iso"
-    resources:
-      cores: 32      # Full CPU power (AMD Ryzen 9 9950X3D: 16 cores + SMT = 32 threads)
-      memory: 38912  # 40% of host RAM (~38GB of 92GB available)
-      disk: 200      # 200GB disk for development work and projects
-    storage: "vm-storage"
-    boot_order: "scsi0"
-    bios: "ovmf"  # UEFI boot
-    machine: "q35"  # Modern chipset
-    agent: true  # Enable QEMU guest agent
-    onboot: false  # Don't auto-start on Proxmox boot
-
-  102:
-    name: "omarchy-dev-automated"
-    type: "vm"
-    ip: "192.168.0.102"
-    description: "Omarchy (Arch Linux + Hyprland) development workstation - Fully automated cloud-init installation"
-    cloud_image: "Arch-Linux-x86_64-cloudimg.qcow2"
-    cloud_init: true
-    resources:
-      cores: 32      # Full CPU power (AMD Ryzen 9 9950X3D: 16 cores + SMT = 32 threads)
-      memory: 38912  # 40% of host RAM (~38GB of 92GB available)
-      disk: 200      # 200GB disk for development work and projects
-    storage: "vm-storage"
-    boot_order: "scsi0"
-    bios: "ovmf"  # UEFI boot
-    machine: "q35"  # Modern chipset
-    agent: true  # Enable QEMU guest agent
-    onboot: false  # Don't auto-start on Proxmox boot
 
 
 # Physical Infrastructure

@@ -37,8 +37,8 @@ proxmox_ct_templates:
     url: "http://download.proxmox.com/images/system/debian-12-standard_12.12-1_amd64.tar.zst"
     storage: "local"
 
-# VM Templates/ISOs (minimal set - Omarchy ISO managed separately)
-proxmox_vm_isos: []  # Omarchy ISO is downloaded separately via vm-omarchy-dev role
+# VM Templates/ISOs
+proxmox_vm_isos: []  # ISOs managed by specific VM roles
 
 # API Configuration
 proxmox_api:

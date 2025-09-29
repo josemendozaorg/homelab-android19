@@ -1,7 +1,0 @@
----
-- name: Omarchy Dev VM Setup
-  hosts: proxmox
-  gather_facts: no
-
-  roles:
-    - role: configuration-by-ansible/vm-omarchy-dev
