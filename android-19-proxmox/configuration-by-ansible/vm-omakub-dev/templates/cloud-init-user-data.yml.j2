@@ -1,10 +1,13 @@
 #cloud-config
-# Cloud-init configuration for Omakub Development VM
-# Fully automated Ubuntu 24.04 + Omakub setup
+# Simplified Omakub Development VM - Fully Automated Ubuntu 24.04 + Omakub
+# This cloud-init configuration handles the complete setup automatically
 
-# Hostname and timezone
+# System configuration
 hostname: {{ cloud_init_hostname }}
 timezone: {{ cloud_init_timezone }}
+locale: en_US.UTF-8
+keyboard:
+  layout: us
 
 # User configuration
 users:
@@ -23,24 +26,21 @@ disable_root: true
 chpasswd:
   expire: false
 
-# Package updates and installation
+# Package management
 package_update: true
 package_upgrade: true
-
-# Install required packages for Ubuntu desktop and Omakub
 packages:
-{% for package in desktop_packages %}
-  - {{ package }}
-{% endfor %}
+  - curl
+  - wget
+  - git
+  - software-properties-common
+  - ubuntu-desktop-minimal
+  - gnome-shell
+  - gdm3
+  - firefox
 
-# Network configuration and SSH setup
+# Network configuration (static IP)
 write_files:
-  - path: /etc/ssh/sshd_config.d/50-cloud-init.conf
-    content: |
-      PasswordAuthentication yes
-      PubkeyAuthentication yes
-      AuthenticationMethods password publickey
-    permissions: '0644'
   - path: /etc/netplan/01-netcfg.yaml
     content: |
       network:
@@ -58,88 +58,76 @@ write_files:
 {% endfor %}
     permissions: '0644'
 
-  - path: /home/{{ cloud_init_user }}/install-omakub.sh
+  - path: /etc/ssh/sshd_config.d/50-cloud-init.conf
     content: |
-      #!/bin/bash
-      set -e
+      PasswordAuthentication yes
+      PubkeyAuthentication yes
+    permissions: '0644'
 
-      echo "=== Omakub Installation Script ===" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-      echo "Starting at: $(date)" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-
-      # Wait for desktop session to be available
-      echo "Waiting for GNOME desktop to be ready..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-      sleep 60
-
-      # Configure git before Omakub installation
-      echo "Configuring git..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-      git config --global user.name "{{ git_user_name }}"
-      git config --global user.email "{{ git_user_email }}"
-
-      # Download and run Omakub installation script
-      echo "Downloading Omakub installation script..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-      cd /home/{{ cloud_init_user }}
-
-      # Set environment for headless installation
-      export DEBIAN_FRONTEND=noninteractive
-      export OMAKUB_FIRST_RUN_COMPLETE=true
-
-      # Download and run Omakub with automatic yes responses
-      echo "Running Omakub installation (headless mode)..." | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-      wget -qO- {{ omakub_install_script_url }} | bash 2>&1 | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-
-      echo "Omakub installation completed at: $(date)" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-
-      # Change ownership of installation log
-      chown {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}/omakub-install.log
-
-      echo "=== Omakub Installation Complete ===" | tee -a /home/{{ cloud_init_user }}/omakub-install.log
-    permissions: '0755'
-    owner: '{{ cloud_init_user }}:{{ cloud_init_user }}'
-
-# Run commands during cloud-init
+# Complete automated setup
 runcmd:
   # Apply network configuration
   - netplan apply
-
-  # Restart SSH service to apply new configuration
   - systemctl restart ssh
 
-  # Enable and start display manager for desktop
+  # Configure desktop environment
   - systemctl enable gdm3
   - systemctl set-default graphical.target
 
-  # Wait for network to be fully ready
-  - sleep 30
+  # Configure git globally
+  - sudo -u {{ cloud_init_user }} git config --global user.name "{{ git_user_name }}"
+  - sudo -u {{ cloud_init_user }} git config --global user.email "{{ git_user_email }}"
 
-  # Run Omakub installation as the user (in background to avoid cloud-init timeout)
-  - sudo -u {{ cloud_init_user }} nohup /home/{{ cloud_init_user }}/install-omakub.sh > /home/{{ cloud_init_user }}/omakub-install.log 2>&1 &
+  # Install Omakub automatically (runs in user session after desktop is ready)
+  - |
+    cat > /home/{{ cloud_init_user }}/install-omakub.sh << 'EOF'
+    #!/bin/bash
+    set -e
+    echo "$(date): Starting Omakub installation" | tee -a /home/{{ cloud_init_user }}/omakub.log
+    export DEBIAN_FRONTEND=noninteractive
+    cd /home/{{ cloud_init_user }}
+    wget -qO- https://omakub.org/install | bash 2>&1 | tee -a /home/{{ cloud_init_user }}/omakub.log
+    echo "$(date): Omakub installation complete" | tee -a /home/{{ cloud_init_user }}/omakub.log
+    EOF
+
+  - chmod +x /home/{{ cloud_init_user }}/install-omakub.sh
+  - chown {{ cloud_init_user }}:{{ cloud_init_user }} /home/{{ cloud_init_user }}/install-omakub.sh
+
+  # Create systemd service to run Omakub installation after desktop starts
+  - |
+    cat > /etc/systemd/system/omakub-install.service << 'EOF'
+    [Unit]
+    Description=Omakub Installation Service
+    After=graphical-session.target
+    Wants=graphical-session.target
+
+    [Service]
+    Type=oneshot
+    User={{ cloud_init_user }}
+    Group={{ cloud_init_user }}
+    WorkingDirectory=/home/{{ cloud_init_user }}
+    ExecStart=/home/{{ cloud_init_user }}/install-omakub.sh
+    StandardOutput=append:/home/{{ cloud_init_user }}/omakub.log
+    StandardError=append:/home/{{ cloud_init_user }}/omakub.log
+
+    [Install]
+    WantedBy=graphical.target
+    EOF
+
+  - systemctl enable omakub-install.service
 
 # Final message
 final_message: |
-  Cloud-init setup complete for Omakub development VM!
+  🎉 Omakub Development VM Setup Complete!
 
-  VM Details:
-  - Hostname: {{ cloud_init_hostname }}
-  - User: {{ cloud_init_user }}
-  - IP: {{ network_config.ip_address }}
+  Connection: ssh {{ cloud_init_user }}@{{ network_config.ip_address }}
+  Password: {{ cloud_init_password }}
 
-  Omakub installation is running in the background.
-  Check /home/{{ cloud_init_user }}/omakub-install.log for progress.
+  Omakub will install automatically after first desktop login.
+  Check ~/omakub.log for installation progress.
 
-  SSH Access: ssh {{ cloud_init_user }}@{{ network_config.ip_address }}
-  Desktop: Access via Proxmox console or VNC
-
-  System ready for development work!
-
-# Set system locale
-locale: en_US.UTF-8
-
-# Set keyboard layout
-keyboard:
-  layout: us
-
-# Power state after completion
+# Reboot to apply all changes
 power_state:
   mode: reboot
-  delay: 60
-  message: "Rebooting after cloud-init setup completion"
+  delay: 30
+  message: "Rebooting to complete setup"
