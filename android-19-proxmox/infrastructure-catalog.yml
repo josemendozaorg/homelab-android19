@@ -76,23 +76,6 @@ services:
     agent: true  # Enable QEMU guest agent
     onboot: false  # Don't auto-start on Proxmox boot
 
-  103:
-    name: "omakub-dev"
-    type: "vm"
-    ip: "192.168.0.103"
-    description: "Omakub (Ubuntu 24.04 + GNOME) development workstation - Fully automated cloud-init installation"
-    cloud_image: "ubuntu-24.04-server-cloudimg-amd64.img"
-    cloud_init: true
-    resources:
-      cores: 32      # Full CPU power (AMD Ryzen 9 9950X3D: 16 cores + SMT = 32 threads)
-      memory: 38912  # 40% of host RAM (~38GB of 92GB available)
-      disk: 150      # 150GB disk for Ubuntu + Omakub + desktop environment
-    storage: "vm-storage"
-    boot_order: "scsi0"
-    bios: "ovmf"  # UEFI boot
-    machine: "q35"  # Modern chipset
-    agent: true  # Enable QEMU guest agent
-    onboot: false  # Don't auto-start on Proxmox boot
 
 # Physical Infrastructure
 physical:

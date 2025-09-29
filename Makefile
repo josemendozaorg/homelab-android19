@@ -22,7 +22,6 @@ INVENTORY := inventory.yml
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         omarchy-start omarchy-stop omarchy-status \
         deploy-vm-omarchy-devmachine-automated omarchy-automated-start omarchy-automated-stop omarchy-automated-status omarchy-automated-destroy \
-        deploy-vm-ubuntu-desktop-devmachine \
         all-deploy all-ping
 
 # Help target with color output
@@ -47,9 +46,6 @@ help: ## Show available commands
 	@echo ""
 	@echo "Omarchy Dev VM (omarchy-*):"
 	@$(MAKE) -s help-section SECTION="Omarchy"
-	@echo ""
-	@echo "Ubuntu Desktop Dev VM:"
-	@$(MAKE) -s help-section SECTION="Ubuntu Desktop"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -184,16 +180,6 @@ omarchy-automated-status: ## Check Automated Omarchy VM status
 omarchy-automated-destroy: ## Destroy Automated Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"102\\\"]"
 
-# Ubuntu Desktop
-deploy-vm-ubuntu-desktop-devmachine: ## Deploy Ubuntu Desktop development workstation (manual install + automation)
-	@echo "🖥️ Preparing Ubuntu Desktop development workstation..."
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/ubuntu-desktop-dev-setup.yml
-
-# Legacy omakub command - redirect to new approach
-deploy-vm-omakub-devmachine: deploy-vm-ubuntu-desktop-devmachine ## Deploy development workstation (redirects to Ubuntu Desktop approach)
-
-# Ubuntu Desktop VM commands have been simplified - only deployment command needed
-# After deployment, use standard SSH and Proxmox console for VM management
 
 # Group deployment targets
 deploy-proxmox-all: deploy-lxc-adguard-dns ## Deploy all Proxmox VMs and LXCs

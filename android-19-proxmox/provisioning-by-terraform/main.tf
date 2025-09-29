@@ -127,9 +127,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
 
   # Clone configuration for cloud-init VMs
   clone {
-    vm_id = lookup(each.value, "cloud_init", false) ? (
-      each.value.name == "omakub-dev" ? 9103 : 9102  # Template VM IDs
-    ) : null
+    vm_id = lookup(each.value, "cloud_init", false) ? 9102 : null  # Template VM ID for Omarchy
     full = lookup(each.value, "cloud_init", false) ? true : null
   }
 
