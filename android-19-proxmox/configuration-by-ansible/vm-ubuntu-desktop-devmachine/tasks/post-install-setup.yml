@@ -19,30 +19,6 @@
     state: directory
     mode: '0755'
 
-- name: Generate network configuration script
-  ansible.builtin.template:
-    src: setup-network.sh.j2
-    dest: "{{ iso_storage_path }}/ubuntu-post-install/setup-network.sh"
-    mode: '0755'
-
-- name: Generate SSH setup script
-  ansible.builtin.template:
-    src: setup-ssh.sh.j2
-    dest: "{{ iso_storage_path }}/ubuntu-post-install/setup-ssh.sh"
-    mode: '0755'
-
-- name: Generate Omakub installation script
-  ansible.builtin.template:
-    src: setup-omakub.sh.j2
-    dest: "{{ iso_storage_path }}/ubuntu-post-install/setup-omakub.sh"
-    mode: '0755'
-
-- name: Generate user configuration script
-  ansible.builtin.template:
-    src: setup-user.sh.j2
-    dest: "{{ iso_storage_path }}/ubuntu-post-install/setup-user.sh"
-    mode: '0755'
-
 - name: Generate master setup script
   ansible.builtin.template:
     src: ubuntu-post-install.sh.j2
@@ -52,19 +28,19 @@
 - name: Display post-install scripts status
   ansible.builtin.debug:
     msg: |
-      ✅ Post-install scripts created successfully
+      ✅ Post-install script created successfully
 
       📁 Location: {{ iso_storage_path }}/ubuntu-post-install/
-      📄 Scripts created:
-        - ubuntu-post-install.sh (master script)
-        - setup-network.sh (static IP configuration)
-        - setup-ssh.sh (SSH key setup)
-        - setup-user.sh (git config, user setup)
-        - setup-omakub.sh (Omakub installation on first login)
+      📄 Script created:
+        - ubuntu-post-install.sh (complete automation script)
 
       🎯 Usage after Ubuntu installation:
       1. SSH to VM: ssh {{ dev_user }}@{{ ubuntu_vm.ip }}
-      2. Copy and run: wget http://192.168.0.19:8080/ubuntu-post-install.sh && bash ubuntu-post-install.sh
+      2. Copy and run: wget http://192.168.0.19:8080/ubuntu-post-install/ubuntu-post-install.sh && bash ubuntu-post-install.sh
       3. Or manually copy from {{ iso_storage_path }}/ubuntu-post-install/
 
-      🚀 This will configure everything automatically!
+      🚀 This will configure everything automatically:
+      - Static IP configuration ({{ network_config.ip_address }})
+      - SSH key authentication
+      - Git configuration
+      - Omakub installation on first GUI login
