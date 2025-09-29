@@ -22,7 +22,7 @@ INVENTORY := inventory.yml
         omarchy-iso-setup omarchy-tf-plan omarchy-tf-apply omarchy-configure omarchy-full-deploy omarchy-destroy \
         omarchy-start omarchy-stop omarchy-status \
         deploy-vm-omarchy-devmachine-automated omarchy-automated-start omarchy-automated-stop omarchy-automated-status omarchy-automated-destroy \
-        deploy-vm-omakub-devmachine omakub-start omakub-stop omakub-status omakub-destroy \
+        deploy-vm-ubuntu-desktop-devmachine deploy-vm-omakub-devmachine omakub-start omakub-stop omakub-status omakub-destroy \
         omakub-ssh-test omakub-ansible-test omakub-ssh-shell omakub-info \
         all-deploy all-ping
 
@@ -186,13 +186,19 @@ omarchy-automated-destroy: ## Destroy Automated Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"102\\\"]"
 
 # Omakub
-deploy-vm-omakub-devmachine: proxmox-tf-init ## Deploy Omakub development workstation (VM)
-	@echo "🚀 Deploying Omakub development workstation (Ubuntu 24.04 + GNOME via cloud-init)..."
-	@echo "📋 Step 1/2: Prepare cloud image, template, and cloud-init ISO with Ansible"
-	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omakub-setup.yml
-	@echo "📋 Step 2/2: Provisioning VM with Terraform (clone from template)"
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
-	@echo "✅ Omakub development workstation deployment complete! VM will auto-configure Ubuntu + Omakub via cloud-init."
+deploy-vm-ubuntu-desktop-devmachine: ## Deploy Ubuntu Desktop development workstation (manual install + automation)
+	@echo "🖥️ Preparing Ubuntu Desktop development workstation..."
+	@echo "📋 Step 1/2: Download Ubuntu Desktop ISO and create post-install scripts"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/ubuntu-desktop-setup.yml
+	@echo "📋 Step 2/2: Manual steps required:"
+	@echo "  1. Create VM in Proxmox with Ubuntu Desktop ISO"
+	@echo "  2. Install Ubuntu Desktop with user 'dev' / password 'dev'"
+	@echo "  3. Run post-install script: wget http://192.168.0.19:8080/ubuntu-post-install/ubuntu-post-install.sh && bash ubuntu-post-install.sh"
+	@echo "  4. Reboot and login - Omakub will install automatically"
+	@echo "✅ Ubuntu Desktop ISO and automation scripts ready!"
+
+# Legacy omakub command - redirect to new approach
+deploy-vm-omakub-devmachine: deploy-vm-ubuntu-desktop-devmachine ## Deploy development workstation (redirects to Ubuntu Desktop approach)
 
 omakub-start: ## Start Omakub VM
 	@echo "🚀 Starting Omakub VM..."
