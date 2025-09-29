@@ -30,22 +30,41 @@
       ⏭️ Skipping download
   when: iso_file.stat.exists
 
-- name: Download Ubuntu Desktop ISO
+- name: Download Ubuntu Desktop ISO (async)
   ansible.builtin.get_url:
     url: "{{ ubuntu_desktop_iso_url }}"
     dest: "{{ iso_storage_path }}/{{ ubuntu_desktop_iso_name }}"
     mode: '0644'
-    timeout: 3600  # 1 hour timeout for large ISO
-  register: iso_download
+  async: 3600  # 1 hour timeout
+  poll: 0      # Start async, don't wait
+  register: iso_download_async
   when: not iso_file.stat.exists
+
+- name: Monitor Ubuntu Desktop ISO download progress
+  ansible.builtin.async_status:
+    jid: "{{ iso_download_async.ansible_job_id }}"
+  register: iso_download_result
+  until: iso_download_result.finished
+  retries: 240  # 240 * 15 seconds = 1 hour
+  delay: 15     # Check every 15 seconds
+  when: not iso_file.stat.exists
+
+- name: Display download progress
+  ansible.builtin.debug:
+    msg: |
+      📥 Ubuntu Desktop ISO Download Progress:
+      ⏱️  Checking download status every 15 seconds...
+      📁 Target: {{ iso_storage_path }}/{{ ubuntu_desktop_iso_name }}
+      🔄 Status: {{ 'In Progress' if not iso_download_result.finished else 'Completed' }}
+  when: not iso_file.stat.exists and iso_download_async is defined
 
 - name: Display download completion
   ansible.builtin.debug:
     msg: |
-      ✅ Ubuntu Desktop ISO download completed
+      ✅ Ubuntu Desktop ISO download completed successfully!
       📁 Location: {{ iso_storage_path }}/{{ ubuntu_desktop_iso_name }}
       🎯 Ready for VM installation
-  when: iso_download.changed
+  when: not iso_file.stat.exists and iso_download_result.finished
 
 - name: Verify ISO is available in Proxmox storage
   ansible.builtin.command: pvesm list {{ proxmox_iso_storage }}
