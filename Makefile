@@ -42,6 +42,9 @@ help: ## Show available commands
 	@echo "Proxmox Terraform (proxmox-tf-*):"
 	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
 	@echo ""
+	@echo "Omarchy Packer (omarchy-packer-*):"
+	@$(MAKE) -s help-section SECTION="Omarchy Packer"
+	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
 
