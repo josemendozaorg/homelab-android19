@@ -220,7 +220,7 @@ omarchy-packer-build: omarchy-packer-validate ## Build Omarchy golden template w
 	@echo "🏗️ Building Omarchy golden template..."
 	@echo "⚠️  This will create VM ID 9101 and build for ~30 minutes"
 	@echo "📋 Prerequisites: Omarchy ISO must be uploaded to Proxmox local storage"
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer build -var 'proxmox_token=$$(grep proxmox_api_token ../../provisioning-by-terraform/terraform.tfvars | cut -d'=' -f2 | tr -d ' \"')' ."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer build -var 'proxmox_token=$$(grep '^proxmox_api_token' ../../provisioning-by-terraform/terraform.tfvars | head -1 | cut -d'=' -f2- | tr -d ' \"')' ."
 	@echo "✅ Omarchy golden template created successfully!"
 
 # All Machines
