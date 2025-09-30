@@ -127,7 +127,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
 
   # Clone configuration for cloud-init VMs
   clone {
-    vm_id = lookup(each.value, "cloud_init", false) ? 9999 : null  # Template VM ID (placeholder)
+    vm_id = lookup(each.value, "cloud_init", false) ? lookup(each.value, "template_vm_id", null) : null
     full = lookup(each.value, "cloud_init", false) ? true : null
   }
 
