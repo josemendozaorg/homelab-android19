@@ -31,7 +31,7 @@ source "proxmox-iso" "omarchy" {
     type              = "scsi"
     disk_size         = var.omarchy_disk_size
     storage_pool      = var.proxmox_storage
-    format            = "qcow2"
+    format            = "raw"
   }
 
   network_adapters {
