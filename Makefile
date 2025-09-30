@@ -19,7 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-check-iso omarchy-packer-init omarchy-packer-validate omarchy-packer-build \
+        omarchy-download-iso omarchy-check-iso omarchy-packer-init omarchy-packer-validate omarchy-packer-build \
         all-deploy all-ping
 
 # Help target with color output
@@ -196,6 +196,11 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 
 # Omarchy Packer
+omarchy-download-iso: ## Download Omarchy ISO to Proxmox storage
+	@echo "📥 Downloading Omarchy 3.0.2 ISO to Proxmox storage..."
+	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626"
+	@echo "✅ Omarchy ISO download complete"
+
 omarchy-check-iso: ## Check if Omarchy ISO is available in Proxmox storage
 	@echo "🔍 Checking for Omarchy ISO in Proxmox storage..."
 	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "ls -la /var/lib/vz/template/iso/omarchy-3.0.2.iso"
