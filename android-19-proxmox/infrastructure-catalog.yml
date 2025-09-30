@@ -47,6 +47,9 @@ services:
     ip: "192.168.0.101"
     description: "Omarchy development workstation (Arch Linux + Hyprland)"
     template: "omarchy-golden-template"
+    cloud_init: true  # Deploy from golden template (not ISO)
+    agent: true       # Enable QEMU guest agent for better integration
+    onboot: false     # Manual start (development workstation)
     resources:
       cores: 16
       memory: 32768
