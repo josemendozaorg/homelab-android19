@@ -197,8 +197,8 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 
 # Omarchy Packer
 omarchy-download-iso: ## Download Omarchy ISO to Proxmox storage
-	@echo "📥 Downloading Omarchy 3.0.2 ISO to Proxmox storage..."
-	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626"
+	@echo "📥 Downloading Omarchy 3.0.2 ISO to Proxmox storage (6.2GB - may take 10+ minutes)..."
+	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626 timeout=1800"
 	@echo "✅ Omarchy ISO download complete"
 
 omarchy-check-iso: ## Check if Omarchy ISO is available in Proxmox storage
