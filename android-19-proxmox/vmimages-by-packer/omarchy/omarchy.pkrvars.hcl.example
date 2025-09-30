@@ -1,0 +1,6 @@
+# Packer variables for Omarchy build
+# Copy this file to omarchy.pkrvars.hcl and set your actual Proxmox API token
+
+# Proxmox API token format: user@realm!tokenid=secret
+# Example: root@pam!packer=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+proxmox_token = "YOUR_USER@REALM!TOKEN_ID=YOUR-TOKEN-SECRET-HERE"
