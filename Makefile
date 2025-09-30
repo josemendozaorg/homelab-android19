@@ -19,6 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
+        omarchy-packer-validate \
         all-deploy all-ping
 
 # Help target with color output
@@ -190,6 +191,12 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	$(MAKE) deploy-proxmox-all
 	@echo "✅ Complete Proxmox deployment finished!"
 	@echo "🌐 Run 'make test-ping' to validate deployment"
+
+# Omarchy Packer
+omarchy-packer-validate: ## Validate Omarchy Packer template
+	@echo "🔍 Validating Omarchy Packer template..."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer validate ."
+	@echo "✅ Omarchy Packer template is valid"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
