@@ -40,6 +40,13 @@ source "proxmox-iso" "omarchy" {
   }
 
   boot_wait = "10s"
+  boot_command = [
+    "<enter><wait10>",
+    "<enter><wait5>",
+    "temp-password<enter><wait3>",
+    "temp-password<enter><wait3>",
+    "<enter><wait30>"
+  ]
 
   ssh_username         = "root"
   ssh_password         = "temp-password"
