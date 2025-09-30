@@ -216,10 +216,15 @@ omarchy-packer-validate: omarchy-packer-init ## Validate Omarchy Packer template
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer validate -var 'proxmox_token=dummy-token-for-validation' ."
 	@echo "✅ Omarchy Packer template is valid"
 
-omarchy-packer-build: omarchy-packer-validate ## Build Omarchy golden template with Packer
-	@echo "🏗️ Building Omarchy golden template..."
-	@echo "⚠️  This will create VM ID 9101 and build for ~30 minutes"
+omarchy-packer-build: omarchy-packer-validate ## Build Omarchy golden template with Packer (requires manual interaction)
+	@echo "🏗️ Building Omarchy golden template with manual interaction..."
+	@echo "⚠️  This will create VM ID 9101 and require manual setup via Proxmox console"
 	@echo "📋 Prerequisites: Omarchy ISO must be uploaded to Proxmox local storage"
+	@echo "🖱️  MANUAL STEPS REQUIRED:"
+	@echo "    1. Packer will create and start VM 9101"
+	@echo "    2. Open Proxmox console for VM 9101"
+	@echo "    3. Complete Omarchy installation (keyboard layout, timezone, user creation)"
+	@echo "    4. Wait for Packer breakpoint prompt, then press Enter to continue"
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer build -var-file=omarchy.pkrvars.hcl ."
 	@echo "✅ Omarchy golden template created successfully!"
 

@@ -40,17 +40,13 @@ source "proxmox-iso" "omarchy" {
   }
 
   boot_wait = "10s"
-  boot_command = [
-    "<enter><wait10>",
-    "<enter><wait5>",
-    "temp-password<enter><wait3>",
-    "temp-password<enter><wait3>",
-    "<enter><wait30>"
-  ]
+  # Boot commands removed - manual interaction required for Omarchy ISO installer
+  # User must manually complete: keyboard layout, timezone, user creation
+  # VM will pause at SSH connection phase until manual setup is complete
 
   ssh_username         = "root"
   ssh_password         = "temp-password"
-  ssh_timeout          = "20m"
+  ssh_timeout          = "30m"
 
   template_name        = "omarchy-golden-template"
   template_description = "Omarchy (Arch Linux + Hyprland) golden template"
@@ -58,4 +54,30 @@ source "proxmox-iso" "omarchy" {
 
 build {
   sources = ["source.proxmox-iso.omarchy"]
+
+  # Wait for manual Omarchy installation to complete
+  provisioner "breakpoint" {
+    note = "MANUAL STEP: Complete Omarchy installation via Proxmox console:\n1. Select keyboard layout (e.g., Europe/Warsaw)\n2. Select timezone\n3. Create user with username: root, password: temp-password\n4. Wait for installation to complete and system to boot\n5. Press Enter to continue Packer build"
+  }
+
+  # Basic system preparation
+  provisioner "shell" {
+    inline = [
+      "echo 'Omarchy installation completed, preparing golden template...'",
+      "sudo pacman -Syu --noconfirm",
+      "echo 'System updated successfully'"
+    ]
+  }
+
+  # Clean up for template
+  provisioner "shell" {
+    inline = [
+      "sudo pacman -Sc --noconfirm",
+      "sudo rm -rf /var/cache/pacman/pkg/*",
+      "sudo rm -rf /tmp/*",
+      "sudo rm -rf /var/tmp/*",
+      "history -c",
+      "echo 'Template cleanup completed'"
+    ]
+  }
 }
