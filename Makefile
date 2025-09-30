@@ -193,9 +193,14 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 
 # Omarchy Packer
-omarchy-packer-validate: ## Validate Omarchy Packer template
+omarchy-packer-init: ## Initialize Packer plugins for Omarchy
+	@echo "🔧 Initializing Packer plugins..."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer init ."
+	@echo "✅ Packer plugins installed"
+
+omarchy-packer-validate: omarchy-packer-init ## Validate Omarchy Packer template
 	@echo "🔍 Validating Omarchy Packer template..."
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer validate ."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer validate -var 'proxmox_token=dummy-token-for-validation' ."
 	@echo "✅ Omarchy Packer template is valid"
 
 # All Machines

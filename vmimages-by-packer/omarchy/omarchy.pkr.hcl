@@ -12,9 +12,12 @@ source "proxmox-iso" "omarchy" {
   username             = var.proxmox_username
   token                = var.proxmox_token
   node                 = var.proxmox_node
+  insecure_skip_tls_verify = true
 
-  iso_file             = "local:iso/omarchy-3.0.2.iso"
-  iso_storage_pool     = "local"
+  boot_iso {
+    iso_file         = "local:iso/omarchy-3.0.2.iso"
+    unmount          = true
+  }
 
   vm_name              = "omarchy-golden-build"
   vm_id                = var.omarchy_vm_id
@@ -37,6 +40,10 @@ source "proxmox-iso" "omarchy" {
   }
 
   boot_wait = "10s"
+
+  ssh_username         = "root"
+  ssh_password         = "temp-password"
+  ssh_timeout          = "20m"
 
   template_name        = "omarchy-golden-template"
   template_description = "Omarchy (Arch Linux + Hyprland) golden template"
