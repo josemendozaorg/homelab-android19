@@ -23,6 +23,23 @@
   debug:
     var: system_info.stdout
 
+- name: Verify Arch Linux system
+  command: grep "ID=arch" /etc/os-release
+  register: arch_check
+  delegate_to: "{{ omarchy_vm_ip }}"
+
+- name: Verify Hyprland is available
+  command: which Hyprland
+  register: hyprland_check
+  delegate_to: "{{ omarchy_vm_ip }}"
+  failed_when: false  # Don't fail if not found, just register result
+
+- name: Display Omarchy verification results
+  debug:
+    msg:
+      - "Arch Linux detected: {{ arch_check.stdout != '' }}"
+      - "Hyprland available: {{ hyprland_check.rc == 0 }}"
+
 # Placeholder for future configuration tasks
 - name: Configure development environment
   debug:
