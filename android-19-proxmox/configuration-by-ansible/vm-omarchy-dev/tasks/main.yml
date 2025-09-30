@@ -1,0 +1,30 @@
+---
+# Omarchy Development VM Post-Deployment Configuration
+
+- name: Debug VM connection
+  debug:
+    msg: "Configuring Omarchy VM {{ omarchy_vm_name }} at {{ omarchy_vm_ip }}"
+
+- name: Wait for VM to be ready
+  wait_for_connection:
+    timeout: 300
+  delegate_to: "{{ omarchy_vm_ip }}"
+
+- name: Gather VM facts
+  setup:
+  delegate_to: "{{ omarchy_vm_ip }}"
+
+- name: Verify Omarchy installation
+  command: uname -a
+  register: system_info
+  delegate_to: "{{ omarchy_vm_ip }}"
+
+- name: Display system information
+  debug:
+    var: system_info.stdout
+
+# Placeholder for future configuration tasks
+- name: Configure development environment
+  debug:
+    msg: "Future: Configure development tools and user environment"
+  when: false  # Disabled until needed
