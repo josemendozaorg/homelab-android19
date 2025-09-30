@@ -19,7 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-packer-init omarchy-packer-validate omarchy-packer-build \
+        omarchy-check-iso omarchy-packer-init omarchy-packer-validate omarchy-packer-build \
         all-deploy all-ping
 
 # Help target with color output
@@ -196,6 +196,11 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 
 # Omarchy Packer
+omarchy-check-iso: ## Check if Omarchy ISO is available in Proxmox storage
+	@echo "🔍 Checking for Omarchy ISO in Proxmox storage..."
+	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "ls -la /var/lib/vz/template/iso/omarchy-3.0.2.iso"
+	@echo "✅ Omarchy ISO availability check complete"
+
 omarchy-packer-init: ## Initialize Packer plugins for Omarchy
 	@echo "🔧 Initializing Packer plugins..."
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer init ."
