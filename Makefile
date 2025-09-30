@@ -19,7 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-packer-init omarchy-packer-validate \
+        omarchy-packer-init omarchy-packer-validate omarchy-packer-build \
         all-deploy all-ping
 
 # Help target with color output
@@ -202,6 +202,13 @@ omarchy-packer-validate: omarchy-packer-init ## Validate Omarchy Packer template
 	@echo "🔍 Validating Omarchy Packer template..."
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer validate -var 'proxmox_token=dummy-token-for-validation' ."
 	@echo "✅ Omarchy Packer template is valid"
+
+omarchy-packer-build: omarchy-packer-validate ## Build Omarchy golden template with Packer
+	@echo "🏗️ Building Omarchy golden template..."
+	@echo "⚠️  This will create VM ID 9101 and build for ~30 minutes"
+	@echo "📋 Prerequisites: Omarchy ISO must be uploaded to Proxmox local storage"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer build -var-file=../../terraform.tfvars ."
+	@echo "✅ Omarchy golden template created successfully!"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
