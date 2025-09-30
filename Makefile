@@ -198,19 +198,19 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 # Omarchy Packer
 omarchy-packer-init: ## Initialize Packer plugins for Omarchy
 	@echo "🔧 Initializing Packer plugins..."
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer init ."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer init ."
 	@echo "✅ Packer plugins installed"
 
 omarchy-packer-validate: omarchy-packer-init ## Validate Omarchy Packer template
 	@echo "🔍 Validating Omarchy Packer template..."
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer validate -var 'proxmox_token=dummy-token-for-validation' ."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer validate -var 'proxmox_token=dummy-token-for-validation' ."
 	@echo "✅ Omarchy Packer template is valid"
 
 omarchy-packer-build: omarchy-packer-validate ## Build Omarchy golden template with Packer
 	@echo "🏗️ Building Omarchy golden template..."
 	@echo "⚠️  This will create VM ID 9101 and build for ~30 minutes"
 	@echo "📋 Prerequisites: Omarchy ISO must be uploaded to Proxmox local storage"
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd vmimages-by-packer/omarchy && packer build -var 'proxmox_token=$$(grep proxmox_api_token ../../android-19-proxmox/provisioning-by-terraform/terraform.tfvars | cut -d'=' -f2 | tr -d ' \"')' ."
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer build -var 'proxmox_token=$$(grep proxmox_api_token ../../provisioning-by-terraform/terraform.tfvars | cut -d'=' -f2 | tr -d ' \"')' ."
 	@echo "✅ Omarchy golden template created successfully!"
 
 # All Machines
