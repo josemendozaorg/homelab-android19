@@ -64,3 +64,33 @@
   ansible.builtin.debug:
     msg: "{{ vfio_verify.stdout_lines }}"
   when: vfio_verify is defined and vfio_verify.stdout_lines is defined
+
+- name: Reboot system to load VFIO modules from initramfs
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+    connect_timeout: 20
+    post_reboot_delay: 15
+    msg: "Rebooting to load VFIO modules from initramfs"
+  when: update_initramfs_result is defined and update_initramfs_result is not skipped
+
+- name: Verify VFIO modules are loaded after reboot
+  ansible.builtin.shell:
+    cmd: lsmod | grep vfio
+  register: vfio_loaded
+  changed_when: false
+  when: update_initramfs_result is defined and update_initramfs_result is not skipped
+
+- name: Display loaded VFIO modules
+  ansible.builtin.debug:
+    msg: "{{ vfio_loaded.stdout_lines }}"
+  when: vfio_loaded is defined and vfio_loaded.stdout_lines is defined
+
+- name: Verify all VFIO modules are loaded
+  ansible.builtin.assert:
+    that:
+      - "'vfio_pci' in vfio_loaded.stdout"
+      - "'vfio_iommu_type1' in vfio_loaded.stdout"
+      - "'vfio ' in vfio_loaded.stdout or 'vfio\n' in vfio_loaded.stdout"
+    fail_msg: "Not all VFIO modules are loaded after reboot"
+    success_msg: "All VFIO modules successfully loaded from initramfs"
+  when: vfio_loaded is defined and vfio_loaded.stdout is defined
