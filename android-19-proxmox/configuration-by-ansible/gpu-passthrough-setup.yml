@@ -1,0 +1,10 @@
+---
+# GPU Passthrough Configuration Playbook
+- name: Configure GPU Passthrough on Proxmox Host
+  hosts: proxmox
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: host-proxmox-gpu-passthrough
+      tags: [gpu, passthrough]

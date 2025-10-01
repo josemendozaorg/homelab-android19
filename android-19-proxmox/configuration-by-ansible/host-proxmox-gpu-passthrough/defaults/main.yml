@@ -7,3 +7,11 @@ gpu_model: "ZOTAC GAMING RTX 5060Ti 16GB"
 
 # NVIDIA vendor ID (10de is NVIDIA Corporation)
 gpu_vendor_id: "10de"
+
+# Detected GPU PCI Information (from lspci output)
+# VGA controller: 02:00.0 VGA compatible controller [0300]: NVIDIA Corporation GB206 [GeForce RTX 5060 Ti] [10de:2d04]
+# Audio device: 02:00.1 Audio device [0403]: NVIDIA Corporation Device [10de:22eb]
+gpu_pci_address: "02:00.0"
+gpu_device_id: "2d04"
+gpu_audio_pci_address: "02:00.1"
+gpu_audio_device_id: "22eb"
