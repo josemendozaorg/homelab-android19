@@ -1,6 +1,7 @@
 """Tests for Ansible playbook validation."""
 import pytest
 import subprocess
+import requests
 from pathlib import Path
 
 
@@ -80,3 +81,31 @@ def test_ubuntu_desktop_role_defaults(project_root):
 
     assert defaults is not None, "Defaults file is empty"
     assert isinstance(defaults, dict), "Defaults should be a dictionary"
+
+
+def test_ubuntu_desktop_iso_url_accessible(project_root):
+    """Ubuntu Desktop ISO URL is accessible and returns valid response."""
+    defaults_file = (
+        project_root / "android-19-proxmox" / "configuration-by-ansible" /
+        "vm-ubuntu-desktop-devmachine" / "defaults" / "main.yml"
+    )
+
+    import yaml
+    with open(defaults_file) as f:
+        defaults = yaml.safe_load(f)
+
+    iso_url = defaults.get('ubuntu_desktop_iso_url')
+    assert iso_url, "ubuntu_desktop_iso_url not defined in defaults"
+
+    # Send HEAD request to check if ISO is accessible
+    # Use timeout to avoid hanging on slow/dead URLs
+    try:
+        response = requests.head(iso_url, timeout=10, allow_redirects=True)
+        assert response.status_code == 200, (
+            f"ISO URL returned status {response.status_code}. "
+            f"Expected 200. URL: {iso_url}"
+        )
+    except requests.exceptions.Timeout:
+        pytest.fail(f"ISO URL request timed out after 10 seconds. URL: {iso_url}")
+    except requests.exceptions.RequestException as e:
+        pytest.fail(f"Failed to access ISO URL: {e}")
