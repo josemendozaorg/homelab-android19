@@ -79,3 +79,29 @@ def test_validate_amd_cpu_task_exists(project_root):
     assert "amd" in task_content.lower(), "Task should check for AMD CPU"
     assert "fail" in task_content.lower() or "assert" in task_content.lower(), \
         "Task should fail gracefully if AMD CPU not detected"
+
+
+def test_check_iommu_runtime_task_exists(project_root):
+    """IOMMU runtime check task reads /proc/cmdline and registers fact."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "check-iommu-runtime.yml"
+
+    assert task_file.exists(), f"IOMMU runtime check task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for /proc/cmdline reading
+    assert "/proc/cmdline" in task_content, "Task should read /proc/cmdline"
+
+    # Check for iommu=pt string search
+    assert "iommu=pt" in task_content or "iommu" in task_content.lower(), \
+        "Task should check for iommu=pt parameter"
+
+    # Check for fact registration
+    assert "set_fact" in task_content or "register" in task_content, \
+        "Task should register the result as a fact"

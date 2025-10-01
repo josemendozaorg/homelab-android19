@@ -1,0 +1,16 @@
+---
+# Check if IOMMU passthrough is enabled in current runtime
+
+- name: Read current kernel command line
+  ansible.builtin.command:
+    cmd: cat /proc/cmdline
+  register: kernel_cmdline
+  changed_when: false
+
+- name: Check if iommu=pt is present in runtime
+  ansible.builtin.set_fact:
+    iommu_runtime_enabled: "{{ 'iommu=pt' in kernel_cmdline.stdout }}"
+
+- name: Display IOMMU runtime status
+  ansible.builtin.debug:
+    msg: "IOMMU passthrough runtime status: {{ 'ENABLED' if iommu_runtime_enabled else 'DISABLED' }}"
