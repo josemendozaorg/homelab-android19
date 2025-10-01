@@ -8,3 +8,52 @@
     mode: '0644'
     owner: root
     group: root
+  register: blacklist_config
+
+- name: Update initramfs to include GPU driver blacklist
+  ansible.builtin.command:
+    cmd: update-initramfs -u -k all
+  register: update_initramfs_blacklist
+  when: blacklist_config is changed
+  changed_when: true
+
+- name: Display update-initramfs output
+  ansible.builtin.debug:
+    msg: "{{ update_initramfs_blacklist.stdout_lines }}"
+  when: blacklist_config is changed and update_initramfs_blacklist is defined
+
+- name: Reboot system to apply GPU driver blacklist
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+    connect_timeout: 20
+    post_reboot_delay: 15
+    msg: "Rebooting to apply GPU driver blacklist"
+  when: blacklist_config is changed
+
+- name: Verify GPU drivers are NOT loaded after reboot
+  ansible.builtin.shell:
+    cmd: lsmod | grep -E '(nouveau|nvidia)' || true
+  register: gpu_drivers_check
+  changed_when: false
+  when: blacklist_config is changed
+
+- name: Display GPU driver status
+  ansible.builtin.debug:
+    msg: "{{ 'GPU drivers successfully blacklisted - no drivers loaded' if gpu_drivers_check.stdout == '' else 'WARNING: GPU drivers still loaded: ' + gpu_drivers_check.stdout }}"
+  when: blacklist_config is changed and gpu_drivers_check is defined
+
+- name: Verify nouveau driver is NOT loaded
+  ansible.builtin.assert:
+    that:
+      - "'nouveau' not in gpu_drivers_check.stdout"
+    fail_msg: "Nouveau driver still loaded after blacklist"
+    success_msg: "Nouveau driver successfully blacklisted"
+  when: blacklist_config is changed and gpu_drivers_check is defined
+
+- name: Verify nvidia drivers are NOT loaded
+  ansible.builtin.assert:
+    that:
+      - "'nvidia' not in gpu_drivers_check.stdout"
+    fail_msg: "NVIDIA drivers still loaded after blacklist"
+    success_msg: "NVIDIA drivers successfully blacklisted"
+  when: blacklist_config is changed and gpu_drivers_check is defined
