@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: homelab
+  description: Comprehensive Proxmox host configuration including storage, network, templates, and API tokens
+  company: homelab
+  license: MIT
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - proxmox
+    - virtualization
+    - infrastructure
+    - storage
+    - network
+    - api
+    - backup
+
+dependencies: []

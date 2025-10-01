@@ -47,9 +47,14 @@ make setup-ssh
 
 ### Machine-Specific Deployment
 - `make bastion-deploy` - Deploy configuration to Android #16 bastion
+- `make proxmox-host-setup` - Configure Proxmox host infrastructure
 - `make proxmox-deploy` - Deploy base configuration to Android #19 Proxmox
 - `make proxmox-services` - Deploy all Proxmox services
-- `make proxmox-adguard` - Deploy AdGuard Home service only
+
+### Service-Level Deployment (Terraform + Ansible)
+- `make deploy-lxc-adguard-dns` - Deploy AdGuard DNS server (LXC container)
+- `make deploy-vm-omarchy-devmachine` - Deploy Omarchy development workstation (VM)
+- `make deploy-proxmox-all` - Deploy all Proxmox VMs and LXCs
 
 ### Proxmox Infrastructure (Terraform)
 - `make proxmox-tf-init` - Initialize Terraform for Proxmox
@@ -66,11 +71,36 @@ make setup-ssh
 
 ### Directory Structure
 - `android-16-bastion/` - Bastion host configuration and Ansible playbooks
-- `android-19-proxmox/` - Proxmox server configuration, Ansible playbooks, and Terraform
-  - `terraform/` - Infrastructure as Code for VM/container provisioning
+- `android-19-proxmox/` - Proxmox server configuration with separated concerns
+  - `provisioning-by-terraform/` - Infrastructure as Code for VM/container provisioning
+  - `configuration-by-ansible/` - Ansible roles for service configuration
+    - `host-*/` - Physical machine roles (host-proxmox)
+    - `lxc-*/` - LXC container roles (lxc-adguard)
+    - `vm-*/` - Virtual machine roles (vm-omarchy-dev)
   - `infrastructure-catalog.yml` - Service definitions and configuration
 - `scripts/` - Helper scripts (SSH setup, etc.)
 - `docs/` - Documentation including SSH setup guide
+
+### Naming Conventions
+
+#### Ansible Role Naming
+All Ansible roles follow a prefixed naming pattern:
+- **host-*** - Physical machine roles (e.g., host-proxmox)
+- **lxc-*** - LXC container roles (e.g., lxc-adguard)
+- **vm-*** - Virtual machine roles (e.g., vm-omarchy-dev)
+
+#### Makefile Target Naming
+Service deployment targets follow a structured naming pattern:
+- **deploy-{type}-{name}-{capability}** - Complete orchestration (Terraform + Ansible)
+  - `{type}` = `lxc` or `vm` (infrastructure type)
+  - `{name}` = Service name (e.g., adguard, omarchy)
+  - `{capability}` = Homelab function (e.g., dns, devmachine, vpn, containerplatform)
+
+**Examples:**
+- `deploy-lxc-adguard-dns` - AdGuard DNS server running in LXC container
+- `deploy-vm-omarchy-devmachine` - Omarchy development workstation running in VM
+- `deploy-lxc-nextcloud-fileserver` - Nextcloud file server in LXC container
+- `deploy-vm-docker-containerplatform` - Docker host VM for containers
 
 ### Infrastructure Flow
 1. **Terraform Provisioning**: Create VMs/containers on Proxmox with cloud-init
@@ -87,17 +117,59 @@ make setup-ssh
   - **LXC containers**: Uses Proxmox container initialization (SSH keys, user accounts)
   - **VMs**: Uses full cloud-init (custom scripts, packages, services)
 - **Proxmox**: Virtualization platform for VMs and LXC containers
+  - **Storage**: ZFS pool on 4TB NVMe disk for VM/container storage
+  - **Benefits**: Compression, snapshots, data integrity, performance
 
 ## Important Files
 - `Makefile` - Main automation interface with all commands
 - `inventory.yml` - Ansible inventory defining machine groups
 - `docker-compose.yml` - Development environment definition
-- `android-19-proxmox/terraform/terraform.tfvars` - Terraform configuration (not committed)
+- `android-19-proxmox/provisioning-by-terraform/terraform.tfvars` - Terraform configuration (not committed)
 - `android-19-proxmox/infrastructure-catalog.yml` - Service definitions for Terraform
 - `docs/SSH_SETUP.md` - Comprehensive SSH authentication setup guide
 
 ## SSH Authentication
 SSH key authentication is required for Ansible to communicate with both machines. If you encounter "Permission denied" errors, run `make setup-ssh` or follow the detailed guide in `docs/SSH_SETUP.md`.
+
+## ⚠️ CRITICAL WARNING: Network Configuration
+**NEVER run network configuration tasks on production Proxmox hosts without extreme caution!**
+
+### What Happened (Lesson Learned)
+The Ansible network configuration in `host-proxmox/tasks/network.yml` overwrites `/etc/network/interfaces` with a template. This caused complete loss of SSH and web access because:
+
+1. **Template Assumptions**: The template assumes specific interface names (e.g., `eno1`) that may not exist
+2. **No Validation**: No verification that the new config matches existing working setup
+3. **Immediate Apply**: Network restart happens immediately, breaking connectivity if config is wrong
+4. **Complete Lockout**: Both SSH (port 22) and web UI (port 8006) become unreachable
+
+### Current Status
+Network configuration is **DISABLED** in `host-proxmox/tasks/main.yml` (when: false) to prevent this issue.
+
+### Recovery Procedure
+If network access is lost, **physical console access is required**:
+
+```bash
+# 1. Check what interfaces actually exist
+ip link show
+
+# 2. Restore from Ansible backup (if available)
+ls /etc/network/interfaces.*
+cp /etc/network/interfaces.backup /etc/network/interfaces
+
+# 3. Restart networking
+systemctl restart networking
+
+# 4. If backup doesn't work, manually configure
+nano /etc/network/interfaces
+# Add working configuration based on actual interface names
+```
+
+### Safe Network Configuration
+Before enabling network configuration:
+1. **Always check existing interface names**: `ip link show`
+2. **Update defaults to match reality**: Edit `host-proxmox/defaults/main.yml`
+3. **Test in non-production first**: Use a test VM
+4. **Have console access ready**: Physical or IPMI access
 
 ## Container Management Architecture
 

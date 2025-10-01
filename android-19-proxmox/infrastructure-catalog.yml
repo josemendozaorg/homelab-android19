@@ -27,7 +27,7 @@ services:
       cores: 2
       memory: 1024
       disk: 16
-    storage: "local-lvm"
+    storage: "vm-storage"
 
   130:
     name: "test-nginx"
@@ -39,7 +39,23 @@ services:
       cores: 1
       memory: 512
       disk: 8
-    storage: "local-lvm"
+    storage: "vm-storage"
+
+  101:
+    name: "omarchy"
+    type: "vm"
+    ip: "192.168.0.101"
+    description: "Omarchy development workstation (Arch Linux + Hyprland)"
+    iso: "omarchy-3.0.2.iso"  # Boot from Omarchy ISO
+    agent: true           # Enable QEMU guest agent (install after OS setup)
+    onboot: false         # Manual start (development workstation)
+    resources:
+      cores: 16
+      memory: 32768
+      disk: 250  # Increased for development environment
+    storage: "vm-storage"
+
+
 
 # Physical Infrastructure
 physical:

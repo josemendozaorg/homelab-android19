@@ -1,0 +1,92 @@
+---
+# Storage configuration tasks for Proxmox Host
+
+- name: Check if storage disk exists
+  ansible.builtin.stat:
+    path: "{{ proxmox_storage.vm_storage.device }}"
+  register: storage_disk
+  when: proxmox_storage.vm_storage.enabled | default(true)
+
+- name: Display storage disk status
+  ansible.builtin.debug:
+    msg: >
+      {% if storage_disk.stat.exists | default(false) %}
+      Storage disk {{ proxmox_storage.vm_storage.device }} found
+      {% else %}
+      Storage disk {{ proxmox_storage.vm_storage.device }} not found. Please verify the device path.
+      {% endif %}
+  when: proxmox_storage.vm_storage.enabled | default(true)
+
+- name: Configure ZFS storage for VMs (4TB disk)
+  when:
+    - proxmox_storage.vm_storage.enabled | default(true)
+    - storage_disk.stat.exists | default(false)
+    - proxmox_storage.vm_storage.type == "zfspool"
+  block:
+    - name: Check if ZFS pool is imported
+      ansible.builtin.command: zpool list {{ proxmox_storage.vm_storage.pool_name }}
+      register: zpool_check
+      failed_when: false
+      changed_when: false
+
+    - name: Import existing ZFS pool
+      ansible.builtin.command: zpool import -f {{ proxmox_storage.vm_storage.pool_name }}
+      when: zpool_check.rc != 0
+      register: zpool_import
+
+    - name: Create ZFS dataset for VM storage
+      ansible.builtin.command: >
+        zfs create
+        -o compression={{ proxmox_storage.vm_storage.compression }}
+        -o atime=off
+        -o relatime=on
+        {{ proxmox_storage.vm_storage.pool_name }}/{{ proxmox_storage.vm_storage.dataset_name }}
+      register: zfs_dataset_create
+      failed_when: false
+      changed_when: zfs_dataset_create.rc == 0
+
+    - name: Get ZFS pool status
+      ansible.builtin.command: zpool status {{ proxmox_storage.vm_storage.pool_name }}
+      register: zpool_status
+      changed_when: false
+
+- name: Configure Proxmox storage pools
+  block:
+    - name: Check if storage already exists
+      ansible.builtin.command: pvesm status
+      register: storage_status
+      changed_when: false
+
+    - name: Remove default local-lvm if using dedicated storage
+      ansible.builtin.command: pvesm remove local-lvm
+      when:
+        - proxmox_storage.vm_storage.enabled | default(true)
+        - "'local-lvm' in storage_status.stdout"
+      failed_when: false
+
+    - name: Add ZFS storage pool to Proxmox
+      ansible.builtin.command: >
+        pvesm add zfspool {{ proxmox_storage.vm_storage.name }}
+        --pool {{ proxmox_storage.vm_storage.pool_name }}/{{ proxmox_storage.vm_storage.dataset_name }}
+        --content {{ proxmox_storage.vm_storage.content | join(',') }}
+        --nodes {{ proxmox_storage.vm_storage.nodes }}
+        --sparse
+      when:
+        - proxmox_storage.vm_storage.enabled | default(true)
+        - proxmox_storage.vm_storage.type == "zfspool"
+        - proxmox_storage.vm_storage.name not in storage_status.stdout
+
+    - name: Update local storage configuration
+      ansible.builtin.command: >
+        pvesm set local
+        --content {{ proxmox_storage.local_storage.content | join(',') }}
+      register: local_storage_update
+      changed_when: "'update storage' in local_storage_update.stdout"
+
+- name: Display storage configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Storage configuration complete"
+      - "{% if proxmox_storage.vm_storage.type == 'zfspool' %}ZFS Pool: {{ proxmox_storage.vm_storage.pool_name }} ({{ proxmox_storage.vm_storage.name }}){% else %}VM Storage: {{ proxmox_storage.vm_storage.name }}{% endif %}"
+      - "Content types: {{ proxmox_storage.vm_storage.content | join(', ') }}"
+      - "{% if proxmox_storage.vm_storage.type == 'zfspool' %}Compression: {{ proxmox_storage.vm_storage.compression }}{% endif %}"

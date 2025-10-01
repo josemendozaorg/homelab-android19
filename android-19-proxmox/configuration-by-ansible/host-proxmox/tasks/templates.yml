@@ -1,0 +1,83 @@
+---
+# Template download tasks for Proxmox Host
+
+- name: Download container templates
+  block:
+    - name: Update Proxmox template list
+      ansible.builtin.command: pveam update
+      register: template_update
+      changed_when: template_update.rc == 0
+
+    - name: Check existing container templates
+      ansible.builtin.command: pveam list {{ item.storage }}
+      register: existing_templates
+      changed_when: false
+      failed_when: false
+      loop: "{{ proxmox_ct_templates }}"
+
+    - name: Download container templates
+      ansible.builtin.command: >
+        pveam download {{ item.storage }} {{ item.url | basename }}
+      when: item.url | basename not in existing_templates.results[index].stdout | default('')
+      loop: "{{ proxmox_ct_templates }}"
+      loop_control:
+        index_var: index
+      register: template_download
+
+    - name: Display container template status
+      ansible.builtin.debug:
+        msg: >
+          Template {{ item.name }}:
+          {% if template_download.results[index].changed | default(false) %}Downloaded{% else %}Already exists{% endif %}
+      loop: "{{ proxmox_ct_templates }}"
+      loop_control:
+        index_var: index
+
+- name: Download VM ISOs
+  block:
+    - name: Ensure ISO directory exists
+      ansible.builtin.file:
+        path: "/var/lib/vz/template/iso"
+        state: directory
+        mode: '0755'
+
+    - name: Check existing ISOs
+      ansible.builtin.stat:
+        path: "/var/lib/vz/template/iso/{{ item.name }}"
+      register: iso_status
+      loop: "{{ proxmox_vm_isos }}"
+
+    - name: Download VM ISOs
+      ansible.builtin.get_url:
+        url: "{{ item.item.url }}"
+        dest: "/var/lib/vz/template/iso/{{ item.item.name }}"
+        mode: '0644'
+        timeout: 600
+      when: not item.stat.exists
+      loop: "{{ iso_status.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      register: iso_download
+
+    - name: Display ISO download status
+      ansible.builtin.debug:
+        msg: >
+          ISO {{ item.item.item.name }}:
+          {% if item.changed | default(false) %}Downloaded{% else %}Already exists{% endif %}
+      loop: "{{ iso_download.results }}"
+      when: iso_download.results is defined
+      loop_control:
+        label: "{{ item.item.item.name }}"
+
+- name: Verify templates in storage
+  ansible.builtin.command: pvesm list {{ proxmox_storage.local_storage.name }}
+  register: storage_contents
+  changed_when: false
+
+- name: Display template summary
+  ansible.builtin.debug:
+    msg:
+      - "Template management complete"
+      - "Container templates: {{ proxmox_ct_templates | length }}"
+      - "VM ISOs: {{ proxmox_vm_isos | length }}"
+      - "Storage location: {{ proxmox_storage.local_storage.name }}"

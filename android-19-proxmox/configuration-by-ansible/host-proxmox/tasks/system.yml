@@ -1,0 +1,120 @@
+---
+# System configuration tasks for Proxmox Host
+
+- name: Configure repositories
+  block:
+    - name: Check if enterprise repository files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: enterprise_repo_files
+      loop:
+        - /etc/apt/sources.list.d/pve-enterprise.list
+        - /etc/apt/sources.list.d/pve-enterprise.sources
+
+    - name: Disable enterprise repository (no subscription)
+      ansible.builtin.replace:
+        path: "{{ item.item }}"
+        regexp: '^(deb.*)$'
+        replace: '#\1'
+      when:
+        - proxmox_system.disable_enterprise_repo | default(true)
+        - item.stat.exists
+      loop: "{{ enterprise_repo_files.results }}"
+
+    - name: Enable no-subscription repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://download.proxmox.com/debian/pve {{ ansible_distribution_release }} pve-no-subscription"
+        state: present
+        filename: pve-no-subscription
+        update_cache: no  # Don't update cache automatically
+      when: "'pve-no-subscription' in proxmox_system.repositories"
+      failed_when: false  # Don't fail on repository issues
+
+    - name: Update apt cache (ignore enterprise repo errors)
+      ansible.builtin.shell: |
+        apt-get update -o Dir::Etc::sourcelist="sources.list.d/pve-no-subscription.list" \
+        -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
+      register: apt_update_result
+      failed_when: false
+      changed_when: "'Reading package lists' in apt_update_result.stdout"
+
+- name: Update system packages
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: no  # Cache already updated above
+  when:
+    - proxmox_system.update_packages | default(true)
+    - apt_update_result is succeeded
+  failed_when: false  # Don't fail on package update issues
+
+- name: Install useful packages
+  ansible.builtin.apt:
+    name:
+      - htop
+      - iotop
+      - vim
+      - curl
+      - wget
+      - git
+      - screen
+      - tmux
+      - net-tools
+      - nfs-common
+      - python3-pip
+    state: present
+
+- name: Configure system limits
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop: "{{ proxmox_system.sysctl_settings }}"
+
+- name: Configure IOMMU for PCI passthrough
+  when: proxmox_system.enable_iommu | default(false)
+  block:
+    - name: Enable IOMMU in GRUB
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"'
+        backup: yes
+      register: grub_config
+
+    - name: Update GRUB
+      ansible.builtin.command: update-grub
+      when: grub_config.changed
+
+    - name: Load VFIO modules
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+        create: yes
+      loop:
+        - vfio
+        - vfio_iommu_type1
+        - vfio_pci
+        - vfio_virqfd
+
+- name: Configure log rotation
+  ansible.builtin.copy:
+    content: |
+      /var/log/pveproxy/access.log {
+          daily
+          rotate 7
+          compress
+          missingok
+          notifempty
+      }
+    dest: /etc/logrotate.d/pveproxy
+    mode: '0644'
+
+- name: Display system configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "System configuration complete"
+      - "Repositories configured: {{ proxmox_system.repositories | join(', ') }}"
+      - "System updated: {{ proxmox_system.update_packages | default(true) }}"
+      - "IOMMU enabled: {{ proxmox_system.enable_iommu | default(false) }}"

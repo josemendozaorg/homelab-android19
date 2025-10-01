@@ -1,0 +1,113 @@
+---
+# Proxmox Host Configuration Defaults
+
+# Storage Configuration
+proxmox_storage:
+  # 4TB disk for VMs and Containers (ZFS)
+  vm_storage:
+    name: "vm-storage"
+    type: "zfspool"
+    pool_name: "zfs-nvme-1"   # Existing ZFS pool to import
+    dataset_name: "vm-data"   # Dataset for VM/LXC storage
+    device: "/dev/nvme1n1p1"  # 3.6TB partition on 4TB NVMe disk
+    content:
+      - "images"     # VM disk images
+      - "rootdir"    # Container root filesystems
+    nodes: "proxmox"
+    compression: "lz4"        # Enable compression
+    enabled: true
+
+  # Local storage configuration
+  local_storage:
+    name: "local"
+    path: "/var/lib/vz"
+    content:
+      - "iso"
+      - "vztmpl"
+      - "backup"
+      - "snippets"
+
+# Network Configuration
+# Note: Proxmox creates vmbr0 bridge automatically during installation
+# No need to manage network configuration via Ansible
+
+# Container Templates (only keep what we use)
+proxmox_ct_templates:
+  - name: "debian-12-standard"
+    url: "http://download.proxmox.com/images/system/debian-12-standard_12.12-1_amd64.tar.zst"
+    storage: "local"
+
+# VM Templates/ISOs
+proxmox_vm_isos: []  # ISOs managed by specific VM roles
+
+# API Configuration
+# SECURITY: API credentials should be provided via environment variables or ansible-vault
+# Example: ansible-playbook ... -e proxmox_api_user=terraform@pve -e proxmox_api_token_id=terraform-token
+proxmox_api:
+  user: "{{ proxmox_api_user | default('terraform@pve') }}"
+  token_id: "{{ proxmox_api_token_id | default('terraform-token') }}"
+  token_comment: "Token for Terraform automation"
+  privileges:
+    - "VM.Allocate"
+    - "VM.Clone"
+    - "VM.Config.CDROM"
+    - "VM.Config.CPU"
+    - "VM.Config.Disk"
+    - "VM.Config.HWType"
+    - "VM.Config.Memory"
+    - "VM.Config.Network"
+    - "VM.Config.Options"
+    - "VM.Monitor"
+    - "VM.Audit"
+    - "VM.PowerMgmt"
+    - "Datastore.AllocateSpace"
+    - "Datastore.Audit"
+    - "Datastore.AllocateTemplate"
+    - "Sys.Audit"
+    - "Sys.Modify"
+    - "Pool.Allocate"
+
+# Cluster Configuration (for future expansion)
+proxmox_cluster:
+  name: "homelab"
+  enabled: false  # Set to true if configuring cluster
+
+# System Configuration
+proxmox_system:
+  # Update system packages
+  update_packages: true
+
+  # Enable required repositories
+  repositories:
+    - "pve-no-subscription"
+
+  # Disable enterprise repository if no subscription
+  disable_enterprise_repo: true
+
+  # System limits for better performance
+  sysctl_settings:
+    - { key: "vm.swappiness", value: "10" }
+    - { key: "fs.inotify.max_user_watches", value: "524288" }
+    - { key: "fs.inotify.max_user_instances", value: "512" }
+
+  # Enable PCI passthrough if needed
+  enable_iommu: false
+
+# Backup Configuration
+proxmox_backup:
+  enabled: true
+  storage: "local"
+  schedule: "sun 01:00"
+  mode: "snapshot"
+  compress: "zstd"
+  keep_daily: 7
+  keep_weekly: 4
+  keep_monthly: 3
+
+# Monitoring
+proxmox_monitoring:
+  enable_metrics: true
+  influxdb:
+    enabled: false
+    server: ""
+    port: 8086

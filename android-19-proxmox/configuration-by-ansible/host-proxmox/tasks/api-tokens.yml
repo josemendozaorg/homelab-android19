@@ -1,0 +1,98 @@
+---
+# API token configuration tasks for Proxmox Host
+
+- name: Create Terraform user
+  block:
+    - name: Check if user exists
+      ansible.builtin.command: pveum user list
+      register: user_list
+      changed_when: false
+
+    - name: Create Terraform user
+      ansible.builtin.command: >
+        pveum user add {{ proxmox_api.user }}
+        --comment "Terraform automation user"
+      when: proxmox_api.user not in user_list.stdout
+
+    - name: Create role for Terraform
+      ansible.builtin.command: >
+        pveum role add TerraformRole
+        --privs "{{ proxmox_api.privileges | join(',') }}"
+      register: role_creation
+      failed_when: false
+      changed_when: "'create role' in role_creation.stdout | default('')"
+
+    - name: Apply role to Terraform user
+      ansible.builtin.command: >
+        pveum acl modify /
+        --users {{ proxmox_api.user }}
+        --roles TerraformRole
+      register: acl_modify
+      failed_when: false
+      changed_when: "'update acl' in acl_modify.stdout | default('')"
+
+- name: Generate API token
+  block:
+    - name: Check existing tokens
+      ansible.builtin.command: pveum user token list {{ proxmox_api.user }}
+      register: token_list
+      changed_when: false
+      failed_when: false
+
+    - name: Generate new API token
+      ansible.builtin.command: >
+        pveum user token add {{ proxmox_api.user }} {{ proxmox_api.token_id }}
+        --comment "{{ proxmox_api.token_comment }}"
+        --privsep 0
+      register: token_output
+      when: proxmox_api.token_id not in token_list.stdout | default('')
+
+    - name: Extract token value
+      set_fact:
+        api_token_value: "{{ token_output.stdout | regex_search('value: (.+)', '\\1') | default([]) | first | default('') }}"
+      when: token_output.changed
+
+    - name: Save token to file (for reference)
+      ansible.builtin.copy:
+        content: |
+          # Proxmox API Token for Terraform
+          # Generated: {{ ansible_date_time.iso8601 }}
+          # User: {{ proxmox_api.user }}
+          # Token ID: {{ proxmox_api.token_id }}
+          # Full Token: {{ proxmox_api.user }}!{{ proxmox_api.token_id }}={{ api_token_value }}
+
+          # Add to terraform.tfvars:
+          proxmox_api_token_id = "{{ proxmox_api.user }}!{{ proxmox_api.token_id }}"
+          proxmox_api_token_secret = "{{ api_token_value }}"
+        dest: "/root/proxmox-api-token.txt"
+        mode: '0600'
+      when: api_token_value is defined
+
+    - name: Display token information
+      ansible.builtin.debug:
+        msg:
+          - "API Token Configuration Complete"
+          - "User: {{ proxmox_api.user }}"
+          - "Token ID: {{ proxmox_api.token_id }}"
+          - "{% if api_token_value is defined %}NEW TOKEN GENERATED - Saved to /root/proxmox-api-token.txt{% else %}Token already exists{% endif %}"
+          - "IMPORTANT: Save the token value securely - it cannot be retrieved again!"
+      when: token_output.changed | default(false)
+
+- name: Create API token for Ansible (optional)
+  block:
+    - name: Create Ansible user
+      ansible.builtin.command: >
+        pveum user add ansible@pve
+        --comment "Ansible automation user"
+      register: ansible_user_result
+      failed_when: false
+      changed_when: "'create user' in ansible_user_result.stdout | default('')"
+
+    - name: Apply admin role to Ansible user
+      ansible.builtin.command: >
+        pveum acl modify /
+        --users ansible@pve
+        --roles Administrator
+      register: ansible_acl_result
+      changed_when: "'update acl' in ansible_acl_result.stdout | default('')"
+  when: proxmox_api.create_ansible_token | default(false)

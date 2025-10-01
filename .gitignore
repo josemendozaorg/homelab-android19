@@ -28,6 +28,9 @@ secrets/
 terraform.tfvars
 *.auto.tfvars
 
+# Packer
+*.pkrvars.hcl
+
 # Ansible
 *.retry
 .ansible/

@@ -1,0 +1,68 @@
+---
+# Pre-flight checks - MUST run before any dangerous operations
+# These checks prevent catastrophic failures like network lockouts
+
+- name: Pre-flight Network Safety Checks
+  block:
+    - name: Collect current network interface information
+      ansible.builtin.shell: |
+        echo "=== Current Network Interfaces ==="
+        ip link show | grep -E "^[0-9]+:" | cut -d: -f2 | tr -d ' '
+      register: actual_interfaces
+      changed_when: false
+
+    - name: Show detected network interfaces
+      ansible.builtin.debug:
+        msg:
+          - "Detected interfaces on system:"
+          - "{{ actual_interfaces.stdout_lines }}"
+
+    - name: Collect current network configuration
+      ansible.builtin.shell: |
+        echo "=== Current Active Configuration ==="
+        ip addr show | grep -E "inet |state UP"
+      register: active_config
+      changed_when: false
+
+    - name: Backup current working configuration
+      ansible.builtin.copy:
+        src: /etc/network/interfaces
+        dest: "/etc/network/interfaces.backup.{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      changed_when: true
+
+    - name: Display network status (informational only)
+      ansible.builtin.debug:
+        msg: |
+          ℹ️  NETWORK STATUS (Proxmox manages network configuration)
+
+          Current Working Config:
+          {{ active_config.stdout }}
+
+          Network bridges are managed by Proxmox installation.
+          No network configuration changes will be made via Ansible.
+
+          Backup created: /etc/network/interfaces.backup.{{ ansible_date_time.epoch }}
+
+- name: Pre-flight Storage Safety Checks
+  when: proxmox_storage.vm_storage.enabled | default(false)
+  block:
+    - name: Check existing ZFS pools
+      ansible.builtin.command: zpool list
+      register: existing_pools
+      failed_when: false
+      changed_when: false
+
+    - name: Check existing Proxmox storage
+      ansible.builtin.command: pvesm status
+      register: existing_storage
+      failed_when: false
+      changed_when: false
+
+    - name: Display storage status
+      ansible.builtin.debug:
+        msg:
+          - "Existing ZFS pools:"
+          - "{{ existing_pools.stdout | default('No pools found') }}"
+          - "Existing Proxmox storage:"
+          - "{{ existing_storage.stdout | default('No storage found') }}"
