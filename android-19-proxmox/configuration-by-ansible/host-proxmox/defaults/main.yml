@@ -41,9 +41,11 @@ proxmox_ct_templates:
 proxmox_vm_isos: []  # ISOs managed by specific VM roles
 
 # API Configuration
+# SECURITY: API credentials should be provided via environment variables or ansible-vault
+# Example: ansible-playbook ... -e proxmox_api_user=terraform@pve -e proxmox_api_token_id=terraform-token
 proxmox_api:
-  user: "terraform@pve"
-  token_id: "terraform-token"
+  user: "{{ proxmox_api_user | default('terraform@pve') }}"
+  token_id: "{{ proxmox_api_token_id | default('terraform-token') }}"
   token_comment: "Token for Terraform automation"
   privileges:
     - "VM.Allocate"

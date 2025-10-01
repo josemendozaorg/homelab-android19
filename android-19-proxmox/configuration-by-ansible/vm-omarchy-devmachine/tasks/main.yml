@@ -10,6 +10,18 @@
   debug:
     msg: "{{ 'ISO already exists' if omarchy_iso_stat.stat.exists else 'ISO needs to be downloaded' }}"
 
+- name: Check available disk space for ISO download
+  shell: df -B1 /var/lib/vz/template/iso | awk 'NR==2 {print $4}'
+  register: available_space
+  when: not omarchy_iso_stat.stat.exists
+
+- name: Verify sufficient disk space for ISO (6.6GB required)
+  fail:
+    msg: "Insufficient disk space. Need 7.0GB, have {{ (available_space.stdout | int / 1024 / 1024 / 1024) | round(1) }}GB available"
+  when:
+    - not omarchy_iso_stat.stat.exists
+    - available_space.stdout | int < 7500000000  # 7.5GB buffer for 6.2GB file
+
 - name: Download Omarchy ISO if not present
   get_url:
     url: "{{ omarchy_iso_url }}"
@@ -19,6 +31,8 @@
     mode: '0644'
   when: not omarchy_iso_stat.stat.exists
   register: iso_download
+  retries: 3
+  delay: 10
 
 - name: Display download completion
   debug:

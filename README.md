@@ -79,7 +79,7 @@ make proxmox-full-deploy
 
 ### Troubleshooting
 - **SSH Permission Denied**: See [SSH Setup Guide](docs/SSH_SETUP.md)
-- **Terraform API Issues**: Check your API token in `terraform/terraform.tfvars`
+- **Terraform API Issues**: Check your API token in `android-19-proxmox/provisioning-by-terraform/terraform.tfvars`
 - **Docker Issues**: Ensure Docker is running and you have proper permissions
 
 ## ⚠️ INFRASTRUCTURE SAFETY
