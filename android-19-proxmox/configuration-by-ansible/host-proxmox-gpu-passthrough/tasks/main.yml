@@ -5,6 +5,10 @@
   include_tasks: validate-amd-cpu.yml
   tags: [gpu, validate, iommu]
 
+- name: Check IOMMU runtime status
+  include_tasks: check-iommu-runtime.yml
+  tags: [gpu, iommu, check]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]
