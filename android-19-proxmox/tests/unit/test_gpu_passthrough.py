@@ -58,3 +58,24 @@ def test_identify_gpu_task_structure(project_root):
     task_content = str(tasks)
     assert "lspci" in task_content, "Task should use lspci command to detect GPU"
     assert "NVIDIA" in task_content or "nvidia" in task_content.lower(), "Task should filter for NVIDIA GPU"
+
+
+def test_validate_amd_cpu_task_exists(project_root):
+    """AMD CPU validation task exists for IOMMU prerequisite check."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "validate-amd-cpu.yml"
+
+    assert task_file.exists(), f"AMD CPU validation task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    # Check for CPU detection command (lscpu or grep)
+    task_content = str(tasks)
+    assert "lscpu" in task_content.lower() or "cpuinfo" in task_content.lower(), \
+        "Task should use lscpu or cpuinfo to detect CPU"
+    assert "amd" in task_content.lower(), "Task should check for AMD CPU"
+    assert "fail" in task_content.lower() or "assert" in task_content.lower(), \
+        "Task should fail gracefully if AMD CPU not detected"

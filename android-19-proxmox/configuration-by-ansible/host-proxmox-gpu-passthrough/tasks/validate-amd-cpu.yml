@@ -1,0 +1,15 @@
+---
+# Validate AMD CPU before IOMMU configuration
+
+- name: Detect CPU vendor
+  ansible.builtin.command:
+    cmd: lscpu
+  register: cpu_info
+  changed_when: false
+
+- name: Verify AMD CPU is present
+  ansible.builtin.assert:
+    that:
+      - "'AMD' in cpu_info.stdout"
+    fail_msg: "This system does not have an AMD CPU. AMD IOMMU configuration requires an AMD processor."
+    success_msg: "AMD CPU detected. Proceeding with IOMMU configuration."
