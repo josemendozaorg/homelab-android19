@@ -46,14 +46,13 @@ services:
     type: "vm"
     ip: "192.168.0.101"
     description: "Omarchy development workstation (Arch Linux + Hyprland)"
-    template_vm_id: 9101  # VM ID of golden template created by Packer
-    cloud_init: true      # Deploy from golden template (not ISO)
-    agent: true           # Enable QEMU guest agent for better integration
+    iso: "omarchy-3.0.2.iso"  # Boot from Omarchy ISO
+    agent: true           # Enable QEMU guest agent (install after OS setup)
     onboot: false         # Manual start (development workstation)
     resources:
       cores: 16
       memory: 32768
-      disk: 200
+      disk: 250  # Increased for development environment
     storage: "vm-storage"
 
 
