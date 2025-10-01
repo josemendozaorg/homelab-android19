@@ -29,6 +29,11 @@
   when: grub_config_changed is changed
   tags: [gpu, iommu, update]
 
+- name: Reboot system to apply IOMMU configuration
+  include_tasks: reboot-system.yml
+  when: grub_config_changed is changed and not iommu_runtime_enabled
+  tags: [gpu, iommu, reboot]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]

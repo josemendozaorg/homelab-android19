@@ -1,0 +1,33 @@
+---
+# Reboot system and verify IOMMU configuration
+
+- name: Reboot system to apply IOMMU configuration
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+    connect_timeout: 20
+    post_reboot_delay: 15
+    msg: "Rebooting to apply IOMMU GPU passthrough configuration"
+
+- name: Read kernel command line after reboot
+  ansible.builtin.command:
+    cmd: cat /proc/cmdline
+  register: post_reboot_cmdline
+  changed_when: false
+
+- name: Verify IOMMU parameters are active after reboot
+  ansible.builtin.assert:
+    that:
+      - "'amd_iommu=on' in post_reboot_cmdline.stdout"
+      - "'iommu=pt' in post_reboot_cmdline.stdout"
+    fail_msg: "IOMMU parameters not found in kernel command line after reboot"
+    success_msg: "IOMMU parameters successfully enabled in kernel"
+
+- name: Check system uptime to verify fresh reboot
+  ansible.builtin.command:
+    cmd: uptime -s
+  register: system_uptime
+  changed_when: false
+
+- name: Display system uptime
+  ansible.builtin.debug:
+    msg: "System booted at: {{ system_uptime.stdout }}"

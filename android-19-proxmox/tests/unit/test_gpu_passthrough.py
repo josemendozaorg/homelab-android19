@@ -217,3 +217,33 @@ def test_update_grub_task_exists(project_root):
 
     # Check for result registration
     assert "register" in task_content.lower(), "Task should register command result for verification"
+
+
+def test_reboot_system_task_exists(project_root):
+    """Reboot system task reboots and verifies IOMMU and uptime."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "reboot-system.yml"
+
+    assert task_file.exists(), f"Reboot system task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for reboot module usage
+    assert "reboot" in task_content.lower(), "Task should use reboot module"
+
+    # Check for timeout configuration
+    assert "timeout" in task_content.lower() or "reboot_timeout" in task_content.lower(), \
+        "Task should configure reboot timeout"
+
+    # Check for post-reboot verification
+    assert "/proc/cmdline" in task_content or "iommu" in task_content.lower(), \
+        "Task should verify IOMMU parameters after reboot"
+
+    # Check for uptime verification
+    assert "uptime" in task_content.lower() or "stat" in task_content.lower(), \
+        "Task should verify system uptime after reboot"
