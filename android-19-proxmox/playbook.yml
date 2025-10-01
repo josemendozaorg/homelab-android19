@@ -16,8 +16,3 @@
         - "192.168.0.19 proxmox pve"
         - "192.168.0.10 android16-bastion android16"
 
-- name: Configure Omarchy development VM
-  hosts: localhost
-  gather_facts: no
-  roles:
-    - configuration-by-ansible/vm-omarchy-dev
