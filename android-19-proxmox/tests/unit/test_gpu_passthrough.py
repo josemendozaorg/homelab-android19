@@ -131,3 +131,31 @@ def test_check_iommu_grub_task_exists(project_root):
     # Check for fact registration
     assert "set_fact" in task_content or "register" in task_content, \
         "Task should register the result as a fact"
+
+
+def test_backup_grub_config_task_exists(project_root):
+    """GRUB backup task creates timestamped backup in same directory."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "backup-grub-config.yml"
+
+    assert task_file.exists(), f"GRUB backup task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for copy module usage
+    assert "copy" in task_content.lower(), "Task should use copy module for backup"
+    assert "remote_src" in task_content, "Task should use remote_src for local copy"
+
+    # Check for source and destination paths
+    assert "/etc/default/grub" in task_content, "Task should backup /etc/default/grub"
+    assert ".backup." in task_content or "backup" in task_content.lower(), \
+        "Backup filename should include 'backup'"
+
+    # Check for timestamp in destination
+    assert "ansible_date_time" in task_content or "date" in task_content.lower(), \
+        "Task should use timestamp in backup filename"
