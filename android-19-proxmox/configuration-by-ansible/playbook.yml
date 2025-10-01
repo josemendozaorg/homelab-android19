@@ -10,9 +10,6 @@
     - name: Update /etc/hosts
       lineinfile:
         path: /etc/hosts
-        line: "{{ item }}"
+        line: "192.168.0.19 proxmox pve"
         state: present
-      loop:
-        - "192.168.0.19 proxmox pve"
-        - "192.168.0.10 android16-bastion android16"
 

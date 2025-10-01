@@ -5,4 +5,4 @@
   gather_facts: no
 
   roles:
-    - role: configuration-by-ansible/vm-omarchy-devmachine
+    - role: vm-omarchy-devmachine

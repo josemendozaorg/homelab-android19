@@ -19,14 +19,14 @@ locals {
 resource "proxmox_virtual_environment_container" "containers" {
   for_each = local.terraform_containers
 
-  node_name    = local.catalog.physical.android19-proxmox.node_name
+  node_name    = local.catalog.proxmox.node_name
   vm_id        = tonumber(each.key)
-  started      = true  # Ensure container is started after creation
-  unprivileged = true  # Use unprivileged containers (required for API token access)
+  started      = true # Ensure container is started after creation
+  unprivileged = true # Use unprivileged containers (required for API token access)
 
   # Network interface configuration
   network_interface {
-    name = "eth0"
+    name   = "eth0"
     bridge = "vmbr0"
   }
 
@@ -49,7 +49,7 @@ resource "proxmox_virtual_environment_container" "containers" {
 
   operating_system {
     template_file_id = "local:vztmpl/${lookup(each.value, "template", var.lxc_template)}"
-    type            = "debian"
+    type             = "debian"
   }
 
   cpu {
@@ -82,17 +82,17 @@ resource "proxmox_virtual_environment_container" "containers" {
 resource "proxmox_virtual_environment_vm" "vms" {
   for_each = local.terraform_vms
 
-  node_name = local.catalog.physical.android19-proxmox.node_name
+  node_name = local.catalog.proxmox.node_name
   vm_id     = tonumber(each.key)
   name      = each.value.name
-  started   = lookup(each.value, "cloud_init", false)  # Auto-start cloud-init VMs, manual for ISO-based
+  started   = lookup(each.value, "cloud_init", false) # Auto-start cloud-init VMs, manual for ISO-based
 
   description = each.value.description
 
   # BIOS and boot configuration
-  bios = lookup(each.value, "bios", "ovmf")  # Default to UEFI
+  bios = lookup(each.value, "bios", "ovmf") # Default to UEFI
 
-  machine = lookup(each.value, "machine", "q35")  # Modern chipset
+  machine = lookup(each.value, "machine", "q35") # Modern chipset
 
   # Boot order: cloud images boot from disk, ISOs boot from ISO first
   boot_order = lookup(each.value, "cloud_init", false) ? ["scsi0"] : ["ide2", "scsi0"]
@@ -105,27 +105,17 @@ resource "proxmox_virtual_environment_vm" "vms" {
   # CPU configuration
   cpu {
     cores   = lookup(each.value.resources, "cores", 2)
-    type    = "host"  # Pass through CPU features for better performance
+    type    = "host" # Pass through CPU features for better performance
     sockets = 1
   }
 
   # Memory configuration with balloon
   memory {
     dedicated = lookup(each.value.resources, "memory", 4096)
-    floating  = lookup(each.value.resources, "memory", 4096)  # Enable balloon memory
+    floating  = lookup(each.value.resources, "memory", 4096) # Enable balloon memory
   }
 
-  # Primary disk - clone from template for cloud-init VMs, blank disk for ISO VMs
-  dynamic "disk" {
-    for_each = lookup(each.value, "cloud_init", false) ? [] : [1]
-    content {
-      datastore_id = lookup(each.value, "storage", "local")
-      size         = lookup(each.value.resources, "disk", 32)
-      interface    = "scsi0"
-    }
-  }
-
-  # Clone configuration for cloud-init VMs
+  # Clone configuration for cloud-init VMs (clone from template)
   dynamic "clone" {
     for_each = lookup(each.value, "cloud_init", false) ? [1] : []
     content {
@@ -134,19 +124,11 @@ resource "proxmox_virtual_environment_vm" "vms" {
     }
   }
 
-  # Disk configuration for new VMs (ISO-based)
+  # Disk configuration
+  # For cloud-init VMs: Resize cloned disk
+  # For ISO VMs: Create blank disk
   dynamic "disk" {
-    for_each = lookup(each.value, "iso", null) != null ? [1] : []
-    content {
-      datastore_id = lookup(each.value, "storage", "vm-storage")
-      size         = lookup(each.value.resources, "disk", 150)
-      interface    = "scsi0"
-    }
-  }
-
-  # Disk configuration for cloned VMs (resize cloned disk)
-  dynamic "disk" {
-    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    for_each = [1]
     content {
       datastore_id = lookup(each.value, "storage", "vm-storage")
       size         = lookup(each.value.resources, "disk", 150)
@@ -158,8 +140,9 @@ resource "proxmox_virtual_environment_vm" "vms" {
   dynamic "cdrom" {
     for_each = lookup(each.value, "iso", null) != null ? [1] : []
     content {
-      enabled = true
-      file_id = "local:iso/${each.value.iso}"
+      enabled   = true
+      file_id   = "local:iso/${each.value.iso}"
+      interface = "ide2"
     }
   }
 
@@ -167,8 +150,8 @@ resource "proxmox_virtual_environment_vm" "vms" {
   dynamic "cdrom" {
     for_each = lookup(each.value, "cloud_init", false) ? [1] : []
     content {
-      enabled = true
-      file_id = "local:iso/cloud-init-${each.key}.iso"
+      enabled   = true
+      file_id   = "local:iso/cloud-init-${each.key}.iso"
       interface = "ide2"
     }
   }
@@ -181,7 +164,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
 
   # VGA display - default settings for remote access
   vga {
-    type = "std"  # Default standard VGA (compatible with remote desktop)
+    type = "std" # Default standard VGA (compatible with remote desktop)
   }
 
   # On boot behavior
@@ -189,22 +172,32 @@ resource "proxmox_virtual_environment_vm" "vms" {
 
   # Operating system type for optimization
   operating_system {
-    type = "l26"  # Linux 2.6/3.x/4.x/5.x/6.x kernel
+    type = "l26" # Linux 2.6/3.x/4.x/5.x/6.x kernel
   }
 
-  # Cloud-init configuration
-  initialization {
-    datastore_id = lookup(each.value, "storage", "local")
+  # Cloud-init configuration (only for VMs with cloud_init: true)
+  dynamic "initialization" {
+    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    content {
+      datastore_id = lookup(each.value, "storage", "local")
 
-    ip_config {
-      ipv4 {
-        address = "${each.value.ip}/24"
-        gateway = local.catalog.network.gateway
+      # User account configuration (only works with cloud images)
+      user_account {
+        username = lookup(each.value, "cloud_init_user", "dev")
+        password = lookup(each.value, "cloud_init_password", "dev")
+        keys     = [file("~/.ssh/id_rsa.pub")]
       }
-    }
 
-    dns {
-      servers = [local.catalog.network.dns]
+      ip_config {
+        ipv4 {
+          address = "${each.value.ip}/24"
+          gateway = local.catalog.network.gateway
+        }
+      }
+
+      dns {
+        servers = [local.catalog.network.dns]
+      }
     }
   }
 }

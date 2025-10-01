@@ -1,0 +1,26 @@
+---
+# Ubuntu Desktop Dev Machine Role
+# Simple approach: Download Ubuntu Desktop ISO + create VM with Terraform
+
+- name: Include Ubuntu Desktop ISO download tasks
+  include_tasks: iso-download.yml
+  tags: [iso, download]
+
+- name: Display installation instructions
+  ansible.builtin.debug:
+    msg: |
+      ✅ Ubuntu Desktop ISO ready for VM installation
+
+      📋 VM Configuration (from infrastructure-catalog.yml):
+      - VM ID: {{ vm_config.id | default('103') }}
+      - VM Name: {{ vm_config.name }}
+      - IP Address: {{ vm_config.ip }}
+      - CPU: {{ vm_config.resources.cores }} cores
+      - RAM: {{ (vm_config.resources.memory / 1024) | round(1) }}GB
+      - Disk: {{ vm_config.resources.disk }}GB
+      - Storage: {{ vm_config.storage }}
+
+      📁 ISO Location: {{ iso_storage_path }}/{{ ubuntu_desktop_iso_name }}
+
+      🚀 Next: Terraform will create the VM automatically
+      🖥️  Then: Boot VM and complete Ubuntu installation manually

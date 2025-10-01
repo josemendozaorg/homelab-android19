@@ -1,9 +1,10 @@
 ---
-# Infrastructure Catalog - Source of Truth for IDs and IPs
-# All roles/playbooks should reference this catalog for ID and IP assignments
+# Proxmox Infrastructure Catalog - Source of Truth for IDs and IPs
+# This catalog defines all infrastructure managed by Proxmox (containers and VMs)
+# All Proxmox roles/playbooks should reference this catalog for ID and IP assignments
 #
 # Network Strategy (see docs/adr/002-homelab-network-strategy.md):
-# - Physical hosts: .10-.19
+# - Proxmox host: 192.168.0.19
 # - Containers: .20-.99 (ID matches IP last octet)
 # - VMs: .100-.199 (ID matches IP last octet)
 # - DHCP pool: .200-.249
@@ -12,7 +13,10 @@
 # 1. Choose appropriate IP range based on service type
 # 2. Pick unused ID matching IP last octet if possible
 # 3. Add entry with type: "container" or "vm"
-# 4. Update role to use: catalog.services[ID]
+# 4. Set cloud_init flag:
+#    - true: VM uses cloud image with cloud-init support (automated)
+#    - false: VM uses ISO requiring manual installation
+# 5. Update role to use: catalog.services[ID]
 
 # Services (both containers and VMs - unified to prevent ID conflicts)
 # All services are provisioned by Terraform
@@ -47,6 +51,7 @@ services:
     ip: "192.168.0.101"
     description: "Omarchy development workstation (Arch Linux + Hyprland)"
     iso: "omarchy-3.0.2.iso"  # Boot from Omarchy ISO
+    cloud_init: false     # ISO does not support cloud-init (manual installation required)
     agent: true           # Enable QEMU guest agent (install after OS setup)
     onboot: false         # Manual start (development workstation)
     resources:
@@ -55,17 +60,28 @@ services:
       disk: 250  # Increased for development environment
     storage: "vm-storage"
 
+  103:
+    name: "ubuntu-desktop-dev"
+    type: "vm"
+    ip: "192.168.0.103"
+    description: "Ubuntu Desktop development workstation (Ubuntu 24.04 + Omakub)"
+    iso: "ubuntu-24.04.1-desktop-amd64.iso"  # Boot from Ubuntu Desktop ISO
+    cloud_init: false     # Desktop ISO requires manual installation (cloud-init in GUI not fully automated)
+    agent: true           # QEMU guest agent enabled
+    onboot: false         # Manual start (development workstation)
+    resources:
+      cores: 32
+      memory: 38912
+      disk: 150
+    storage: "vm-storage"
 
 
-# Physical Infrastructure
-physical:
-  android16-bastion:
-    ip: "192.168.0.10"
 
-  android19-proxmox:
-    ip: "192.168.0.19"
-    node_name: "proxmox"
-    api_port: 8006
+# Proxmox Host Configuration
+proxmox:
+  ip: "192.168.0.19"
+  node_name: "proxmox"
+  api_port: 8006
 
 # Network Configuration
 network:
@@ -73,11 +89,9 @@ network:
   gateway: "192.168.0.1"
   dns: "192.168.0.25"  # AdGuard Home DNS server
 
-  # IP Range Allocation Strategy
+  # IP Range Allocation Strategy (for Proxmox-managed infrastructure)
   ranges:
-    router_gateway: "192.168.0.1-9"      # Router and network infrastructure
-    physical_hosts: "192.168.0.10-19"    # Physical machines
     containers: "192.168.0.20-99"        # LXC containers
     virtual_machines: "192.168.0.100-199" # QEMU VMs
-    dhcp_pool: "192.168.0.200-249"       # Dynamic allocation
+    dhcp_pool: "192.168.0.200-249"       # Dynamic allocation for VMs
     reserved: "192.168.0.250-254"        # Future use

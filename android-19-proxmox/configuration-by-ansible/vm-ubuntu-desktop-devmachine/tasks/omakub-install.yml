@@ -1,0 +1,47 @@
+---
+# Omakub Installation Tasks via QEMU Guest Agent
+# Install Omakub with pre-configured choices using the official installation method
+#
+# Version: stable (or specify OMAKUB_REF environment variable)
+# Tested with: Omakub v1.4.0
+# Environment variables: OMAKUB_FIRST_RUN_* variables work as of v1.4.0
+
+- name: Display Omakub installation start
+  ansible.builtin.debug:
+    msg: |
+      🚀 Installing Omakub {{ omakub_version }} with automated configuration
+
+      Programming Languages: {{ omakub_languages }}
+      Databases: {{ omakub_databases }}
+      Optional Apps: {{ omakub_optional_apps }}
+
+- name: Run Omakub installation with pre-configured environment variables
+  ansible.builtin.shell:
+    cmd: |
+      qm guest exec {{ vm_config.id | default('103') }} -- bash -c '
+      export OMAKUB_REF="{{ omakub_version }}"
+      export OMAKUB_FIRST_RUN_OPTIONAL_APPS="{{ omakub_optional_apps }}"
+      export OMAKUB_FIRST_RUN_LANGUAGES="{{ omakub_languages }}"
+      export OMAKUB_FIRST_RUN_DBS="{{ omakub_databases }}"
+      export OMAKUB_FULL_NAME="{{ omakub_full_name }}"
+      export OMAKUB_EMAIL="{{ omakub_email }}"
+      export OMAKUB_GITHUB_HANDLE="{{ omakub_github_handle }}"
+      wget -qO- https://omakub.org/install | bash
+      '
+  register: omakub_install
+  changed_when: omakub_install.rc == 0
+  async: 7200  # 2 hour timeout for installation
+  poll: 60     # Check every minute
+
+- name: Display Omakub installation status
+  ansible.builtin.debug:
+    msg: |
+      ✅ Omakub installation completed!
+
+      Version: {{ omakub_version }}
+      Configuration:
+      - Languages: {{ omakub_languages }}
+      - Databases: {{ omakub_databases }}
+      - Optional Apps: {{ omakub_optional_apps }}
+
+      The VM now has a fully configured development environment!

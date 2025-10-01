@@ -1,0 +1,46 @@
+---
+# Ubuntu Desktop Dev Machine role defaults
+# Automated deployment: ISO download + Terraform VM + QEMU guest agent configuration
+
+# Ubuntu Desktop ISO configuration
+ubuntu_desktop_iso_url: "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso"
+ubuntu_desktop_iso_name: "ubuntu-24.04.1-desktop-amd64.iso"
+
+# Proxmox storage configuration
+iso_storage_path: "/var/lib/vz/template/iso"
+proxmox_iso_storage: "local"
+
+# NOTE: VM configuration (ID, name, IP, resources) comes from infrastructure-catalog.yml
+# The playbook loads this automatically from catalog.services[103]
+# Do not duplicate VM config here - maintain single source of truth in catalog
+
+# Git Configuration (used by Omakub)
+git_user_name: "Dev User"
+git_user_email: "josephrichard7@gmail.com"
+
+# Omakub Configuration
+# Version: Pinned to specific version for reproducibility
+# See: https://github.com/basecamp/omakub/releases
+# Tested and verified with v1.4.0 (released May 20, 2025)
+omakub_version: "v1.4.0"
+omakub_full_name: "{{ git_user_name }}"
+omakub_email: "{{ git_user_email }}"
+omakub_github_handle: ""
+
+# Optional Desktop Applications (comma-separated)
+# Available: 1password, Spotify, Zoom, Dropbox
+# Default: 1password, Spotify, Zoom
+# To skip all: set to empty string ""
+omakub_optional_apps: ""
+
+# Programming Languages (comma-separated)
+# Available: Ruby on Rails, Node.js, Go, PHP, Python, Elixir, Rust, Java
+# Default: Ruby on Rails, Node.js
+# To skip all: set to empty string ""
+omakub_languages: "Node.js,Java,Go,Rust,Python"
+
+# Databases (comma-separated, run in Docker)
+# Available: MySQL, Redis, PostgreSQL
+# Default: MySQL, Redis
+# To skip all: set to empty string ""
+omakub_databases: ""

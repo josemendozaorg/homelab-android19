@@ -1,0 +1,44 @@
+---
+# Ubuntu Desktop Development VM Setup Playbook
+# Simple approach: Download ISO + Create VM with Terraform
+- name: Setup Ubuntu Desktop Development VM
+  hosts: proxmox
+  become: false
+  gather_facts: true
+
+  vars_files:
+    - vm-ubuntu-desktop-devmachine/defaults/main.yml
+
+  vars:
+    # Load configuration from infrastructure catalog
+    catalog: "{{ lookup('file', '../infrastructure-catalog.yml') | from_yaml }}"
+    vm_config: "{{ catalog.services[103] }}"
+
+  tasks:
+    - name: Include Ubuntu Desktop ISO download tasks
+      include_tasks: vm-ubuntu-desktop-devmachine/tasks/iso-download.yml
+      tags: [download, iso]
+
+    - name: Display next steps
+      ansible.builtin.debug:
+        msg: |
+          🎉 Ubuntu Desktop VM preparation complete!
+
+          ✅ ISO downloaded: {{ ubuntu_desktop_iso_name }}
+          ✅ VM configuration ready from infrastructure-catalog.yml
+
+          📋 VM Details:
+          - VM ID: 103
+          - Name: {{ vm_config.name }}
+          - CPU: {{ vm_config.resources.cores }} cores
+          - RAM: {{ vm_config.resources.memory }}MB
+          - Disk: {{ vm_config.resources.disk }}GB
+          - IP: {{ vm_config.ip }}
+
+          🚀 VM will be created by Terraform
+          🖥️  Then boot VM and install Ubuntu manually via console
+
+  tags:
+    - ubuntu-desktop
+    - vm
+    - development

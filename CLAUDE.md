@@ -250,3 +250,52 @@ make proxmox-tf-apply
 4. Deploy to specific machines: `make bastion-deploy` or `make proxmox-deploy`
 5. For infrastructure changes: `make proxmox-tf-plan` → `make proxmox-tf-apply`
 6. Validate with: `make test-ping` or service-specific tests
+
+## TDD Development Example
+
+This project follows strict Test-Driven Development (TDD) practices with small, testable incremental changes.
+
+### Example: Fixing Hardcoded SSH Key Security Issue
+
+**Problem:** SSH key was hardcoded in `defaults/main.yml` (security risk)
+
+**TDD Workflow (2 commits):**
+
+#### Commit 1: Document Issue with Failing Test
+```python
+# tests/unit/test_playbooks.py
+@pytest.mark.xfail(reason="Known issue: SSH key is currently hardcoded")
+def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
+    """SSH public key should not be hardcoded in defaults file."""
+    # Test that validates security issue
+    assert not ssh_key.startswith('ssh-rsa'), "Key should not be hardcoded"
+```
+- Test: `make test-unit` → **17 passed, 1 xfailed**
+- Documents the security issue
+- Specifies what "fixed" means
+
+#### Commit 2: Fix Issue, Test Passes
+```yaml
+# defaults/main.yml - Before
+ssh_public_key: "ssh-rsa AAAA...hardcoded..."
+
+# defaults/main.yml - After
+ssh_public_key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"
+```
+- Test: `make test-unit` → **18 passed, 0 xfailed**
+- Security issue fixed
+- Test validates the fix automatically
+
+**Benefits of this approach:**
+- ✅ **Small changes:** Each commit is tiny and focused
+- ✅ **Always testable:** Every change has automated validation
+- ✅ **Documents intent:** Test shows what should happen
+- ✅ **Safe refactoring:** Test catches regressions
+- ✅ **Clear history:** Git log shows problem → solution
+
+**Key Principles:**
+1. **One small change at a time** (strict requirement)
+2. **Test first** (or document with xfail)
+3. **Automated validation** (`make test-unit`)
+4. **Commit immediately** after each small working step
+5. **Never skip tests** - they prevent future breakage
