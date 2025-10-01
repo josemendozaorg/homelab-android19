@@ -303,3 +303,40 @@ def test_update_initramfs_task_exists(project_root):
 
     # Check for result registration
     assert "register" in task_content.lower(), "Task should register command result"
+
+
+def test_blacklist_gpu_drivers_task_exists(project_root):
+    """GPU driver blacklist task creates modprobe configuration."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "blacklist-gpu-drivers.yml"
+
+    assert task_file.exists(), f"GPU driver blacklist task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for template module usage
+    assert "template" in task_content.lower(), "Task should use template module"
+
+    # Check for target file path
+    assert "/etc/modprobe.d/blacklist-nvidia.conf" in task_content, \
+        "Task should target /etc/modprobe.d/blacklist-nvidia.conf"
+
+    # Check template file exists
+    template_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "templates" / "blacklist-nvidia.conf.j2"
+    assert template_file.exists(), f"Template file not found: {template_file}"
+
+    # Read template and check for blacklisted drivers
+    with open(template_file) as f:
+        template_content = f.read()
+
+    # Check for all required drivers
+    assert "nouveau" in template_content, "Template should blacklist nouveau driver"
+    assert "nvidia" in template_content, "Template should blacklist nvidia driver"
+    assert "nvidia_drm" in template_content, "Template should blacklist nvidia_drm driver"
+    assert "nvidia_modeset" in template_content, "Template should blacklist nvidia_modeset driver"
+    assert "nvidia_uvm" in template_content, "Template should blacklist nvidia_uvm driver"

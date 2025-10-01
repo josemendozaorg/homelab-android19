@@ -1,0 +1,10 @@
+---
+# Blacklist NVIDIA GPU drivers to prevent conflict with VFIO
+
+- name: Deploy GPU driver blacklist configuration
+  ansible.builtin.template:
+    src: blacklist-nvidia.conf.j2
+    dest: /etc/modprobe.d/blacklist-nvidia.conf
+    mode: '0644'
+    owner: root
+    group: root

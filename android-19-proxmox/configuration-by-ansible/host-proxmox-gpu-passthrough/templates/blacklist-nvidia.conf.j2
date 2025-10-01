@@ -1,0 +1,8 @@
+# Blacklist NVIDIA GPU drivers to prevent conflict with VFIO
+# This allows VFIO to claim the GPU for passthrough to VMs
+
+blacklist nouveau
+blacklist nvidia
+blacklist nvidia_drm
+blacklist nvidia_modeset
+blacklist nvidia_uvm

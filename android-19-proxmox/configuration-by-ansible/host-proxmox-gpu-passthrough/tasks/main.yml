@@ -42,6 +42,10 @@
   include_tasks: update-initramfs.yml
   tags: [gpu, vfio, initramfs]
 
+- name: Blacklist GPU drivers for VFIO
+  include_tasks: blacklist-gpu-drivers.yml
+  tags: [gpu, vfio, blacklist]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]
