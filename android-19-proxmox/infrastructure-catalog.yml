@@ -1,9 +1,10 @@
 ---
-# Infrastructure Catalog - Source of Truth for IDs and IPs
-# All roles/playbooks should reference this catalog for ID and IP assignments
+# Proxmox Infrastructure Catalog - Source of Truth for IDs and IPs
+# This catalog defines all infrastructure managed by Proxmox (containers and VMs)
+# All Proxmox roles/playbooks should reference this catalog for ID and IP assignments
 #
 # Network Strategy (see docs/adr/002-homelab-network-strategy.md):
-# - Physical hosts: .10-.19
+# - Proxmox host: 192.168.0.19
 # - Containers: .20-.99 (ID matches IP last octet)
 # - VMs: .100-.199 (ID matches IP last octet)
 # - DHCP pool: .200-.249
@@ -76,15 +77,11 @@ services:
 
 
 
-# Physical Infrastructure
-physical:
-  android16-bastion:
-    ip: "192.168.0.10"
-
-  android19-proxmox:
-    ip: "192.168.0.19"
-    node_name: "proxmox"
-    api_port: 8006
+# Proxmox Host Configuration
+proxmox:
+  ip: "192.168.0.19"
+  node_name: "proxmox"
+  api_port: 8006
 
 # Network Configuration
 network:
@@ -92,11 +89,9 @@ network:
   gateway: "192.168.0.1"
   dns: "192.168.0.25"  # AdGuard Home DNS server
 
-  # IP Range Allocation Strategy
+  # IP Range Allocation Strategy (for Proxmox-managed infrastructure)
   ranges:
-    router_gateway: "192.168.0.1-9"      # Router and network infrastructure
-    physical_hosts: "192.168.0.10-19"    # Physical machines
     containers: "192.168.0.20-99"        # LXC containers
     virtual_machines: "192.168.0.100-199" # QEMU VMs
-    dhcp_pool: "192.168.0.200-249"       # Dynamic allocation
+    dhcp_pool: "192.168.0.200-249"       # Dynamic allocation for VMs
     reserved: "192.168.0.250-254"        # Future use

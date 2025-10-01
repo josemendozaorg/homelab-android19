@@ -93,13 +93,11 @@ adguard_filter_lists:
 adguard_dns_rewrites:
   # Internal homelab domains
   - domain: "proxmox.homelab"
-    ip: "{{ catalog.physical['android19-proxmox'].ip }}"
+    ip: "{{ catalog.proxmox.ip }}"
   - domain: "pve.homelab"
-    ip: "{{ catalog.physical['android19-proxmox'].ip }}"
+    ip: "{{ catalog.proxmox.ip }}"
   - domain: "adguard.homelab"
     ip: "{{ adguard_static_ip }}"
-  - domain: "bastion.homelab"
-    ip: "{{ catalog.physical['android16-bastion'].ip }}"
 
   # Service-specific domains for easy access
   - domain: "dns.homelab"
