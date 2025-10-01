@@ -54,15 +54,15 @@ def test_ubuntu_desktop_role_exists(project_root):
 
     assert role_dir.exists(), f"Role directory not found: {role_dir}"
 
-    # Check required directories
+    # Check required directories (templates removed - using QEMU guest agent)
     assert (role_dir / "tasks").exists(), "Role missing tasks directory"
     assert (role_dir / "defaults").exists(), "Role missing defaults directory"
-    assert (role_dir / "templates").exists(), "Role missing templates directory"
 
     # Check required task files
     assert (role_dir / "tasks" / "main.yml").exists(), "Role missing tasks/main.yml"
     assert (role_dir / "tasks" / "iso-download.yml").exists(), "Role missing tasks/iso-download.yml"
-    assert (role_dir / "tasks" / "post-install-setup.yml").exists(), "Role missing tasks/post-install-setup.yml"
+    assert (role_dir / "tasks" / "vm-configure.yml").exists(), "Role missing tasks/vm-configure.yml"
+    assert (role_dir / "tasks" / "omakub-install.yml").exists(), "Role missing tasks/omakub-install.yml"
 
 
 def test_ubuntu_desktop_role_defaults(project_root):
@@ -117,8 +117,8 @@ def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
     Security: SSH keys should be read from the system or environment variables,
     not hardcoded in version control.
 
-    This test verifies that ssh_public_key uses Ansible lookup instead of
-    hardcoded key material.
+    Note: ssh_public_key variable removed from defaults since QEMU guest agent
+    approach doesn't require it. SSH keys configured in Terraform main.tf.
     """
     defaults_file = (
         project_root / "android-19-proxmox" / "configuration-by-ansible" /
@@ -129,13 +129,14 @@ def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
     with open(defaults_file) as f:
         defaults = yaml.safe_load(f)
 
+    # Verify ssh_public_key is not defined (moved to Terraform)
+    # If it exists, ensure it's not hardcoded
     ssh_key = defaults.get('ssh_public_key', '')
-
-    # Check if SSH key is hardcoded (starts with ssh-rsa, ssh-ed25519, etc.)
-    assert not ssh_key.startswith(('ssh-rsa', 'ssh-ed25519', 'ssh-dss', 'ecdsa-')), (
-        "SSH public key should not be hardcoded in defaults file. "
-        "Use lookup from ~/.ssh/id_rsa.pub or environment variable instead."
-    )
+    if ssh_key:
+        assert not ssh_key.startswith(('ssh-rsa', 'ssh-ed25519', 'ssh-dss', 'ecdsa-')), (
+            "SSH public key should not be hardcoded in defaults file. "
+            "Use lookup from ~/.ssh/id_rsa.pub or environment variable instead."
+        )
 
 
 def test_ubuntu_desktop_no_hardcoded_credentials(project_root):
@@ -145,8 +146,9 @@ def test_ubuntu_desktop_no_hardcoded_credentials(project_root):
     Credentials should be provided via ansible-vault, environment variables,
     or prompted during deployment.
 
-    This test verifies that dev_password uses environment variable lookup
-    instead of hardcoded password.
+    Note: dev_password variable removed from defaults since credentials are
+    now configured in Terraform via cloud-init (for cloud images) or set
+    during manual Ubuntu Desktop installation.
     """
     defaults_file = (
         project_root / "android-19-proxmox" / "configuration-by-ansible" /
@@ -157,13 +159,13 @@ def test_ubuntu_desktop_no_hardcoded_credentials(project_root):
     with open(defaults_file) as f:
         defaults = yaml.safe_load(f)
 
-    # Check for obviously insecure hardcoded passwords
-    dev_password = defaults.get('dev_password', '')
-
-    # Password should not be a simple string like "dev", "password", "changeme", etc.
+    # Verify dev_password is not defined (moved to Terraform or manual setup)
+    # If any password fields exist, ensure they're not insecure
     insecure_passwords = ['dev', 'password', 'changeme', 'admin', 'test', '123456']
 
-    assert dev_password not in insecure_passwords, (
-        f"Password '{dev_password}' is hardcoded in defaults file. "
-        "Use ansible-vault, environment variable, or prompt for password instead."
-    )
+    for key, value in defaults.items():
+        if 'password' in key.lower() and isinstance(value, str):
+            assert value not in insecure_passwords, (
+                f"Insecure password '{value}' found in defaults file at key '{key}'. "
+                "Use ansible-vault, environment variable, or prompt for password instead."
+            )

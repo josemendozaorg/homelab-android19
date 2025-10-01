@@ -12,7 +12,10 @@
 # 1. Choose appropriate IP range based on service type
 # 2. Pick unused ID matching IP last octet if possible
 # 3. Add entry with type: "container" or "vm"
-# 4. Update role to use: catalog.services[ID]
+# 4. Set cloud_init flag:
+#    - true: VM uses cloud image with cloud-init support (automated)
+#    - false: VM uses ISO requiring manual installation
+# 5. Update role to use: catalog.services[ID]
 
 # Services (both containers and VMs - unified to prevent ID conflicts)
 # All services are provisioned by Terraform
@@ -47,6 +50,7 @@ services:
     ip: "192.168.0.101"
     description: "Omarchy development workstation (Arch Linux + Hyprland)"
     iso: "omarchy-3.0.2.iso"  # Boot from Omarchy ISO
+    cloud_init: false     # ISO does not support cloud-init (manual installation required)
     agent: true           # Enable QEMU guest agent (install after OS setup)
     onboot: false         # Manual start (development workstation)
     resources:
@@ -61,6 +65,7 @@ services:
     ip: "192.168.0.103"
     description: "Ubuntu Desktop development workstation (Ubuntu 24.04 + Omakub)"
     iso: "ubuntu-24.04.1-desktop-amd64.iso"  # Boot from Ubuntu Desktop ISO
+    cloud_init: false     # Desktop ISO requires manual installation (cloud-init in GUI not fully automated)
     agent: true           # QEMU guest agent enabled
     onboot: false         # Manual start (development workstation)
     resources:

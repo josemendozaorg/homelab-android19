@@ -115,17 +115,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
     floating  = lookup(each.value.resources, "memory", 4096)  # Enable balloon memory
   }
 
-  # Primary disk - clone from template for cloud-init VMs, blank disk for ISO VMs
-  dynamic "disk" {
-    for_each = lookup(each.value, "cloud_init", false) ? [] : [1]
-    content {
-      datastore_id = lookup(each.value, "storage", "local")
-      size         = lookup(each.value.resources, "disk", 32)
-      interface    = "scsi0"
-    }
-  }
-
-  # Clone configuration for cloud-init VMs
+  # Clone configuration for cloud-init VMs (clone from template)
   dynamic "clone" {
     for_each = lookup(each.value, "cloud_init", false) ? [1] : []
     content {
@@ -134,19 +124,11 @@ resource "proxmox_virtual_environment_vm" "vms" {
     }
   }
 
-  # Disk configuration for new VMs (ISO-based)
+  # Disk configuration
+  # For cloud-init VMs: Resize cloned disk
+  # For ISO VMs: Create blank disk
   dynamic "disk" {
-    for_each = lookup(each.value, "iso", null) != null ? [1] : []
-    content {
-      datastore_id = lookup(each.value, "storage", "vm-storage")
-      size         = lookup(each.value.resources, "disk", 150)
-      interface    = "scsi0"
-    }
-  }
-
-  # Disk configuration for cloned VMs (resize cloned disk)
-  dynamic "disk" {
-    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    for_each = [1]
     content {
       datastore_id = lookup(each.value, "storage", "vm-storage")
       size         = lookup(each.value.resources, "disk", 150)
@@ -193,26 +175,29 @@ resource "proxmox_virtual_environment_vm" "vms" {
     type = "l26"  # Linux 2.6/3.x/4.x/5.x/6.x kernel
   }
 
-  # Cloud-init configuration
-  initialization {
-    datastore_id = lookup(each.value, "storage", "local")
+  # Cloud-init configuration (only for VMs with cloud_init: true)
+  dynamic "initialization" {
+    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    content {
+      datastore_id = lookup(each.value, "storage", "local")
 
-    # User account configuration (only works with cloud images, not ISO installations)
-    user_account {
-      username = lookup(each.value, "cloud_init_user", "dev")
-      password = lookup(each.value, "cloud_init_password", "dev")
-      keys     = [file("~/.ssh/id_rsa.pub")]
-    }
-
-    ip_config {
-      ipv4 {
-        address = "${each.value.ip}/24"
-        gateway = local.catalog.network.gateway
+      # User account configuration (only works with cloud images)
+      user_account {
+        username = lookup(each.value, "cloud_init_user", "dev")
+        password = lookup(each.value, "cloud_init_password", "dev")
+        keys     = [file("~/.ssh/id_rsa.pub")]
       }
-    }
 
-    dns {
-      servers = [local.catalog.network.dns]
+      ip_config {
+        ipv4 {
+          address = "${each.value.ip}/24"
+          gateway = local.catalog.network.gateway
+        }
+      }
+
+      dns {
+        servers = [local.catalog.network.dns]
+      }
     }
   }
 }

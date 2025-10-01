@@ -1,6 +1,6 @@
 ---
 # Ubuntu Desktop Dev Machine role defaults
-# Simple approach: Ubuntu Desktop ISO + post-install automation
+# Automated deployment: ISO download + Terraform VM + QEMU guest agent configuration
 
 # Ubuntu Desktop ISO configuration
 ubuntu_desktop_iso_url: "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso"
@@ -14,15 +14,7 @@ proxmox_iso_storage: "local"
 # The playbook loads this automatically from catalog.services[103]
 # Do not duplicate VM config here - maintain single source of truth in catalog
 
-# User Configuration
-dev_user: "dev"
-# Password should be provided via environment variable DEV_PASSWORD
-# This avoids hardcoding passwords in version control (security issue)
-# Usage: export DEV_PASSWORD="your_secure_password" before running playbook
-dev_password: "{{ lookup('env', 'DEV_PASSWORD') }}"
-dev_hostname: "ubuntu-desktop-dev"
-
-# Git Configuration
+# Git Configuration (used by Omakub)
 git_user_name: "Dev User"
 git_user_email: "josephrichard7@gmail.com"
 
@@ -34,20 +26,21 @@ omakub_version: "v1.4.0"
 omakub_full_name: "{{ git_user_name }}"
 omakub_email: "{{ git_user_email }}"
 omakub_github_handle: ""
-omakub_optional_apps: "1password,Spotify,Zoom"
-omakub_languages: "Ruby on Rails,Node.js"
-omakub_databases: "MySQL,Redis"
 
-# Network Configuration (static IP as per infrastructure-catalog.yml)
-network_config:
-  interface: "enp0s3"  # Common Ubuntu Desktop interface name
-  ip_address: "192.168.0.103"
-  gateway: "192.168.0.1"
-  dns_servers:
-    - "192.168.0.25"  # AdGuard DNS
-    - "1.1.1.1"       # Cloudflare fallback
+# Optional Desktop Applications (comma-separated)
+# Available: 1password, Spotify, Zoom, Dropbox
+# Default: 1password, Spotify, Zoom
+# To skip all: set to empty string ""
+omakub_optional_apps: ""
 
-# SSH Key Configuration
-# Read SSH public key from the user's home directory
-# This avoids hardcoding keys in version control (security issue)
-ssh_public_key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"
+# Programming Languages (comma-separated)
+# Available: Ruby on Rails, Node.js, Go, PHP, Python, Elixir, Rust, Java
+# Default: Ruby on Rails, Node.js
+# To skip all: set to empty string ""
+omakub_languages: "Node.js,Java,Go,Rust,Python"
+
+# Databases (comma-separated, run in Docker)
+# Available: MySQL, Redis, PostgreSQL
+# Default: MySQL, Redis
+# To skip all: set to empty string ""
+omakub_databases: ""
