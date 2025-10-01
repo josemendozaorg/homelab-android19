@@ -1,0 +1,15 @@
+---
+# Check if IOMMU passthrough is configured in GRUB
+
+- name: Read GRUB configuration file
+  ansible.builtin.slurp:
+    src: /etc/default/grub
+  register: grub_config
+
+- name: Check if iommu=pt is configured in GRUB
+  ansible.builtin.set_fact:
+    iommu_grub_configured: "{{ 'iommu=pt' in (grub_config.content | b64decode) }}"
+
+- name: Display IOMMU GRUB configuration status
+  ansible.builtin.debug:
+    msg: "IOMMU passthrough in GRUB config: {{ 'CONFIGURED' if iommu_grub_configured else 'NOT CONFIGURED' }}"

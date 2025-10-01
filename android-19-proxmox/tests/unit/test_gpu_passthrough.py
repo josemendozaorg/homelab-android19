@@ -105,3 +105,29 @@ def test_check_iommu_runtime_task_exists(project_root):
     # Check for fact registration
     assert "set_fact" in task_content or "register" in task_content, \
         "Task should register the result as a fact"
+
+
+def test_check_iommu_grub_task_exists(project_root):
+    """IOMMU GRUB config check task reads /etc/default/grub and registers fact."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "check-iommu-grub.yml"
+
+    assert task_file.exists(), f"IOMMU GRUB check task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for GRUB config file reading
+    assert "/etc/default/grub" in task_content, "Task should read /etc/default/grub"
+
+    # Check for iommu=pt string search
+    assert "iommu=pt" in task_content or "iommu" in task_content.lower(), \
+        "Task should check for iommu=pt parameter"
+
+    # Check for fact registration
+    assert "set_fact" in task_content or "register" in task_content, \
+        "Task should register the result as a fact"
