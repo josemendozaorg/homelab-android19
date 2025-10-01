@@ -1,6 +1,10 @@
 ---
 # GPU Passthrough Configuration Tasks
 
+- name: Validate AMD CPU prerequisite
+  include_tasks: validate-amd-cpu.yml
+  tags: [gpu, validate, iommu]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]
