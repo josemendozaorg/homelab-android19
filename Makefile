@@ -19,7 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-download-iso omarchy-check-iso omarchy-deploy omarchy-destroy \
+        omarchy-download-iso omarchy-check-iso omarchy-deploy omarchy-full-deploy omarchy-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -175,6 +175,14 @@ omarchy-deploy: omarchy-check-iso ## Deploy Omarchy VM with Terraform (creates V
 	@echo "2. Start the VM and complete manual installation"
 	@echo "3. Select keyboard layout, timezone, and create user"
 	@echo "4. After installation, enable SSH if needed"
+
+omarchy-full-deploy: ## Complete Omarchy deployment: download ISO and create VM
+	@echo "🚀 Starting complete Omarchy deployment..."
+	@echo "📋 Step 1: Checking if ISO exists..."
+	@$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "test -f /var/lib/vz/template/iso/omarchy-3.0.2.iso" 2>/dev/null || $(MAKE) omarchy-download-iso
+	@echo "📋 Step 2: Creating VM with ISO..."
+	@$(MAKE) omarchy-deploy
+	@echo "✅ Complete Omarchy deployment finished!"
 
 omarchy-destroy: ## Destroy Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
