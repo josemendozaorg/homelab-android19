@@ -34,6 +34,10 @@
   when: grub_config_changed is changed and not iommu_runtime_enabled
   tags: [gpu, iommu, reboot]
 
+- name: Configure VFIO kernel modules
+  include_tasks: configure-vfio-modules.yml
+  tags: [gpu, vfio, modules]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]

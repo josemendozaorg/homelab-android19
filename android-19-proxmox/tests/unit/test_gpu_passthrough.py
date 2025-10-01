@@ -247,3 +247,31 @@ def test_reboot_system_task_exists(project_root):
     # Check for uptime verification
     assert "uptime" in task_content.lower() or "stat" in task_content.lower(), \
         "Task should verify system uptime after reboot"
+
+
+def test_configure_vfio_modules_task_exists(project_root):
+    """VFIO kernel modules configuration task creates /etc/modules-load.d/vfio.conf."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "configure-vfio-modules.yml"
+
+    assert task_file.exists(), f"VFIO modules configuration task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for lineinfile module usage
+    assert "lineinfile" in task_content.lower(), "Task should use lineinfile module"
+
+    # Check for target file path
+    assert "/etc/modules-load.d/vfio.conf" in task_content, \
+        "Task should target /etc/modules-load.d/vfio.conf"
+
+    # Check for all four VFIO modules
+    assert "vfio" in task_content, "Task should configure vfio module"
+    assert "vfio_iommu_type1" in task_content, "Task should configure vfio_iommu_type1 module"
+    assert "vfio_pci" in task_content, "Task should configure vfio_pci module"
+    assert "vfio_virqfd" in task_content, "Task should configure vfio_virqfd module"

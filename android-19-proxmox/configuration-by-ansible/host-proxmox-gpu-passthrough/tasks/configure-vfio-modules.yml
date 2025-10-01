@@ -1,0 +1,30 @@
+---
+# Configure VFIO kernel modules to load at boot
+
+- name: Add vfio module to modules-load configuration
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/vfio.conf
+    line: "vfio"
+    create: yes
+    mode: '0644'
+
+- name: Add vfio_iommu_type1 module to modules-load configuration
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/vfio.conf
+    line: "vfio_iommu_type1"
+    create: yes
+    mode: '0644'
+
+- name: Add vfio_pci module to modules-load configuration
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/vfio.conf
+    line: "vfio_pci"
+    create: yes
+    mode: '0644'
+
+- name: Add vfio_virqfd module to modules-load configuration
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/vfio.conf
+    line: "vfio_virqfd"
+    create: yes
+    mode: '0644'
