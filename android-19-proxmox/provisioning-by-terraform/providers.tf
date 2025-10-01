@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "proxmox" {
-  endpoint = "https://${local.catalog.proxmox.ip}:${local.catalog.proxmox.api_port}"
+  endpoint  = "https://${local.catalog.proxmox.ip}:${local.catalog.proxmox.api_port}"
   api_token = var.proxmox_api_token
-  insecure = true
+  insecure  = true
 }
