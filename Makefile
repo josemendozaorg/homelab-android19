@@ -93,10 +93,10 @@ test-ping-proxmox: ## Test connection to Proxmox server only
 	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name ping
 
 test-catalog: ## Validate infrastructure catalog with pytest
-	$(ANSIBLE_EXEC) pytest tests/unit/test_catalog.py -v
+	$(ANSIBLE_EXEC) pytest android-19-proxmox/tests/unit/test_catalog.py -v
 
 test-unit: ## Run all unit tests
-	$(ANSIBLE_EXEC) pytest tests/unit/ -v
+	$(ANSIBLE_EXEC) pytest android-19-proxmox/tests/unit/ -v
 
 test-all: test-unit test-ping ## Run all tests (unit + connectivity)
 

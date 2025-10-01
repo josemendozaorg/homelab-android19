@@ -6,14 +6,14 @@ from pathlib import Path
 
 @pytest.fixture(scope="session")
 def project_root():
-    """Return the project root directory."""
+    """Return the android-19-proxmox directory."""
     return Path(__file__).parent.parent
 
 
 @pytest.fixture(scope="session")
 def catalog(project_root):
     """Load infrastructure catalog once for all tests."""
-    catalog_path = project_root / "android-19-proxmox" / "infrastructure-catalog.yml"
+    catalog_path = project_root / "infrastructure-catalog.yml"
     with open(catalog_path) as f:
         return yaml.safe_load(f)
 

@@ -8,7 +8,7 @@ from pathlib import Path
 @pytest.fixture(scope="module")
 def playbook_dir(project_root):
     """Return the android-19-proxmox playbook directory."""
-    return project_root / "android-19-proxmox" / "configuration-by-ansible"
+    return project_root / "configuration-by-ansible"
 
 
 def test_ubuntu_desktop_playbook_exists(playbook_dir):
@@ -50,7 +50,7 @@ def test_ubuntu_desktop_playbook_references_catalog(playbook_dir):
 
 def test_ubuntu_desktop_role_exists(project_root):
     """Ubuntu Desktop role directory exists with required structure."""
-    role_dir = project_root / "android-19-proxmox" / "configuration-by-ansible" / "vm-ubuntu-desktop-devmachine"
+    role_dir = project_root / "configuration-by-ansible" / "vm-ubuntu-desktop-devmachine"
 
     assert role_dir.exists(), f"Role directory not found: {role_dir}"
 
@@ -68,7 +68,7 @@ def test_ubuntu_desktop_role_exists(project_root):
 def test_ubuntu_desktop_role_defaults(project_root):
     """Ubuntu Desktop role has defaults file."""
     defaults_file = (
-        project_root / "android-19-proxmox" / "configuration-by-ansible" /
+        project_root / "configuration-by-ansible" /
         "vm-ubuntu-desktop-devmachine" / "defaults" / "main.yml"
     )
 
@@ -86,7 +86,7 @@ def test_ubuntu_desktop_role_defaults(project_root):
 def test_ubuntu_desktop_iso_url_accessible(project_root):
     """Ubuntu Desktop ISO URL is accessible and returns valid response."""
     defaults_file = (
-        project_root / "android-19-proxmox" / "configuration-by-ansible" /
+        project_root / "configuration-by-ansible" /
         "vm-ubuntu-desktop-devmachine" / "defaults" / "main.yml"
     )
 
@@ -121,7 +121,7 @@ def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
     approach doesn't require it. SSH keys configured in Terraform main.tf.
     """
     defaults_file = (
-        project_root / "android-19-proxmox" / "configuration-by-ansible" /
+        project_root / "configuration-by-ansible" /
         "vm-ubuntu-desktop-devmachine" / "defaults" / "main.yml"
     )
 
@@ -151,7 +151,7 @@ def test_ubuntu_desktop_no_hardcoded_credentials(project_root):
     during manual Ubuntu Desktop installation.
     """
     defaults_file = (
-        project_root / "android-19-proxmox" / "configuration-by-ansible" /
+        project_root / "configuration-by-ansible" /
         "vm-ubuntu-desktop-devmachine" / "defaults" / "main.yml"
     )
 
