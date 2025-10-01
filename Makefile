@@ -19,7 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-download-iso omarchy-check-iso omarchy-packer-init omarchy-packer-validate omarchy-packer-build \
+        omarchy-download-iso omarchy-check-iso omarchy-deploy omarchy-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -42,8 +42,8 @@ help: ## Show available commands
 	@echo "Proxmox Terraform (proxmox-tf-*):"
 	@$(MAKE) -s help-section SECTION="Android #19 Proxmox"
 	@echo ""
-	@echo "Omarchy Packer (omarchy-packer-*):"
-	@$(MAKE) -s help-section SECTION="Omarchy Packer"
+	@echo "Omarchy VM (omarchy-*):"
+	@$(MAKE) -s help-section SECTION="Omarchy VM"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -194,38 +194,6 @@ proxmox-full-deploy: ## Complete Proxmox deployment: Terraform provision + Ansib
 	@echo "✅ Complete Proxmox deployment finished!"
 	@echo "🌐 Run 'make test-ping' to validate deployment"
 
-# Omarchy Packer
-omarchy-download-iso: ## Download Omarchy ISO to Proxmox storage
-	@echo "📥 Downloading Omarchy 3.0.2 ISO to Proxmox storage (6.2GB - may take 10+ minutes)..."
-	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626 timeout=1800"
-	@echo "✅ Omarchy ISO download complete"
-
-omarchy-check-iso: ## Check if Omarchy ISO is available in Proxmox storage
-	@echo "🔍 Checking for Omarchy ISO in Proxmox storage..."
-	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "ls -la /var/lib/vz/template/iso/omarchy-3.0.2.iso"
-	@echo "✅ Omarchy ISO availability check complete"
-
-omarchy-packer-init: ## Initialize Packer plugins for Omarchy
-	@echo "🔧 Initializing Packer plugins..."
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer init ."
-	@echo "✅ Packer plugins installed"
-
-omarchy-packer-validate: omarchy-packer-init ## Validate Omarchy Packer template
-	@echo "🔍 Validating Omarchy Packer template..."
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer validate -var 'proxmox_token=dummy-token-for-validation' ."
-	@echo "✅ Omarchy Packer template is valid"
-
-omarchy-packer-build: omarchy-packer-validate ## Build Omarchy golden template with Packer (requires manual interaction)
-	@echo "🏗️ Building Omarchy golden template with manual interaction..."
-	@echo "⚠️  This will create VM ID 9101 and require manual setup via Proxmox console"
-	@echo "📋 Prerequisites: Omarchy ISO must be uploaded to Proxmox local storage"
-	@echo "🖱️  MANUAL STEPS REQUIRED:"
-	@echo "    1. Packer will create and start VM 9101"
-	@echo "    2. Open Proxmox console for VM 9101"
-	@echo "    3. Complete Omarchy installation (keyboard layout, timezone, user creation)"
-	@echo "    4. Wait for Packer breakpoint prompt, then press Enter to continue"
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/vmimages-by-packer/omarchy && packer build -var-file=omarchy.pkrvars.hcl ."
-	@echo "✅ Omarchy golden template created successfully!"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines
