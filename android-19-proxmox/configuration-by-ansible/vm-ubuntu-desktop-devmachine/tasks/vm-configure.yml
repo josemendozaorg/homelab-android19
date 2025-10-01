@@ -1,0 +1,42 @@
+---
+# VM Configuration Tasks via QEMU Guest Agent
+# These tasks run commands inside the VM using qm guest exec
+
+- name: Display VM configuration start
+  ansible.builtin.debug:
+    msg: |
+      🔧 Configuring Ubuntu Desktop VM via QEMU Guest Agent
+
+      VM ID: {{ vm_config.id | default('103') }}
+      VM Name: {{ vm_config.name }}
+      Target IP: {{ vm_config.ip }}
+
+- name: Check QEMU guest agent is running
+  ansible.builtin.command:
+    cmd: "qm guest cmd {{ vm_config.id | default('103') }} ping"
+  register: guest_agent_status
+  failed_when: false
+  changed_when: false
+
+- name: Verify guest agent is accessible
+  ansible.builtin.assert:
+    that:
+      - guest_agent_status.rc == 0
+    fail_msg: "QEMU guest agent is not running on VM {{ vm_config.id | default('103') }}"
+    success_msg: "✅ QEMU guest agent is running"
+
+- name: Update package cache
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('103') }} -- sudo apt update"
+  register: apt_update
+  changed_when: "'Reading package lists' in apt_update.stdout"
+
+- name: Install required packages
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('103') }} -- sudo apt install -y git curl wget build-essential"
+  register: apt_install
+  changed_when: "'Setting up' in apt_install.stdout"
+
+- name: Display package installation status
+  ansible.builtin.debug:
+    msg: "✅ Required packages installed"

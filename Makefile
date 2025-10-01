@@ -20,7 +20,7 @@ INVENTORY := inventory.yml
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         omarchy-deploy omarchy-destroy \
-        ubuntu-desktop-deploy \
+        ubuntu-desktop-deploy deploy-vm-ubuntu-desktop-devmachine \
         all-deploy all-ping
 
 # Help target with color output
@@ -185,9 +185,15 @@ omarchy-destroy: ## Destroy Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 
 # Ubuntu Desktop VM
-ubuntu-desktop-deploy: ## Deploy Ubuntu Desktop development workstation (semi-automated)
-	@echo "🖥️ Preparing Ubuntu Desktop development workstation..."
+deploy-vm-ubuntu-desktop-devmachine: proxmox-tf-init ## Deploy Ubuntu Desktop VM (ISO + Terraform)
+	@echo "🖥️ Deploying Ubuntu Desktop development workstation..."
+	@echo "📋 Step 1/2: Downloading Ubuntu ISO"
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/ubuntu-desktop-dev-setup.yml
+	@echo "📋 Step 2/2: Creating VM with Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
+	@echo "✅ Ubuntu Desktop VM created! Open Proxmox console to complete installation"
+
+ubuntu-desktop-deploy: deploy-vm-ubuntu-desktop-devmachine ## Alias for deploy-vm-ubuntu-desktop-devmachine
 
 
 # Complete Infrastructure Deployment

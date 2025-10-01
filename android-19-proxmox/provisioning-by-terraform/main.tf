@@ -158,8 +158,9 @@ resource "proxmox_virtual_environment_vm" "vms" {
   dynamic "cdrom" {
     for_each = lookup(each.value, "iso", null) != null ? [1] : []
     content {
-      enabled = true
-      file_id = "local:iso/${each.value.iso}"
+      enabled   = true
+      file_id   = "local:iso/${each.value.iso}"
+      interface = "ide2"
     }
   }
 
@@ -195,6 +196,13 @@ resource "proxmox_virtual_environment_vm" "vms" {
   # Cloud-init configuration
   initialization {
     datastore_id = lookup(each.value, "storage", "local")
+
+    # User account configuration (only works with cloud images, not ISO installations)
+    user_account {
+      username = lookup(each.value, "cloud_init_user", "dev")
+      password = lookup(each.value, "cloud_init_password", "dev")
+      keys     = [file("~/.ssh/id_rsa.pub")]
+    }
 
     ip_config {
       ipv4 {

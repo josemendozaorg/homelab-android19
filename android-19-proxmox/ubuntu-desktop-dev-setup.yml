@@ -1,6 +1,6 @@
 ---
 # Ubuntu Desktop Development VM Setup Playbook
-# Simple approach: Ubuntu Desktop ISO + post-install automation
+# Simple approach: Download ISO + Create VM with Terraform
 - name: Setup Ubuntu Desktop Development VM
   hosts: proxmox
   become: false
@@ -17,78 +17,26 @@
   tasks:
     - name: Include Ubuntu Desktop ISO download tasks
       include_tasks: configuration-by-ansible/vm-ubuntu-desktop-devmachine/tasks/iso-download.yml
-      vars:
-        ubuntu_vm:
-          id: 103
-          name: "{{ vm_config.name }}"
-          ip: "{{ vm_config.ip }}"
-          storage: "{{ vm_config.storage }}"
       tags: [download, iso]
 
-    - name: Include post-install setup tasks
-      include_tasks: configuration-by-ansible/vm-ubuntu-desktop-devmachine/tasks/post-install-setup.yml
-      vars:
-        ubuntu_vm:
-          id: 103
-          name: "{{ vm_config.name }}"
-          ip: "{{ vm_config.ip }}"
-          storage: "{{ vm_config.storage }}"
-      tags: [post-install, setup]
-
-    - name: Display manual installation instructions
+    - name: Display next steps
       ansible.builtin.debug:
         msg: |
-          🎉 Ubuntu Desktop Development VM Preparation Complete!
+          🎉 Ubuntu Desktop VM preparation complete!
 
-          ================================================================
+          ✅ ISO downloaded: {{ ubuntu_desktop_iso_name }}
+          ✅ VM configuration ready from infrastructure-catalog.yml
 
-          📦 PREPARATION STATUS:
-          ✅ Ubuntu Desktop ISO downloaded: {{ ubuntu_desktop_iso_name }}
-          ✅ Post-install automation scripts created
-          ✅ All configuration ready for VM {{ vm_config.name }} (ID: 103)
+          📋 VM Details:
+          - VM ID: 103
+          - Name: {{ vm_config.name }}
+          - CPU: {{ vm_config.resources.cores }} cores
+          - RAM: {{ vm_config.resources.memory }}MB
+          - Disk: {{ vm_config.resources.disk }}GB
+          - IP: {{ vm_config.ip }}
 
-          📋 MANUAL INSTALLATION STEPS:
-
-          1. 🖥️  CREATE VM IN PROXMOX:
-             - VM ID: 103
-             - Name: {{ vm_config.name }}
-             - CPU: {{ vm_config.resources.cores }} cores
-             - RAM: {{ vm_config.resources.memory }}MB
-             - Disk: {{ vm_config.resources.disk }}GB
-             - ISO: {{ ubuntu_desktop_iso_name }}
-
-          2. 🔧 INSTALL UBUNTU DESKTOP:
-             - Boot from ISO and install Ubuntu 24.04.1 Desktop
-             - Username: {{ dev_user }}
-             - Password: {{ dev_password }}
-             - Hostname: {{ dev_hostname }}
-             - Enable "Log in automatically"
-
-          3. 🚀 RUN POST-INSTALL AUTOMATION:
-             After Ubuntu installation, run in terminal:
-
-             wget http://192.168.0.19:8080/ubuntu-post-install/ubuntu-post-install.sh
-             bash ubuntu-post-install.sh
-
-          4. 🎯 AUTOMATIC CONFIGURATION:
-             The script will configure:
-             - Static IP: {{ network_config.ip_address }}
-             - SSH access with key authentication
-             - Git configuration
-             - Omakub first-login installation
-
-          5. ✨ FINAL STEP:
-             - Reboot the system
-             - Log into desktop GUI
-             - Omakub will install automatically!
-
-          ================================================================
-
-          🎯 RESULT: Fully automated Ubuntu Desktop + Omakub development machine
-          📧 SSH Access: ssh {{ dev_user }}@{{ network_config.ip_address }}
-          🔑 Password: {{ dev_password }}
-
-          ================================================================
+          🚀 VM will be created by Terraform
+          🖥️  Then boot VM and install Ubuntu manually via console
 
   tags:
     - ubuntu-desktop
