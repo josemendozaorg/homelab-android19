@@ -13,6 +13,11 @@
   include_tasks: check-iommu-grub.yml
   tags: [gpu, iommu, check]
 
+- name: Backup GRUB configuration
+  include_tasks: backup-grub-config.yml
+  when: not iommu_grub_configured
+  tags: [gpu, iommu, backup]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]
