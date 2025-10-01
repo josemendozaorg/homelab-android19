@@ -24,7 +24,10 @@ ubuntu_vm_disk_size: 150  # 150GB disk for Ubuntu + development tools
 
 # User Configuration
 dev_user: "dev"
-dev_password: "dev"
+# Password should be provided via environment variable DEV_PASSWORD
+# This avoids hardcoding passwords in version control (security issue)
+# Usage: export DEV_PASSWORD="your_secure_password" before running playbook
+dev_password: "{{ lookup('env', 'DEV_PASSWORD') }}"
 dev_hostname: "ubuntu-desktop-dev"
 
 # Git Configuration

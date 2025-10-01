@@ -138,15 +138,15 @@ def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
     )
 
 
-@pytest.mark.xfail(reason="Known issue: Credentials are currently hardcoded (security issue)")
 def test_ubuntu_desktop_no_hardcoded_credentials(project_root):
     """User credentials should not be hardcoded in defaults file.
 
-    Security Issue: Hardcoded passwords in version control are a security risk.
+    Security: Hardcoded passwords in version control are a security risk.
     Credentials should be provided via ansible-vault, environment variables,
     or prompted during deployment.
 
-    This test documents the known issue and will pass once the fix is implemented.
+    This test verifies that dev_password uses environment variable lookup
+    instead of hardcoded password.
     """
     defaults_file = (
         project_root / "android-19-proxmox" / "configuration-by-ansible" /
