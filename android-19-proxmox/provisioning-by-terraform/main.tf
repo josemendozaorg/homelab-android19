@@ -82,7 +82,7 @@ resource "proxmox_virtual_environment_container" "containers" {
 resource "proxmox_virtual_environment_vm" "vms" {
   for_each = local.terraform_vms
 
-  node_name = local.catalog.physical.android19-proxmox.node_name
+  node_name = local.catalog.proxmox.node_name
   vm_id     = tonumber(each.key)
   name      = each.value.name
   started   = lookup(each.value, "cloud_init", false)  # Auto-start cloud-init VMs, manual for ISO-based
