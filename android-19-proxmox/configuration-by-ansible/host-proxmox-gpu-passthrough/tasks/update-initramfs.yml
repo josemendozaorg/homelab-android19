@@ -1,6 +1,19 @@
 ---
 # Update initramfs to include VFIO modules
 
+- name: Add VFIO modules to initramfs configuration
+  ansible.builtin.lineinfile:
+    path: /etc/initramfs-tools/modules
+    line: "{{ item }}"
+    create: yes
+    mode: '0644'
+  loop:
+    - vfio
+    - vfio_iommu_type1
+    - vfio_pci
+    - vfio_virqfd
+  register: initramfs_modules_config
+
 - name: Check if VFIO modules are already in initramfs
   ansible.builtin.shell:
     cmd: lsinitramfs /boot/initrd.img-$(uname -r) | grep -q vfio
@@ -12,25 +25,25 @@
   ansible.builtin.stat:
     path: /boot/initrd.img-{{ ansible_kernel }}
   register: initramfs_before
-  when: vfio_in_initramfs.rc != 0
+  when: vfio_in_initramfs.rc != 0 or initramfs_modules_config is changed
 
 - name: Update initramfs to include VFIO modules
   ansible.builtin.command:
     cmd: update-initramfs -u -k all
   register: update_initramfs_result
-  when: vfio_in_initramfs.rc != 0
+  when: vfio_in_initramfs.rc != 0 or initramfs_modules_config is changed
   changed_when: true
 
 - name: Display update-initramfs output
   ansible.builtin.debug:
     msg: "{{ update_initramfs_result.stdout_lines }}"
-  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+  when: update_initramfs_result is defined and update_initramfs_result is not skipped
 
 - name: Get initramfs timestamp after update
   ansible.builtin.stat:
     path: /boot/initrd.img-{{ ansible_kernel }}
   register: initramfs_after
-  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+  when: update_initramfs_result is defined and update_initramfs_result is not skipped
 
 - name: Verify initramfs was updated (timestamp changed)
   ansible.builtin.assert:
@@ -38,16 +51,16 @@
       - initramfs_after.stat.mtime > initramfs_before.stat.mtime
     fail_msg: "initramfs timestamp did not change after update"
     success_msg: "initramfs successfully updated"
-  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+  when: update_initramfs_result is defined and update_initramfs_result is not skipped
 
 - name: Verify VFIO modules are now in initramfs
   ansible.builtin.shell:
     cmd: lsinitramfs /boot/initrd.img-$(uname -r) | grep vfio
   register: vfio_verify
   changed_when: false
-  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+  when: update_initramfs_result is defined and update_initramfs_result is not skipped
 
 - name: Display VFIO modules found in initramfs
   ansible.builtin.debug:
     msg: "{{ vfio_verify.stdout_lines }}"
-  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined and vfio_verify is defined
+  when: vfio_verify is defined and vfio_verify.stdout_lines is defined
