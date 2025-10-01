@@ -191,3 +191,29 @@ def test_configure_grub_iommu_task_exists(project_root):
 
     # Check for regexp pattern
     assert "regexp" in task_content.lower(), "Task should use regexp for pattern matching"
+
+
+def test_update_grub_task_exists(project_root):
+    """Update GRUB task runs update-grub command and verifies success."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "update-grub.yml"
+
+    assert task_file.exists(), f"Update GRUB task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for command module usage
+    assert "command" in task_content.lower() or "shell" in task_content.lower(), \
+        "Task should use command or shell module to run update-grub"
+
+    # Check for update-grub command
+    assert "update-grub" in task_content.lower() or "grub-mkconfig" in task_content.lower(), \
+        "Task should run update-grub or grub-mkconfig command"
+
+    # Check for result registration
+    assert "register" in task_content.lower(), "Task should register command result for verification"

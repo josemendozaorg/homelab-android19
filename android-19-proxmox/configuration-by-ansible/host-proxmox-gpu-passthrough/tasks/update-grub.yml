@@ -1,0 +1,24 @@
+---
+# Update GRUB bootloader configuration
+
+- name: Run update-grub to regenerate bootloader
+  ansible.builtin.command:
+    cmd: update-grub
+  register: update_grub_result
+  changed_when: true
+
+- name: Display update-grub output
+  ansible.builtin.debug:
+    msg: "{{ update_grub_result.stdout_lines }}"
+
+- name: Verify GRUB configuration file was updated
+  ansible.builtin.stat:
+    path: /boot/grub/grub.cfg
+  register: grub_cfg_stat
+
+- name: Confirm GRUB configuration exists
+  ansible.builtin.assert:
+    that:
+      - grub_cfg_stat.stat.exists
+    fail_msg: "GRUB configuration file /boot/grub/grub.cfg not found after update"
+    success_msg: "GRUB bootloader successfully updated"

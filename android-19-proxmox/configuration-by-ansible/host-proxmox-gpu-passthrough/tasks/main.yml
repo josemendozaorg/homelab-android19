@@ -22,6 +22,12 @@
   include_tasks: configure-grub-iommu.yml
   when: not iommu_grub_configured
   tags: [gpu, iommu, configure]
+  register: grub_config_changed
+
+- name: Update GRUB bootloader
+  include_tasks: update-grub.yml
+  when: grub_config_changed is changed
+  tags: [gpu, iommu, update]
 
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
