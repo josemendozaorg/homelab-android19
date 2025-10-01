@@ -55,6 +55,20 @@ services:
       disk: 250  # Increased for development environment
     storage: "vm-storage"
 
+  103:
+    name: "ubuntu-desktop-dev"
+    type: "vm"
+    ip: "192.168.0.103"
+    description: "Ubuntu Desktop development workstation (Ubuntu 24.04 + Omakub)"
+    iso: "ubuntu-24.04.1-desktop-amd64.iso"  # Boot from Ubuntu Desktop ISO
+    agent: false          # QEMU guest agent (can be installed post-setup)
+    onboot: false         # Manual start (development workstation)
+    resources:
+      cores: 32
+      memory: 38912
+      disk: 150
+    storage: "vm-storage"
+
 
 
 # Physical Infrastructure
