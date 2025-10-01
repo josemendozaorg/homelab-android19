@@ -32,7 +32,9 @@ RUN pip install --no-cache-dir \
     ansible-lint \
     yamllint \
     molecule \
-    molecule-docker
+    molecule-docker \
+    pytest \
+    pytest-xdist
 
 # Create workspace directory
 WORKDIR /workspace

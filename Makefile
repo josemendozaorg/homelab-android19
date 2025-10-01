@@ -12,7 +12,7 @@ INVENTORY := inventory.yml
 
 # Declare phony targets
 .PHONY: help env-all env-setup env-shell env-clean env-check \
-        test-ping test-ping-bastion test-ping-proxmox \
+        test-ping test-ping-bastion test-ping-proxmox test-catalog test-unit test-all \
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-host-setup proxmox-host-check \
@@ -91,6 +91,14 @@ test-ping-bastion: ## Test connection to bastion host only
 
 test-ping-proxmox: ## Test connection to Proxmox server only
 	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name ping
+
+test-catalog: ## Validate infrastructure catalog with pytest
+	$(ANSIBLE_EXEC) pytest tests/unit/test_catalog.py -v
+
+test-unit: ## Run all unit tests
+	$(ANSIBLE_EXEC) pytest tests/unit/ -v
+
+test-all: test-unit test-ping ## Run all tests (unit + connectivity)
 
 # Android #16 Bastion
 bastion-setup-sudo: ## Configure passwordless sudo on bastion (run once)
