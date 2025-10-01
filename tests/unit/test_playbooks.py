@@ -109,3 +109,30 @@ def test_ubuntu_desktop_iso_url_accessible(project_root):
         pytest.fail(f"ISO URL request timed out after 10 seconds. URL: {iso_url}")
     except requests.exceptions.RequestException as e:
         pytest.fail(f"Failed to access ISO URL: {e}")
+
+
+@pytest.mark.xfail(reason="Known issue: SSH key is currently hardcoded (security issue)")
+def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
+    """SSH public key should not be hardcoded in defaults file.
+
+    Security Issue: Hardcoded SSH keys in version control are a security risk.
+    Keys should be read from the system or provided via environment variables.
+
+    This test documents the known issue and will pass once the fix is implemented.
+    """
+    defaults_file = (
+        project_root / "android-19-proxmox" / "configuration-by-ansible" /
+        "vm-ubuntu-desktop-devmachine" / "defaults" / "main.yml"
+    )
+
+    import yaml
+    with open(defaults_file) as f:
+        defaults = yaml.safe_load(f)
+
+    ssh_key = defaults.get('ssh_public_key', '')
+
+    # Check if SSH key is hardcoded (starts with ssh-rsa, ssh-ed25519, etc.)
+    assert not ssh_key.startswith(('ssh-rsa', 'ssh-ed25519', 'ssh-dss', 'ecdsa-')), (
+        "SSH public key should not be hardcoded in defaults file. "
+        "Use lookup from ~/.ssh/id_rsa.pub or environment variable instead."
+    )
