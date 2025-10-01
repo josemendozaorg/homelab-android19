@@ -19,7 +19,7 @@ INVENTORY := inventory.yml
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
-        omarchy-download-iso omarchy-check-iso omarchy-deploy omarchy-full-deploy omarchy-destroy \
+        omarchy-deploy omarchy-destroy \
         all-deploy all-ping
 
 # Help target with color output
@@ -158,31 +158,21 @@ proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infra
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && ./rebuild-state.sh"
 
 # Omarchy VM Deployment
-omarchy-download-iso: ## Download Omarchy ISO to Proxmox storage
-	@echo "📥 Downloading Omarchy 3.0.2 ISO to Proxmox storage (6.2GB - may take 10+ minutes)..."
-	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626 timeout=1800"
-	@echo "✅ Omarchy ISO download complete"
-
-omarchy-check-iso: ## Check if Omarchy ISO exists in Proxmox storage
-	@echo "🔍 Checking for Omarchy ISO in Proxmox storage..."
-	$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "ls -la /var/lib/vz/template/iso/omarchy-3.0.2.iso 2>/dev/null || echo 'ISO not found'"
-
-omarchy-deploy: omarchy-check-iso ## Deploy Omarchy VM with Terraform (creates VM with ISO attached)
-	@echo "🚀 Deploying Omarchy VM with ISO..."
-	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+omarchy-deploy: ## Deploy Omarchy VM: download ISO if needed and create VM
+	@echo "🚀 Starting Omarchy VM deployment..."
+	@echo "📋 Step 1: Checking if ISO exists..."
+	@if ! $(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "test -f /var/lib/vz/template/iso/omarchy-3.0.2.iso" >/dev/null 2>&1; then \
+		echo "📥 Downloading Omarchy 3.0.2 ISO (6.2GB - may take 10+ minutes)..."; \
+		$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626 timeout=1800"; \
+	else \
+		echo "✅ ISO already exists"; \
+	fi
+	@echo "📋 Step 2: Creating VM with Terraform..."
+	@$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 	@echo "✅ Omarchy VM created! Next steps:"
 	@echo "1. Open Proxmox console for VM 101"
 	@echo "2. Start the VM and complete manual installation"
 	@echo "3. Select keyboard layout, timezone, and create user"
-	@echo "4. After installation, enable SSH if needed"
-
-omarchy-full-deploy: ## Complete Omarchy deployment: download ISO and create VM
-	@echo "🚀 Starting complete Omarchy deployment..."
-	@echo "📋 Step 1: Checking if ISO exists..."
-	@$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "test -f /var/lib/vz/template/iso/omarchy-3.0.2.iso" 2>/dev/null || $(MAKE) omarchy-download-iso
-	@echo "📋 Step 2: Creating VM with ISO..."
-	@$(MAKE) omarchy-deploy
-	@echo "✅ Complete Omarchy deployment finished!"
 
 omarchy-destroy: ## Destroy Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
