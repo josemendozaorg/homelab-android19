@@ -1,0 +1,13 @@
+---
+# Identify NVIDIA GPU for passthrough configuration
+
+- name: Detect NVIDIA GPU using lspci
+  ansible.builtin.shell:
+    cmd: lspci -nn | grep -i nvidia
+  register: nvidia_gpu_detection
+  changed_when: false
+  failed_when: nvidia_gpu_detection.rc != 0
+
+- name: Display detected NVIDIA GPU
+  ansible.builtin.debug:
+    msg: "Detected GPU: {{ nvidia_gpu_detection.stdout }}"

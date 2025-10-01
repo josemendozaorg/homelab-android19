@@ -1,0 +1,6 @@
+---
+# GPU Passthrough Configuration Tasks
+
+- name: Identify NVIDIA GPU
+  include_tasks: identify-gpu.yml
+  tags: [gpu, identify]

@@ -1,0 +1,9 @@
+---
+# GPU Passthrough Configuration Defaults
+# Hardware: ZOTAC GAMING RTX 5060Ti 16GB TWIN EDGE DLSS 4
+
+# Expected GPU model for validation
+gpu_model: "ZOTAC GAMING RTX 5060Ti 16GB"
+
+# NVIDIA vendor ID (10de is NVIDIA Corporation)
+gpu_vendor_id: "10de"
