@@ -38,6 +38,10 @@
   include_tasks: configure-vfio-modules.yml
   tags: [gpu, vfio, modules]
 
+- name: Update initramfs with VFIO modules
+  include_tasks: update-initramfs.yml
+  tags: [gpu, vfio, initramfs]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]

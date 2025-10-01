@@ -1,0 +1,53 @@
+---
+# Update initramfs to include VFIO modules
+
+- name: Check if VFIO modules are already in initramfs
+  ansible.builtin.shell:
+    cmd: lsinitramfs /boot/initrd.img-$(uname -r) | grep -q vfio
+  register: vfio_in_initramfs
+  changed_when: false
+  failed_when: false
+
+- name: Get current initramfs timestamp before update
+  ansible.builtin.stat:
+    path: /boot/initrd.img-{{ ansible_kernel }}
+  register: initramfs_before
+  when: vfio_in_initramfs.rc != 0
+
+- name: Update initramfs to include VFIO modules
+  ansible.builtin.command:
+    cmd: update-initramfs -u -k all
+  register: update_initramfs_result
+  when: vfio_in_initramfs.rc != 0
+  changed_when: true
+
+- name: Display update-initramfs output
+  ansible.builtin.debug:
+    msg: "{{ update_initramfs_result.stdout_lines }}"
+  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+
+- name: Get initramfs timestamp after update
+  ansible.builtin.stat:
+    path: /boot/initrd.img-{{ ansible_kernel }}
+  register: initramfs_after
+  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+
+- name: Verify initramfs was updated (timestamp changed)
+  ansible.builtin.assert:
+    that:
+      - initramfs_after.stat.mtime > initramfs_before.stat.mtime
+    fail_msg: "initramfs timestamp did not change after update"
+    success_msg: "initramfs successfully updated"
+  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+
+- name: Verify VFIO modules are now in initramfs
+  ansible.builtin.shell:
+    cmd: lsinitramfs /boot/initrd.img-$(uname -r) | grep vfio
+  register: vfio_verify
+  changed_when: false
+  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined
+
+- name: Display VFIO modules found in initramfs
+  ansible.builtin.debug:
+    msg: "{{ vfio_verify.stdout_lines }}"
+  when: vfio_in_initramfs.rc != 0 and update_initramfs_result is defined and vfio_verify is defined

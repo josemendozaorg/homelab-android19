@@ -275,3 +275,31 @@ def test_configure_vfio_modules_task_exists(project_root):
     assert "vfio_iommu_type1" in task_content, "Task should configure vfio_iommu_type1 module"
     assert "vfio_pci" in task_content, "Task should configure vfio_pci module"
     assert "vfio_virqfd" in task_content, "Task should configure vfio_virqfd module"
+
+
+def test_update_initramfs_task_exists(project_root):
+    """Update initramfs task rebuilds initramfs with VFIO modules."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "update-initramfs.yml"
+
+    assert task_file.exists(), f"Update initramfs task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for update-initramfs command
+    assert "update-initramfs" in task_content, "Task should run update-initramfs command"
+    assert "-k all" in task_content, "Task should update all kernels with -k all flag"
+
+    # Check for verification with lsinitramfs
+    assert "lsinitramfs" in task_content, "Task should verify modules with lsinitramfs"
+
+    # Check for timestamp verification
+    assert "stat" in task_content.lower(), "Task should check initramfs file timestamp"
+
+    # Check for result registration
+    assert "register" in task_content.lower(), "Task should register command result"
