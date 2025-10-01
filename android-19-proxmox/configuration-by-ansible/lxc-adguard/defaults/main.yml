@@ -8,7 +8,6 @@ catalog: "{{ lookup('file', playbook_dir + '/infrastructure-catalog.yml') | from
 # Container configuration from catalog
 adguard_container_id: 125
 adguard_static_ip: "{{ catalog.services[125].ip }}"
-adguard_gateway: "{{ catalog.network.gateway }}"
 adguard_netmask: "24"
 
 # Service configuration
