@@ -7,20 +7,20 @@
   gather_facts: true
 
   vars_files:
-    - configuration-by-ansible/vm-ubuntu-desktop-devmachine/defaults/main.yml
+    - vm-ubuntu-desktop-devmachine/defaults/main.yml
 
   vars:
     # Load configuration from infrastructure catalog
-    catalog: "{{ lookup('file', 'infrastructure-catalog.yml') | from_yaml }}"
+    catalog: "{{ lookup('file', '../infrastructure-catalog.yml') | from_yaml }}"
     vm_config: "{{ catalog.services[103] }}"
 
   tasks:
     - name: Include VM configuration tasks
-      include_tasks: configuration-by-ansible/vm-ubuntu-desktop-devmachine/tasks/vm-configure.yml
+      include_tasks: vm-ubuntu-desktop-devmachine/tasks/vm-configure.yml
       tags: [configure, packages]
 
     - name: Include Omakub installation tasks
-      include_tasks: configuration-by-ansible/vm-ubuntu-desktop-devmachine/tasks/omakub-install.yml
+      include_tasks: vm-ubuntu-desktop-devmachine/tasks/omakub-install.yml
       tags: [omakub, install]
 
     - name: Display completion message

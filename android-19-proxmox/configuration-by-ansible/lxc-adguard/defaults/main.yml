@@ -3,7 +3,7 @@
 # These values are loaded from the infrastructure catalog
 
 # Load catalog values
-catalog: "{{ lookup('file', playbook_dir + '/infrastructure-catalog.yml') | from_yaml }}"
+catalog: "{{ lookup('file', playbook_dir + '/../infrastructure-catalog.yml') | from_yaml }}"
 
 # Container configuration from catalog
 adguard_container_id: 125

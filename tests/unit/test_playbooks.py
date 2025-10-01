@@ -8,7 +8,7 @@ from pathlib import Path
 @pytest.fixture(scope="module")
 def playbook_dir(project_root):
     """Return the android-19-proxmox playbook directory."""
-    return project_root / "android-19-proxmox"
+    return project_root / "android-19-proxmox" / "configuration-by-ansible"
 
 
 def test_ubuntu_desktop_playbook_exists(playbook_dir):

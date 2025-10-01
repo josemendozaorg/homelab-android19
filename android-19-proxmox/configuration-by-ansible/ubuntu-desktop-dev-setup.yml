@@ -7,16 +7,16 @@
   gather_facts: true
 
   vars_files:
-    - configuration-by-ansible/vm-ubuntu-desktop-devmachine/defaults/main.yml
+    - vm-ubuntu-desktop-devmachine/defaults/main.yml
 
   vars:
     # Load configuration from infrastructure catalog
-    catalog: "{{ lookup('file', 'infrastructure-catalog.yml') | from_yaml }}"
+    catalog: "{{ lookup('file', '../infrastructure-catalog.yml') | from_yaml }}"
     vm_config: "{{ catalog.services[103] }}"
 
   tasks:
     - name: Include Ubuntu Desktop ISO download tasks
-      include_tasks: configuration-by-ansible/vm-ubuntu-desktop-devmachine/tasks/iso-download.yml
+      include_tasks: vm-ubuntu-desktop-devmachine/tasks/iso-download.yml
       tags: [download, iso]
 
     - name: Display next steps
