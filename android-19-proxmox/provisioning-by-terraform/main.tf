@@ -126,9 +126,22 @@ resource "proxmox_virtual_environment_vm" "vms" {
   }
 
   # Clone configuration for cloud-init VMs
-  clone {
-    vm_id = lookup(each.value, "cloud_init", false) ? lookup(each.value, "template_vm_id", null) : null
-    full = lookup(each.value, "cloud_init", false) ? true : null
+  dynamic "clone" {
+    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
+    content {
+      vm_id = lookup(each.value, "template_vm_id", null)
+      full  = true
+    }
+  }
+
+  # Disk configuration for new VMs (ISO-based)
+  dynamic "disk" {
+    for_each = lookup(each.value, "iso", null) != null ? [1] : []
+    content {
+      datastore_id = lookup(each.value, "storage", "vm-storage")
+      size         = lookup(each.value.resources, "disk", 150)
+      interface    = "scsi0"
+    }
   }
 
   # Disk configuration for cloned VMs (resize cloned disk)
