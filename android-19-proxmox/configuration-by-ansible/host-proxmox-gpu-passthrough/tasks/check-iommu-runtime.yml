@@ -7,10 +7,10 @@
   register: kernel_cmdline
   changed_when: false
 
-- name: Check if iommu=pt is present in runtime
+- name: Check if both amd_iommu=on and iommu=pt are present in runtime
   ansible.builtin.set_fact:
-    iommu_runtime_enabled: "{{ 'iommu=pt' in kernel_cmdline.stdout }}"
+    iommu_runtime_enabled: "{{ ('amd_iommu=on' in kernel_cmdline.stdout) and ('iommu=pt' in kernel_cmdline.stdout) }}"
 
 - name: Display IOMMU runtime status
   ansible.builtin.debug:
-    msg: "IOMMU passthrough runtime status: {{ 'ENABLED' if iommu_runtime_enabled else 'DISABLED' }}"
+    msg: "IOMMU passthrough runtime status: {{ 'ENABLED (amd_iommu=on iommu=pt)' if iommu_runtime_enabled else 'DISABLED' }}"

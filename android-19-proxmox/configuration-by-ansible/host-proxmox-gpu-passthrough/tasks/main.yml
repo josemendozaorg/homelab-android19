@@ -9,6 +9,10 @@
   include_tasks: check-iommu-runtime.yml
   tags: [gpu, iommu, check]
 
+- name: Check IOMMU GRUB configuration
+  include_tasks: check-iommu-grub.yml
+  tags: [gpu, iommu, check]
+
 - name: Identify NVIDIA GPU
   include_tasks: identify-gpu.yml
   tags: [gpu, identify]

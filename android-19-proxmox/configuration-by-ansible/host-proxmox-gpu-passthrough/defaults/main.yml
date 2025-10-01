@@ -15,3 +15,8 @@ gpu_pci_address: "02:00.0"
 gpu_device_id: "2d04"
 gpu_audio_pci_address: "02:00.1"
 gpu_audio_device_id: "22eb"
+
+# IOMMU Kernel Parameters
+# Note: amd_iommu=on is redundant on modern AMD systems (enabled by default)
+# but included for compatibility and explicit configuration
+iommu_kernel_params: "amd_iommu=on iommu=pt"
