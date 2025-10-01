@@ -159,3 +159,35 @@ def test_backup_grub_config_task_exists(project_root):
     # Check for timestamp in destination
     assert "ansible_date_time" in task_content or "date" in task_content.lower(), \
         "Task should use timestamp in backup filename"
+
+
+def test_configure_grub_iommu_task_exists(project_root):
+    """GRUB IOMMU configuration task adds kernel parameters using replace module."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox-gpu-passthrough" / "tasks" / "configure-grub-iommu.yml"
+
+    assert task_file.exists(), f"GRUB IOMMU configuration task not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+    assert len(tasks) > 0, "Task file should not be empty"
+
+    task_content = str(tasks)
+
+    # Check for replace module usage
+    assert "replace" in task_content.lower(), "Task should use replace module for GRUB modification"
+
+    # Check for GRUB config file target
+    assert "/etc/default/grub" in task_content, "Task should modify /etc/default/grub"
+
+    # Check for GRUB_CMDLINE_LINUX_DEFAULT
+    assert "GRUB_CMDLINE_LINUX_DEFAULT" in task_content, \
+        "Task should target GRUB_CMDLINE_LINUX_DEFAULT"
+
+    # Check for both IOMMU parameters
+    assert "amd_iommu=on" in task_content, "Task should add amd_iommu=on parameter"
+    assert "iommu=pt" in task_content, "Task should add iommu=pt parameter"
+
+    # Check for regexp pattern
+    assert "regexp" in task_content.lower(), "Task should use regexp for pattern matching"
