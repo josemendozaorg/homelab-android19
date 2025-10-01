@@ -1,0 +1,26 @@
+---
+# vm-omarchy-devmachine role - Prepare Omarchy VM deployment
+
+- name: Check if Omarchy ISO already exists
+  stat:
+    path: "{{ omarchy_iso_dest }}"
+  register: omarchy_iso_stat
+
+- name: Display ISO status
+  debug:
+    msg: "{{ 'ISO already exists' if omarchy_iso_stat.stat.exists else 'ISO needs to be downloaded' }}"
+
+- name: Download Omarchy ISO if not present
+  get_url:
+    url: "{{ omarchy_iso_url }}"
+    dest: "{{ omarchy_iso_dest }}"
+    checksum: "{{ omarchy_iso_checksum }}"
+    timeout: "{{ omarchy_download_timeout }}"
+    mode: '0644'
+  when: not omarchy_iso_stat.stat.exists
+  register: iso_download
+
+- name: Display download completion
+  debug:
+    msg: "Omarchy {{ omarchy_version }} ISO downloaded successfully (6.2GB)"
+  when: iso_download is changed

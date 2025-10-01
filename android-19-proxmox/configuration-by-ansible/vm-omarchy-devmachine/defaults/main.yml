@@ -1,0 +1,12 @@
+---
+# vm-omarchy-devmachine role defaults
+
+# Omarchy ISO configuration
+omarchy_version: "3.0.2"
+omarchy_iso_url: "https://iso.omarchy.org/omarchy-{{ omarchy_version }}.iso"
+omarchy_iso_filename: "omarchy-{{ omarchy_version }}.iso"
+omarchy_iso_checksum: "sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626"
+omarchy_iso_dest: "/var/lib/vz/template/iso/{{ omarchy_iso_filename }}"
+
+# Download timeout (30 minutes for 6.2GB file)
+omarchy_download_timeout: 1800

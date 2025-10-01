@@ -160,13 +160,8 @@ proxmox-tf-rebuild-state: ## Rebuild Terraform state by importing existing infra
 # Omarchy VM Deployment
 omarchy-deploy: ## Deploy Omarchy VM: download ISO if needed and create VM
 	@echo "🚀 Starting Omarchy VM deployment..."
-	@echo "📋 Step 1: Checking if ISO exists..."
-	@if ! $(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name shell --args "test -f /var/lib/vz/template/iso/omarchy-3.0.2.iso" >/dev/null 2>&1; then \
-		echo "📥 Downloading Omarchy 3.0.2 ISO (6.2GB - may take 10+ minutes)..."; \
-		$(ANSIBLE_EXEC) ansible proxmox --inventory $(INVENTORY) --module-name get_url --args "url=https://iso.omarchy.org/omarchy-3.0.2.iso dest=/var/lib/vz/template/iso/omarchy-3.0.2.iso checksum=sha256:8d136a99d74ef534b57356268e5dad392a124c7e28487fc00330af9105fc6626 timeout=1800"; \
-	else \
-		echo "✅ ISO already exists"; \
-	fi
+	@echo "📋 Step 1: Preparing Omarchy VM (download ISO if needed)..."
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/omarchy-vm-setup.yml
 	@echo "📋 Step 2: Creating VM with Terraform..."
 	@$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
 	@echo "✅ Omarchy VM created! Next steps:"

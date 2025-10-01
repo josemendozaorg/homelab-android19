@@ -1,0 +1,8 @@
+---
+- name: Prepare Omarchy VM deployment - Download ISO if needed
+  hosts: proxmox
+  become: yes
+  gather_facts: no
+
+  roles:
+    - role: configuration-by-ansible/vm-omarchy-devmachine
