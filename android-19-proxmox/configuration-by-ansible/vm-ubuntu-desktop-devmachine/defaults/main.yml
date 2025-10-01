@@ -41,4 +41,6 @@ network_config:
     - "1.1.1.1"       # Cloudflare fallback
 
 # SSH Key Configuration
-ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC1OCW64ttYxGvEw/euqFViKrbgmTUJIC4kJE15xmtl0Y+hkNrVgj3lWlVSPn5NChdOMAtF2ZG4neZAonpQgCaTu5Mv3AGRAagGZvrTGHJouVBjvJYozl5p2Vh0S9g2EJ43j1tFw+zSOrBIa9/3SFaTiyslxGMBQBtFNNk4f++LCx0Z6A+ZfcXHFp4ukxgNPC3msAJ7RDUZelSVCrXrKEf4r7JaIGKqhfUMKtoCCpzFBC5imEYzZQn8dVoi9GEtKKUqk1NuyVIdQG1mIJW2f9FR3Goq4yM1JjcOYdfg20YtGekW8DlU40JjPOP/zodJim69nMajm0VNxA3KgrGz3n7Pwrp+ufS/KLvuGHmRvRsHG/3ai9mlPIVfkYO02WKwSpxEr/QGtCDcszsZoi6Du05EK1t0hgObEqfiHcLKJhscKo5MxEJK/lff0gKfGQvr7CPIcaBHwSXYrzk277+1yStrxKUhmf9NIDau5q0MMa42CaGYeFWnxsbajzdtrvITEjWTeOE2PbldwHnNZg2u0OG2XQfRIUsKXk68apPODHo6FWGHf2OSJIK7H5YLhxRpUhl5UDK6NcqqKxo5Ds0iL4fGvc1LLSac/+UY+ENzTicIHmmJE49vzQIVqjXBc8Yx3/r4jDW+RobWi9AvqU8BNIz2sSyKqOldXmgPvQqn0qXb2w== ubuntu@DESKTOP-L6O6BMA"
+# Read SSH public key from the user's home directory
+# This avoids hardcoding keys in version control (security issue)
+ssh_public_key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"

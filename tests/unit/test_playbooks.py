@@ -111,14 +111,14 @@ def test_ubuntu_desktop_iso_url_accessible(project_root):
         pytest.fail(f"Failed to access ISO URL: {e}")
 
 
-@pytest.mark.xfail(reason="Known issue: SSH key is currently hardcoded (security issue)")
 def test_ubuntu_desktop_no_hardcoded_ssh_key(project_root):
     """SSH public key should not be hardcoded in defaults file.
 
-    Security Issue: Hardcoded SSH keys in version control are a security risk.
-    Keys should be read from the system or provided via environment variables.
+    Security: SSH keys should be read from the system or environment variables,
+    not hardcoded in version control.
 
-    This test documents the known issue and will pass once the fix is implemented.
+    This test verifies that ssh_public_key uses Ansible lookup instead of
+    hardcoded key material.
     """
     defaults_file = (
         project_root / "android-19-proxmox" / "configuration-by-ansible" /
