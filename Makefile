@@ -20,6 +20,7 @@ INVENTORY := inventory.yml
         proxmox-deploy proxmox-services adguard-service adguard-setup proxmox-adguard \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-full-deploy \
         omarchy-deploy omarchy-destroy \
+        ubuntu-desktop-deploy \
         all-deploy all-ping
 
 # Help target with color output
@@ -44,6 +45,9 @@ help: ## Show available commands
 	@echo ""
 	@echo "Omarchy VM (omarchy-*):"
 	@$(MAKE) -s help-section SECTION="Omarchy VM"
+	@echo ""
+	@echo "Ubuntu Desktop VM (ubuntu-desktop-*):"
+	@$(MAKE) -s help-section SECTION="Ubuntu Desktop VM"
 	@echo ""
 	@echo "All Machines (all-*):"
 	@$(MAKE) -s help-section SECTION="All Machines"
@@ -171,6 +175,11 @@ omarchy-deploy: ## Deploy Omarchy VM: download ISO if needed and create VM
 
 omarchy-destroy: ## Destroy Omarchy VM with Terraform
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"101\\\"]"
+
+# Ubuntu Desktop VM
+ubuntu-desktop-deploy: ## Deploy Ubuntu Desktop development workstation (semi-automated)
+	@echo "🖥️ Preparing Ubuntu Desktop development workstation..."
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/ubuntu-desktop-dev-setup.yml
 
 
 # Complete Infrastructure Deployment

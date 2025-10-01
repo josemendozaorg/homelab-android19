@@ -1,0 +1,12 @@
+#!/bin/bash
+# User Configuration Script - Git and Development Setup
+
+echo "👤 Setting up user configuration..."
+
+# Configure git
+git config --global user.name "{{ git_user_name }}"
+git config --global user.email "{{ git_user_email }}"
+
+echo "✅ Git configuration complete:"
+echo "  Name: {{ git_user_name }}"
+echo "  Email: {{ git_user_email }}"
