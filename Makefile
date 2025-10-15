@@ -15,7 +15,7 @@ INVENTORY := inventory.yml
         test-ping test-ping-bastion test-ping-proxmox test-catalog test-unit test-all \
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
-        proxmox-host-setup proxmox-host-check proxmox-host-gpu-passthrough \
+        proxmox-host-setup proxmox-host-check proxmox-host-gpu-passthrough proxmox-host-pcie-aspm \
         proxmox-host-storage proxmox-host-templates proxmox-host-api \
         proxmox-deploy adguard-setup \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-tf-rebuild-state proxmox-full-deploy \
@@ -117,6 +117,9 @@ proxmox-host-check: ## SAFE MODE: Validate Proxmox host config without changes
 
 proxmox-host-gpu-passthrough: ## Configure GPU passthrough for NVIDIA RTX 5060Ti
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/gpu-passthrough-setup.yml
+
+proxmox-host-pcie-aspm: ## Disable PCIe ASPM to prevent network card disconnections
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags pcie-aspm
 
 proxmox-host-storage: ## Configure Proxmox storage only
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags storage

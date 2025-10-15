@@ -1,0 +1,14 @@
+---
+# Configure GRUB to disable PCIe ASPM
+
+- name: Add pcie_aspm=off parameter to GRUB configuration
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)"$'
+    replace: '\1 pcie_aspm=off"'
+  when: not pcie_aspm_configured
+
+- name: Display GRUB configuration status
+  ansible.builtin.debug:
+    msg: "PCIe ASPM parameter added to GRUB. Run 'update-grub' and reboot to apply."
+  when: not pcie_aspm_configured

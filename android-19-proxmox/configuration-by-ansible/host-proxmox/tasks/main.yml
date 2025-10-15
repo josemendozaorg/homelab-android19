@@ -15,6 +15,13 @@
     - proxmox
     - system
 
+- name: PCIe ASPM GRUB configuration
+  include_tasks: grub-pcie-aspm.yml
+  tags:
+    - proxmox
+    - grub
+    - pcie-aspm
+
 - name: Storage configuration
   include_tasks: storage.yml
   tags:
