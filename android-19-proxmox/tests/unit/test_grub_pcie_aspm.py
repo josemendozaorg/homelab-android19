@@ -144,6 +144,62 @@ def test_update_grub_pcie_aspm_task(project_root):
         "Task should register result or display message"
 
 
+def test_update_grub_error_handling(project_root):
+    """Update GRUB task has proper error handling for update-grub failures."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm-update.yml"
+
+    assert task_file.exists(), f"Update GRUB task file not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Task file should contain a list of tasks"
+
+    # Find the update-grub task
+    update_grub_task = None
+    for task in tasks:
+        # Check for various command module formats
+        has_command = (
+            "ansible.builtin.command" in task or
+            "command" in task or
+            "ansible.builtin.shell" in task or
+            "shell" in task
+        )
+        if has_command:
+            task_str = str(task)
+            if "update-grub" in task_str.lower() or "grub-mkconfig" in task_str.lower():
+                update_grub_task = task
+                break
+
+    assert update_grub_task is not None, "Could not find update-grub command task"
+
+    # Check for error handling - should have either failed_when or check mode
+    task_keys = update_grub_task.keys()
+    has_error_handling = (
+        "failed_when" in task_keys or
+        "ignore_errors" in task_keys or
+        "check_mode" in task_keys
+    )
+
+    assert has_error_handling, \
+        "Update GRUB task should have error handling (failed_when, ignore_errors, or check_mode)"
+
+    # Check for result registration to capture errors
+    assert "register" in task_keys, \
+        "Update GRUB task should register result for error handling"
+
+    # Look for error message display task (assert or fail task)
+    task_content = str(tasks)
+    has_error_message = (
+        "assert" in task_content.lower() or
+        "fail" in task_content.lower() or
+        "rc" in task_content.lower()  # Return code checking
+    )
+
+    assert has_error_message, \
+        "Task file should include error message handling (assert, fail, or rc checking)"
+
+
 def test_verify_pcie_aspm_task(project_root):
     """Verify PCIe ASPM task checks /proc/cmdline for pcie_aspm=off parameter."""
     task_file = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm-verify.yml"
