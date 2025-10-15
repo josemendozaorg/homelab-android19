@@ -1,0 +1,15 @@
+---
+# PCIe ASPM GRUB Configuration Orchestrator
+# Disables Active State Power Management to prevent network card PCIe disconnections
+
+- name: Check if PCIe ASPM parameter already configured
+  include_tasks: grub-pcie-aspm-check.yml
+
+- name: Backup GRUB configuration before modification
+  include_tasks: grub-pcie-aspm-backup.yml
+
+- name: Configure GRUB to disable PCIe ASPM
+  include_tasks: grub-pcie-aspm-configure.yml
+
+- name: Update GRUB bootloader
+  include_tasks: grub-pcie-aspm-update.yml

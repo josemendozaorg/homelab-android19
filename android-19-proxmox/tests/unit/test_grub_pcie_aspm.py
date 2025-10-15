@@ -167,3 +167,59 @@ def test_verify_pcie_aspm_task(project_root):
     # Check for fact registration or debug output
     assert "register" in task_content.lower() or "debug" in task_content.lower(), \
         "Task should register result or display verification message"
+
+
+def test_grub_pcie_aspm_orchestrator_exists(project_root):
+    """PCIe ASPM orchestrator task file exists and includes subtasks in correct order."""
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm.yml"
+
+    assert task_file.exists(), f"Orchestrator task file not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Orchestrator file should contain a list of tasks"
+    assert len(tasks) >= 4, "Orchestrator should include at least 4 subtasks (check, backup, configure, update)"
+
+    task_content = str(tasks)
+
+    # Check that all required subtasks are included
+    assert "grub-pcie-aspm-check.yml" in task_content, "Orchestrator should include check task"
+    assert "grub-pcie-aspm-backup.yml" in task_content, "Orchestrator should include backup task"
+    assert "grub-pcie-aspm-configure.yml" in task_content, "Orchestrator should include configure task"
+    assert "grub-pcie-aspm-update.yml" in task_content, "Orchestrator should include update task"
+
+    # Check for include_tasks usage
+    assert "include_tasks" in task_content, "Orchestrator should use include_tasks"
+
+
+def test_main_yml_includes_pcie_aspm_configuration(project_root):
+    """host-proxmox main.yml includes PCIe ASPM GRUB configuration with correct tags."""
+    main_yml = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "main.yml"
+
+    assert main_yml.exists(), f"Main task file not found: {main_yml}"
+
+    with open(main_yml) as f:
+        tasks = yaml.safe_load(f)
+
+    assert isinstance(tasks, list), "Main.yml should contain a list of tasks"
+
+    # Find the PCIe ASPM configuration task
+    pcie_aspm_task = None
+    for task in tasks:
+        if "include_tasks" in task and "grub-pcie-aspm.yml" in str(task.get("include_tasks", "")):
+            pcie_aspm_task = task
+            break
+
+    assert pcie_aspm_task is not None, "Main.yml should include grub-pcie-aspm.yml"
+
+    # Check tags
+    tags = pcie_aspm_task.get("tags", [])
+    assert "proxmox" in tags, "PCIe ASPM task should have 'proxmox' tag"
+    assert "grub" in tags, "PCIe ASPM task should have 'grub' tag"
+    assert "pcie-aspm" in tags, "PCIe ASPM task should have 'pcie-aspm' tag"
+
+    # Check task name
+    task_name = pcie_aspm_task.get("name", "")
+    assert "pcie" in task_name.lower() or "aspm" in task_name.lower(), \
+        "Task should have descriptive name mentioning PCIe or ASPM"
