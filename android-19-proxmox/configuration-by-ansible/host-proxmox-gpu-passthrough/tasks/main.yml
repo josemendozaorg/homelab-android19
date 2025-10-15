@@ -22,16 +22,15 @@
   include_tasks: configure-grub-iommu.yml
   when: not iommu_grub_configured
   tags: [gpu, iommu, configure]
-  register: grub_config_changed
 
 - name: Update GRUB bootloader
   include_tasks: update-grub.yml
-  when: grub_config_changed is changed
+  when: not iommu_grub_configured
   tags: [gpu, iommu, update]
 
 - name: Reboot system to apply IOMMU configuration
   include_tasks: reboot-system.yml
-  when: grub_config_changed is changed and not iommu_runtime_enabled
+  when: not iommu_grub_configured
   tags: [gpu, iommu, reboot]
 
 - name: Configure VFIO kernel modules
