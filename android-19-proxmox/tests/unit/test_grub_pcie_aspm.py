@@ -379,6 +379,67 @@ def test_grub_parameter_preservation(project_root):
             f"Parameter preservation failed:\n  Input: {input_line}\n  Expected: {expected_output}\n  Got: {result}"
 
 
+def test_pcie_aspm_idempotence(project_root):
+    """PCIe ASPM configuration tasks are idempotent - safe to run multiple times."""
+    tasks_dir = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks"
+
+    # Test 1: Check task sets fact for idempotence
+    check_file = tasks_dir / "grub-pcie-aspm-check.yml"
+    with open(check_file) as f:
+        check_tasks = yaml.safe_load(f)
+
+    check_content = str(check_tasks)
+    assert "set_fact" in check_content, "Check task should set fact for idempotence"
+    assert "pcie_aspm_configured" in check_content, "Check task should set pcie_aspm_configured fact"
+
+    # Test 2: Modify tasks have idempotence guards
+    modify_files = [
+        "grub-pcie-aspm-backup.yml",
+        "grub-pcie-aspm-configure.yml",
+        "grub-pcie-aspm-update.yml",
+    ]
+
+    for modify_file in modify_files:
+        file_path = tasks_dir / modify_file
+        with open(file_path) as f:
+            tasks = yaml.safe_load(f)
+
+        # Check that at least one task has the idempotence guard
+        has_guard = False
+        for task in tasks:
+            if "when" in task:
+                when_condition = str(task["when"])
+                if "pcie_aspm_configured" in when_condition and "not" in when_condition:
+                    has_guard = True
+                    break
+
+        assert has_guard, \
+            f"{modify_file} should have 'when: not pcie_aspm_configured' guard for idempotence"
+
+    # Test 3: Orchestrator runs check before modifications
+    orchestrator_file = tasks_dir / "grub-pcie-aspm.yml"
+    with open(orchestrator_file) as f:
+        orchestrator_tasks = yaml.safe_load(f)
+
+    # Find check task and first modify task positions
+    check_pos = None
+    first_modify_pos = None
+
+    for idx, task in enumerate(orchestrator_tasks):
+        if "include_tasks" in task:
+            included = task["include_tasks"]
+            if "check" in included:
+                check_pos = idx
+            elif any(mod in included for mod in ["backup", "configure", "update"]):
+                if first_modify_pos is None:
+                    first_modify_pos = idx
+
+    assert check_pos is not None, "Orchestrator should include check task"
+    assert first_modify_pos is not None, "Orchestrator should include modify tasks"
+    assert check_pos < first_modify_pos, \
+        "Check task must run before modify tasks for idempotence"
+
+
 def test_pcie_aspm_include_tasks_are_resolvable(project_root):
     """Integration test: Verify all include_tasks references in orchestrator are resolvable."""
     orchestrator = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm.yml"
