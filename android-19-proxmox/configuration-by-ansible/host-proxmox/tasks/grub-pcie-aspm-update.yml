@@ -1,0 +1,17 @@
+---
+# Update GRUB bootloader after PCIe ASPM configuration
+
+- name: Update GRUB bootloader
+  ansible.builtin.command: update-grub
+  when: not pcie_aspm_configured
+  register: update_grub_result
+
+- name: Display update-grub result
+  ansible.builtin.debug:
+    msg: "GRUB bootloader updated successfully. Reboot required for changes to take effect."
+  when: not pcie_aspm_configured
+
+- name: Display reboot notification
+  ansible.builtin.debug:
+    msg: "⚠️  REBOOT REQUIRED: System must be rebooted for PCIe ASPM changes to take effect."
+  when: not pcie_aspm_configured

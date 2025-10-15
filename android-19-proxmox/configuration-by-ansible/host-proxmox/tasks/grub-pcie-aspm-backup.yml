@@ -1,0 +1,15 @@
+---
+# Backup GRUB configuration before PCIe ASPM modification
+
+- name: Create timestamped backup of GRUB configuration
+  ansible.builtin.copy:
+    src: /etc/default/grub
+    dest: "/etc/default/grub.backup.{{ ansible_date_time.date }}-{{ ansible_date_time.time | replace(':', '') }}"
+    remote_src: yes
+    mode: preserve
+  when: not pcie_aspm_configured
+
+- name: Display backup location
+  ansible.builtin.debug:
+    msg: "GRUB config backed up to: /etc/default/grub.backup.{{ ansible_date_time.date }}-{{ ansible_date_time.time | replace(':', '') }}"
+  when: not pcie_aspm_configured

@@ -1,0 +1,22 @@
+---
+# Verify PCIe ASPM parameter is active in running kernel
+
+- name: Read kernel command line parameters
+  ansible.builtin.slurp:
+    src: /proc/cmdline
+  register: kernel_cmdline
+
+- name: Check if pcie_aspm=off is active
+  ansible.builtin.set_fact:
+    pcie_aspm_active: "{{ 'pcie_aspm=off' in (kernel_cmdline.content | b64decode) }}"
+
+- name: Display PCIe ASPM kernel status
+  ansible.builtin.debug:
+    msg: "PCIe ASPM is {{ 'DISABLED (pcie_aspm=off active)' if pcie_aspm_active else 'ENABLED (parameter not active - reboot required)' }}"
+
+- name: Verify PCIe ASPM is disabled
+  ansible.builtin.assert:
+    that:
+      - pcie_aspm_active
+    fail_msg: "PCIe ASPM parameter not found in kernel command line. Check GRUB configuration and reboot."
+    success_msg: "PCIe ASPM successfully disabled in kernel."
