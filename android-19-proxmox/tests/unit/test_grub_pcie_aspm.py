@@ -335,6 +335,50 @@ def test_pcie_aspm_role_integration_ansible_syntax(project_root):
         raise e
 
 
+def test_grub_parameter_preservation(project_root):
+    """Configure task regexp pattern preserves existing GRUB parameters."""
+    import re
+
+    task_file = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm-configure.yml"
+
+    assert task_file.exists(), f"Configure task file not found: {task_file}"
+
+    with open(task_file) as f:
+        tasks = yaml.safe_load(f)
+
+    # Find the replace task
+    replace_task = None
+    for task in tasks:
+        if "ansible.builtin.replace" in task or "replace" in task:
+            replace_task = task
+            break
+
+    assert replace_task is not None, "Could not find replace task"
+
+    # Extract regexp and replace patterns
+    replace_module = replace_task.get("ansible.builtin.replace") or replace_task.get("replace")
+    regexp_pattern = replace_module.get("regexp")
+    replace_pattern = replace_module.get("replace")
+
+    assert regexp_pattern is not None, "Replace task should have regexp pattern"
+    assert replace_pattern is not None, "Replace task should have replace pattern"
+
+    # Test various GRUB configurations
+    test_cases = [
+        # (input, expected_output)
+        ('GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"', 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash pcie_aspm=off"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT=""', 'GRUB_CMDLINE_LINUX_DEFAULT=" pcie_aspm=off"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT="quiet"', 'GRUB_CMDLINE_LINUX_DEFAULT="quiet pcie_aspm=off"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt"', 'GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt pcie_aspm=off"'),
+    ]
+
+    for input_line, expected_output in test_cases:
+        # Simulate the replace operation
+        result = re.sub(regexp_pattern, replace_pattern, input_line)
+        assert result == expected_output, \
+            f"Parameter preservation failed:\n  Input: {input_line}\n  Expected: {expected_output}\n  Got: {result}"
+
+
 def test_pcie_aspm_include_tasks_are_resolvable(project_root):
     """Integration test: Verify all include_tasks references in orchestrator are resolvable."""
     orchestrator = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm.yml"
