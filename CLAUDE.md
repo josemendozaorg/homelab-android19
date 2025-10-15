@@ -235,6 +235,62 @@ make proxmox-tf-apply
 - Python3 with PyYAML for parsing the infrastructure catalog
 - Infrastructure catalog must be up to date
 
+## Testing
+
+### Test Organization
+Tests are located in `android-19-proxmox/tests/`:
+- `tests/unit/` - Unit tests for Ansible role structure and configuration validation
+- `tests/conftest.py` - Shared pytest fixtures (project_root, catalog, etc.)
+
+### Running Tests
+
+**Run all unit tests:**
+```bash
+cd android-19-proxmox
+python -m pytest tests/unit/ -v
+```
+
+**Run specific test file:**
+```bash
+python -m pytest tests/unit/test_grub_pcie_aspm.py -v
+```
+
+**Run specific test:**
+```bash
+python -m pytest tests/unit/test_grub_pcie_aspm.py::test_pcie_aspm_task_files_exist -v
+```
+
+### Test Environment Setup
+
+Tests require Python dependencies installed:
+```bash
+pip install pytest pyyaml requests
+```
+
+**Docker-based testing (recommended):**
+The development container includes all test dependencies. Use it for consistent test execution:
+```bash
+# Enter development container
+make env-shell
+
+# Run tests inside container
+cd android-19-proxmox
+python -m pytest tests/unit/ -v
+```
+
+### Integration Testing with Docker
+
+The Docker development environment provides:
+- **Isolated testing environment**: All dependencies pre-installed (pytest, ansible, terraform)
+- **SSH key mounting**: Your `~/.ssh` keys are mounted read-only for Ansible connectivity tests
+- **Docker socket access**: For molecule-based integration tests (future)
+- **Consistent Python environment**: Virtual environment at `/opt/venv` with all packages
+
+**Key Docker features for testing:**
+- `molecule` and `molecule-docker` installed for Ansible role testing
+- Can run integration tests that spin up containers
+- Ansible and all required Python libraries available
+
 ## Development Workflow
 
 ### Quick Start (Complete Deployment)
@@ -299,3 +355,52 @@ ssh_public_key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }
 3. **Automated validation** (`make test-unit`)
 4. **Commit immediately** after each small working step
 5. **Never skip tests** - they prevent future breakage
+
+### TDD Workflow Enforcement
+
+When using the `/tdd` workflow commands, follow the **8-step mandatory process**:
+
+1. **Choose Task** - Select smallest testable unit
+2. **Design Solution** - List all assumptions, get user confirmation
+3. **Write Failing Test** (RED) - Test must fail initially
+4. **Implement Minimum Code** (GREEN) - Only enough to pass test
+5. **Verify Test Passes** - Run unit tests AND integration tests
+6. **Run Full Test Suite** - Ensure no regressions
+7. **Refactor** (if needed) - Improve code while tests pass
+8. **Commit Changes** - Atomic commit with clear message
+
+**Critical Validation Checkpoints:**
+
+At Step 5, you MUST verify:
+```
+- [ ] Integration tests have been identified or created
+- [ ] Integration tests have been executed
+- [ ] ALL integration tests PASS
+
+IF no integration tests exist and none were created: STOP. Create at least one integration test.
+```
+
+**Integration Tests vs Unit Tests:**
+- **Unit tests**: Validate file structure, YAML syntax, module usage (structural validation)
+- **Integration tests**: Verify actual execution, Ansible playbook loading, end-to-end workflows
+
+**Common mistake to avoid:**
+Do NOT treat structural YAML validation as "integration tests". True integration tests should:
+- Run `ansible-playbook --syntax-check` on the role
+- Test actual Ansible execution context
+- Verify task orchestration and dependencies
+- Use Docker/molecule for isolated testing environments
+
+**If integration tests are missing:**
+Use the Docker development environment with molecule to create proper integration tests:
+```bash
+# Enter container
+make env-shell
+
+# Create molecule scenario
+cd android-19-proxmox/configuration-by-ansible/host-proxmox
+molecule init scenario --driver-name docker
+
+# Run integration tests
+molecule test
+```
