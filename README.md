@@ -93,6 +93,37 @@ make proxmox-full-deploy
 
 **Lesson**: Don't try to automate what's already working. Proxmox installation handles network setup properly.
 
+### PCIe Network Card Stability
+
+**Issue**: Intel network card (igc enp11s0) randomly disconnects from PCIe bus after several days of uptime, causing complete loss of connectivity.
+
+**Symptoms**:
+- Network card disappears from `ip link` output
+- Kernel logs show: "PCIe link lost, device now detached"
+- Requires physical console access to recover
+- Complete loss of SSH and web UI access
+
+**Solution**: Disable PCIe Active State Power Management (ASPM)
+
+```bash
+# Configure GRUB to disable PCIe ASPM
+make proxmox-host-pcie-aspm
+```
+
+**What it does**:
+- Adds `pcie_aspm=off` kernel boot parameter to GRUB configuration
+- Creates timestamped backup of GRUB config before modification
+- Idempotent - safe to run multiple times
+- Displays reboot notification (manual reboot required)
+
+**Verification** (after reboot):
+```bash
+# Check if parameter is active
+cat /proc/cmdline | grep pcie_aspm=off
+```
+
+**Reference**: See [spec-proxmox-pcie-aspm-fix.md](docs/specs/spec-proxmox-pcie-aspm-fix.md) for technical details.
+
 ### Safety Procedures
 
 **1. Configuration Validation**
