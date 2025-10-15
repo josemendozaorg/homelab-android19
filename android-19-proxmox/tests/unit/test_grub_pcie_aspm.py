@@ -8,6 +8,7 @@ disconnections.
 
 import pytest
 import yaml
+import subprocess
 from pathlib import Path
 
 
@@ -223,3 +224,82 @@ def test_main_yml_includes_pcie_aspm_configuration(project_root):
     task_name = pcie_aspm_task.get("name", "")
     assert "pcie" in task_name.lower() or "aspm" in task_name.lower(), \
         "Task should have descriptive name mentioning PCIe or ASPM"
+
+
+def test_pcie_aspm_role_integration_ansible_syntax(project_root):
+    """Integration test: Validate host-proxmox role with PCIe ASPM can be loaded by Ansible."""
+    # Create a minimal test playbook that uses the host-proxmox role
+    test_playbook_content = """---
+- name: Test host-proxmox role with PCIe ASPM integration
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Include host-proxmox main tasks
+      include_tasks: ../configuration-by-ansible/host-proxmox/tasks/main.yml
+"""
+
+    test_playbook_path = project_root / "test_pcie_aspm_integration.yml"
+
+    # Write test playbook
+    with open(test_playbook_path, 'w') as f:
+        f.write(test_playbook_content)
+
+    try:
+        # Check if ansible-playbook is available
+        result = subprocess.run(
+            ["which", "ansible-playbook"],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode == 0:
+            # ansible-playbook is available, run syntax check
+            syntax_result = subprocess.run(
+                ["ansible-playbook", "--syntax-check", str(test_playbook_path)],
+                capture_output=True,
+                text=True,
+                cwd=str(project_root)
+            )
+
+            # Clean up test playbook
+            test_playbook_path.unlink()
+
+            assert syntax_result.returncode == 0, \
+                f"Ansible syntax check failed:\nSTDOUT: {syntax_result.stdout}\nSTDERR: {syntax_result.stderr}"
+        else:
+            # ansible-playbook not available, skip with warning
+            test_playbook_path.unlink()
+            pytest.skip("ansible-playbook not installed, skipping Ansible syntax validation")
+
+    except Exception as e:
+        # Clean up on any error
+        if test_playbook_path.exists():
+            test_playbook_path.unlink()
+        raise e
+
+
+def test_pcie_aspm_include_tasks_are_resolvable(project_root):
+    """Integration test: Verify all include_tasks references in orchestrator are resolvable."""
+    orchestrator = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks" / "grub-pcie-aspm.yml"
+    tasks_dir = project_root / "configuration-by-ansible" / "host-proxmox" / "tasks"
+
+    assert orchestrator.exists(), "Orchestrator file must exist"
+
+    with open(orchestrator) as f:
+        tasks = yaml.safe_load(f)
+
+    # Extract all include_tasks references
+    for task in tasks:
+        if "include_tasks" in task:
+            included_file = task["include_tasks"]
+            included_path = tasks_dir / included_file
+
+            assert included_path.exists(), \
+                f"Included task file not found: {included_file} (expected at {included_path})"
+
+            # Verify the included file is valid YAML
+            with open(included_path) as included_f:
+                included_tasks = yaml.safe_load(included_f)
+                assert included_tasks is not None, f"Included file {included_file} has invalid YAML"
+                assert isinstance(included_tasks, list), f"Included file {included_file} should contain a list of tasks"
