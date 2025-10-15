@@ -4,12 +4,16 @@
 
 - name: Check if PCIe ASPM parameter already configured
   include_tasks: grub-pcie-aspm-check.yml
+  tags: always
 
 - name: Backup GRUB configuration before modification
   include_tasks: grub-pcie-aspm-backup.yml
+  tags: always
 
 - name: Configure GRUB to disable PCIe ASPM
   include_tasks: grub-pcie-aspm-configure.yml
+  tags: always
 
 - name: Update GRUB bootloader
   include_tasks: grub-pcie-aspm-update.yml
+  tags: always
