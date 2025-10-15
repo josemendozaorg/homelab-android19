@@ -149,7 +149,14 @@
 13. **Task 12** - Verify/add Makefile target
 14. **Task 11** - Create documentation
 
-## Assumptions & Questions
+## Implementation Decisions (User Approved)
+
+✓ **Decision 1:** Use `ansible.builtin.replace` module (matches GPU passthrough pattern - consistency with codebase)
+✓ **Decision 2:** Add as separate `include_tasks` in `main.yml` with tags (follows existing role pattern)
+✓ **Decision 3:** Display notification only, manual reboot (matches specification, safer for production)
+✓ **Decision 4:** Create `test_grub_pcie_aspm.py` following GPU passthrough pattern (comprehensive testing)
+
+## Assumptions & Questions (RESOLVED)
 
 ### Assumption 1: Ansible Module Choice for GRUB Modification
 **Context:** The GPU passthrough role uses `ansible.builtin.replace` with regexp to modify GRUB_CMDLINE_LINUX_DEFAULT. We need to decide the best approach for adding `pcie_aspm=off`.
