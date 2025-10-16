@@ -1,0 +1,10 @@
+---
+# vm-llm-aimachine role handlers
+
+- name: Reboot system for NVIDIA driver loading
+  ansible.builtin.reboot:
+    msg: "Rebooting to load NVIDIA kernel modules"
+    pre_reboot_delay: 5
+    post_reboot_delay: 30
+    reboot_timeout: 300
+  become: yes
