@@ -1,14 +1,31 @@
 ---
-# Configure GRUB to disable PCIe ASPM
+# Configure GRUB to disable PCIe ASPM with performance policy
 
-- name: Add pcie_aspm=off parameter to GRUB configuration
+- name: Remove old pcie_aspm=off parameter if present
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '\s*pcie_aspm=off\s*'
+    replace: ' '
+  when: pcie_aspm_old_param_exists | default(false)
+  register: remove_old_param
+
+- name: Add pcie_aspm.policy=performance parameter to GRUB configuration
   ansible.builtin.replace:
     path: /etc/default/grub
     regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)"$'
-    replace: '\1 pcie_aspm=off"'
+    replace: '\1 pcie_aspm.policy=performance"'
   when: not pcie_aspm_configured
+  register: add_new_param
 
 - name: Display GRUB configuration status
   ansible.builtin.debug:
-    msg: "PCIe ASPM parameter added to GRUB. Run 'update-grub' and reboot to apply."
-  when: not pcie_aspm_configured
+    msg: |
+      PCIe ASPM policy parameter configuration:
+      {% if remove_old_param.changed %}
+      - Removed old 'pcie_aspm=off' parameter
+      {% endif %}
+      {% if add_new_param.changed %}
+      - Added new 'pcie_aspm.policy=performance' parameter
+      {% endif %}
+      Run 'update-grub' and reboot to apply changes.
+  when: remove_old_param.changed | default(false) or add_new_param.changed | default(false)

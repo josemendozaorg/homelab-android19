@@ -6,17 +6,29 @@
     src: /proc/cmdline
   register: kernel_cmdline
 
-- name: Check if pcie_aspm=off is active
+- name: Check if pcie_aspm.policy=performance is active
   ansible.builtin.set_fact:
-    pcie_aspm_active: "{{ 'pcie_aspm=off' in (kernel_cmdline.content | b64decode) }}"
+    pcie_aspm_policy_active: "{{ 'pcie_aspm.policy=performance' in (kernel_cmdline.content | b64decode) }}"
+
+- name: Check if old pcie_aspm=off is still active
+  ansible.builtin.set_fact:
+    pcie_aspm_old_active: "{{ 'pcie_aspm=off' in (kernel_cmdline.content | b64decode) }}"
 
 - name: Display PCIe ASPM kernel status
   ansible.builtin.debug:
-    msg: "PCIe ASPM is {{ 'DISABLED (pcie_aspm=off active)' if pcie_aspm_active else 'ENABLED (parameter not active - reboot required)' }}"
+    msg: |
+      PCIe ASPM kernel status:
+      {% if pcie_aspm_policy_active %}
+      - Policy set to PERFORMANCE (pcie_aspm.policy=performance active)
+      {% elif pcie_aspm_old_active %}
+      - Old parameter active (pcie_aspm=off) - REBOOT REQUIRED for new policy
+      {% else %}
+      - NO ASPM configuration active - REBOOT REQUIRED
+      {% endif %}
 
-- name: Verify PCIe ASPM is disabled
+- name: Verify PCIe ASPM policy is active
   ansible.builtin.assert:
     that:
-      - pcie_aspm_active
-    fail_msg: "PCIe ASPM parameter not found in kernel command line. Check GRUB configuration and reboot."
-    success_msg: "PCIe ASPM successfully disabled in kernel."
+      - pcie_aspm_policy_active
+    fail_msg: "PCIe ASPM policy=performance not found in kernel command line. Check GRUB configuration and reboot."
+    success_msg: "PCIe ASPM policy successfully set to performance in kernel."
