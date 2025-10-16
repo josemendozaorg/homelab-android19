@@ -80,12 +80,14 @@ services:
     type: "vm"
     ip: "192.168.0.140"
     description: "GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama) with RTX 5060Ti passthrough"
-    iso: "ubuntu-24.04.1-live-server-amd64.iso"  # Ubuntu Server ISO
+    template_vm_id: 9000  # Ubuntu 24.04 cloud image template
     cloud_init: true      # Automated setup with cloud-init
+    cloud_init_user: "ubuntu"  # Default user created by cloud-init
+    cloud_init_password: "ubuntu"  # Initial password (will require change on first login)
     agent: true           # QEMU guest agent enabled
     onboot: true          # Auto-start on boot (AI workload server)
     gpu_passthrough:
-      enabled: true
+      enabled: true       # GPU passthrough via Terraform (using root@pam token)
       device_id: "0000:02:00"  # PCIe address for RTX 5060Ti (verified: 02:00.0)
       hostpci: "hostpci0"      # Proxmox hostpci identifier
     resources:
