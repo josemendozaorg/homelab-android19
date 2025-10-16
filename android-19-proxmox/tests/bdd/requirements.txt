@@ -1,0 +1,17 @@
+# BDD Testing Dependencies for Infrastructure as Code
+# Install with: pip install -r tests/bdd/requirements.txt
+
+# BDD Framework - pytest-bdd-ng (modern successor to pytest-bdd)
+pytest-bdd-ng>=0.1.0
+
+# Already included in main Dockerfile but listed for completeness:
+# pytest>=8.0.0
+# pytest-xdist>=3.0.0
+# pyyaml>=6.0.0
+# requests>=2.31.0
+
+# Optional: Enhanced reporting
+pytest-html>=4.0.0
+
+# Optional: Coverage reporting
+# pytest-cov>=4.1.0
