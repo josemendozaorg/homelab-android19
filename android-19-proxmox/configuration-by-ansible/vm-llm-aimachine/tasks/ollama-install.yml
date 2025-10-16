@@ -3,19 +3,98 @@
 # Install and configure Ollama with systemd auto-start
 # Implements Task 1.5 from Scenario 1
 
-- name: Placeholder - Ollama installation
-  ansible.builtin.debug:
-    msg: "Ollama installation tasks will be implemented in Task 1.5"
-  tags: [ollama, ai, llm]
+- name: Check if Ollama is already installed
+  ansible.builtin.command: which ollama
+  register: ollama_installed_check
+  changed_when: false
+  failed_when: false
 
-# TODO (Task 1.5): Implement Ollama installation
-# - Download and install Ollama
-# - Create model directory at {{ ollama_model_dir }}
-# - Configure Ollama to:
-#   - Bind to {{ ollama_host }}:{{ ollama_port }}
-#   - Use custom model directory
-#   - Auto-start on boot via systemd
-# - Start and enable Ollama service
-# - Verify service is running
-# - Test API endpoint (ollama --version)
-# - Optionally download a test model for verification
+- name: Download and install Ollama using official script
+  ansible.builtin.shell: curl -fsSL https://ollama.com/install.sh | sh
+  args:
+    executable: /bin/bash
+  become: yes
+  when: ollama_installed_check.rc != 0
+  environment:
+    # Ensure CUDA/GPU detection during install
+    CUDA_VISIBLE_DEVICES: "0"
+
+- name: Create Ollama model directory
+  ansible.builtin.file:
+    path: "{{ ollama_model_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Create Ollama systemd service override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Configure Ollama service with environment variables
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ollama.service.d/override.conf
+    content: |
+      [Service]
+      Environment="OLLAMA_HOST={{ ollama_host }}:{{ ollama_port }}"
+      Environment="OLLAMA_MODELS={{ ollama_model_dir }}"
+      Environment="CUDA_VISIBLE_DEVICES=0"
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: Restart Ollama service
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: Enable and start Ollama service
+  ansible.builtin.systemd:
+    name: ollama
+    enabled: true
+    state: started
+  become: yes
+
+- name: Wait for Ollama API to become available
+  ansible.builtin.uri:
+    url: "http://{{ ollama_host | replace('0.0.0.0', 'localhost') }}:{{ ollama_port }}"
+    method: GET
+    status_code: 200
+  register: ollama_health_check
+  until: ollama_health_check.status == 200
+  retries: 12
+  delay: 5
+  failed_when: false
+
+- name: Verify Ollama installation with version check
+  ansible.builtin.command: ollama --version
+  register: ollama_version_output
+  changed_when: false
+
+- name: Display Ollama version and status
+  ansible.builtin.debug:
+    msg: |
+      ✅ Ollama Installation Complete
+      Version: {{ ollama_version_output.stdout }}
+      API Endpoint: http://{{ vm_config.ip | default('192.168.0.140') }}:{{ ollama_port }}
+      Model Directory: {{ ollama_model_dir }}
+      GPU Support: Enabled (CUDA_VISIBLE_DEVICES=0)
+      Auto-start: Enabled
+
+- name: Test Ollama API functionality (list models)
+  ansible.builtin.command: ollama list
+  register: ollama_list_output
+  changed_when: false
+  failed_when: false
+
+- name: Display available Ollama models
+  ansible.builtin.debug:
+    msg: "Available models: {{ ollama_list_output.stdout_lines if ollama_list_output.stdout_lines else 'No models downloaded yet' }}"
