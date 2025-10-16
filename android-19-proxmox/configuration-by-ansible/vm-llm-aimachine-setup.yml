@@ -2,8 +2,8 @@
 # GPU-Accelerated AI/LLM VM Setup Playbook
 # vm-llm-aimachine: Ubuntu Server with NVIDIA GPU passthrough, vLLM, and Ollama
 - name: Setup AI/LLM VM with GPU Passthrough
-  hosts: proxmox
-  become: false
+  hosts: vm_llm_aimachine
+  become: true
   gather_facts: true
 
   vars_files:

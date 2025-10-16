@@ -21,5 +21,14 @@ all:
           vm_id: 103
           vm_type: omakub
           description: "Omakub (Ubuntu 24.04 + GNOME) development workstation"
+    ai_vms:
+      hosts:
+        vm_llm_aimachine:
+          ansible_host: 192.168.0.140
+          ansible_user: ubuntu
+          ansible_python_interpreter: /usr/bin/python3
+          vm_id: 140
+          vm_type: ai_llm
+          description: "GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama)"
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
