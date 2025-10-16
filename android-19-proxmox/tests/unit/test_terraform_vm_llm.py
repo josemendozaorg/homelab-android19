@@ -57,20 +57,21 @@ def test_terraform_vm_llm_has_correct_resources(terraform_dir, catalog):
     assert vm_140['resources']['disk'] == 500, "Catalog should define 500 GB disk"
 
 
-def test_terraform_vm_llm_uses_ubuntu_server_iso(terraform_dir, catalog):
-    """VM should boot from Ubuntu Server ISO defined in catalog."""
+def test_terraform_vm_llm_uses_cloud_image_template(terraform_dir, catalog):
+    """VM should clone from Ubuntu cloud image template defined in catalog."""
     main_tf = terraform_dir / "main.tf"
     content = main_tf.read_text()
 
-    # Check that Terraform references ISO from catalog
-    assert 'each.value.iso' in content or 'each.value, "iso"' in content, \
-           "ISO should be read from catalog"
+    # Check that Terraform supports cloning from template
+    assert 'clone' in content.lower(), "Clone configuration should be present"
+    assert 'template_vm_id' in content or 'each.value, "template_vm_id"' in content, \
+           "Template VM ID should be read from catalog"
 
-    # Validate catalog has correct ISO
+    # Validate catalog has cloud-init template configuration
     vm_140 = catalog['services'][140]
-    assert 'ubuntu' in vm_140['iso'].lower(), "Catalog should specify Ubuntu ISO"
-    assert 'server' in vm_140['iso'].lower() or '24.04' in vm_140['iso'], \
-           "Catalog should specify Ubuntu Server ISO"
+    assert 'template_vm_id' in vm_140, "Catalog should specify template_vm_id for cloud-init"
+    assert vm_140['template_vm_id'] == 9000, "Template should be VM ID 9000"
+    assert vm_140['cloud_init'] is True, "Cloud-init should be enabled"
 
 
 def test_terraform_vm_llm_has_cloud_init(terraform_dir):

@@ -42,7 +42,7 @@ resource "proxmox_virtual_environment_container" "containers" {
 
     # Use cloud-init for initial container setup
     user_account {
-      keys     = [file("~/.ssh/id_rsa.pub")]
+      keys     = [file("/tmp/.ssh/id_ed25519.pub")]
       password = "changeme"
     }
   }
@@ -125,33 +125,24 @@ resource "proxmox_virtual_environment_vm" "vms" {
   }
 
   # Disk configuration
-  # For cloud-init VMs: Resize cloned disk
+  # For cloud-init VMs: Resize cloned disk from template
   # For ISO VMs: Create blank disk
   dynamic "disk" {
-    for_each = [1]
+    for_each = lookup(each.value, "cloud_init", false) ? [1] : (lookup(each.value, "iso", null) != null ? [1] : [])
     content {
       datastore_id = lookup(each.value, "storage", "vm-storage")
       size         = lookup(each.value.resources, "disk", 150)
       interface    = "scsi0"
+      file_format  = "raw"  # Required for cloud images
     }
   }
 
-  # ISO for installation (skip for cloud images)
+  # ISO for installation (only for non-cloud-init VMs)
   dynamic "cdrom" {
-    for_each = lookup(each.value, "iso", null) != null ? [1] : []
+    for_each = lookup(each.value, "iso", null) != null && !lookup(each.value, "cloud_init", false) ? [1] : []
     content {
       enabled   = true
       file_id   = "local:iso/${each.value.iso}"
-      interface = "ide2"
-    }
-  }
-
-  # Cloud-init ISO for cloud images
-  dynamic "cdrom" {
-    for_each = lookup(each.value, "cloud_init", false) ? [1] : []
-    content {
-      enabled   = true
-      file_id   = "local:iso/cloud-init-${each.key}.iso"
       interface = "ide2"
     }
   }
@@ -197,7 +188,7 @@ resource "proxmox_virtual_environment_vm" "vms" {
       user_account {
         username = lookup(each.value, "cloud_init_user", "dev")
         password = lookup(each.value, "cloud_init_password", "dev")
-        keys     = [file("~/.ssh/id_rsa.pub")]
+        keys     = [file("/tmp/.ssh/id_ed25519.pub")]
       }
 
       ip_config {
