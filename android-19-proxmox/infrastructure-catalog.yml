@@ -75,6 +75,25 @@ services:
       disk: 150
     storage: "vm-storage"
 
+  140:
+    name: "vm-llm-aimachine"
+    type: "vm"
+    ip: "192.168.0.140"
+    description: "GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama) with RTX 5060Ti passthrough"
+    iso: "ubuntu-24.04.1-live-server-amd64.iso"  # Ubuntu Server ISO
+    cloud_init: true      # Automated setup with cloud-init
+    agent: true           # QEMU guest agent enabled
+    onboot: true          # Auto-start on boot (AI workload server)
+    gpu_passthrough:
+      enabled: true
+      device_id: "0000:01:00"  # PCIe address for RTX 5060Ti (to be verified on actual hardware)
+      hostpci: "hostpci0"      # Proxmox hostpci identifier
+    resources:
+      cores: 32
+      memory: 51200  # 50GB in MB
+      disk: 500
+    storage: "vm-storage"
+
 
 
 # Proxmox Host Configuration
