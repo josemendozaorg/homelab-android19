@@ -1,0 +1,51 @@
+# Implementation Notes: GPU-Passthrough Ubuntu VM for AI/LLM Workloads
+
+**Implementation Started:** 2025-10-16
+**Strategy:** Outside-in TDD (BDD scenarios guide implementation)
+
+---
+
+## Scenario 9: Infrastructure Catalog Integration
+**Completed:** 2025-10-16
+**Acceptance Test Status:** Unit tests ✓ (11/11 passing)
+**Note:** BDD acceptance tests require actual infrastructure - will implement step definitions incrementally
+
+### Tasks Completed (1 task):
+
+#### Task 9.1: Add VM Definition to Infrastructure Catalog
+**Commit:** f119807
+**Test:** 11 unit tests validating catalog entry
+
+**Implementation:**
+- Added VM ID 140 to infrastructure-catalog.yml
+- Configured: 32 cores, 50GB (51200 MB) RAM, 500GB disk
+- GPU passthrough: RTX 5060Ti with device_id and hostpci configuration
+- ISO: ubuntu-24.04.1-live-server-amd64.iso
+- cloud-init: enabled for automated setup
+- agent: QEMU guest agent enabled
+- onboot: true (auto-start on boot)
+
+**Key Decisions:**
+- VM ID 140 follows network strategy (140 → 192.168.0.140)
+- GPU device_id "0000:01:00" is placeholder (to be verified on hardware)
+- cloud-init enabled for automated SSH key injection
+- onboot=true since this is an AI workload server
+
+#### Task 9.2: Create Terraform Variables for GPU Passthrough
+**Status:** Deferred to Scenario 1
+**Rationale:** Variables will be created with actual Terraform VM resource
+
+### Acceptance Criteria Satisfied by This Scenario:
+- [x] AC-8: VM is added to infrastructure-catalog.yml with all specifications
+
+### Scenario Validation:
+- ✓ Unit tests: 11 unit tests created and passing
+- ⏳ BDD acceptance test: Step definitions are templates (to be implemented with infrastructure)
+- ✓ Catalog entry: Functionally complete and validated
+
+### Notes
+- Catalog entry follows existing project patterns (VM 101, 103)
+- GPU passthrough configuration includes both device_id and hostpci for Terraform flexibility
+- Ubuntu Server ISO path matches existing patterns in catalog
+
+---
