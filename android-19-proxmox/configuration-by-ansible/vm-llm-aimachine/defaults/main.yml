@@ -27,6 +27,9 @@ vllm_port: 8000
 vllm_host: "{{ vm_config.ip | default('192.168.0.140') }}"  # Bind to VM IP
 vllm_localhost_enabled: true  # Also bind to localhost
 vllm_model_dir: "/opt/models"  # Directory for downloaded models
+vllm_venv_path: "/opt/vllm-env"  # Python virtual environment path (Ubuntu 24.04 PEP 668)
+vllm_model_name: "Qwen/Qwen2.5-7B-Instruct-AWQ"  # AWQ quantized for 16GB GPU (10-11GB VRAM)
+vllm_gpu_memory_utilization: 0.85  # Reserve 15% for system overhead
 vllm_service_user: "vllm"
 vllm_service_enabled: true  # Auto-start on boot
 vllm_systemd_service: true  # Install as systemd service
