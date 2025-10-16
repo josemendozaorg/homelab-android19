@@ -52,8 +52,8 @@
 
 ## Scenario 1: Initial VM Deployment
 **Started:** 2025-10-16
-**Acceptance Test Status:** Unit tests ✓ (9/9 passing for Task 1.1)
-**Progress:** 1/6 tasks complete
+**Acceptance Test Status:** Unit tests ✓ (19/19 passing across Tasks 1.1-1.2)
+**Progress:** 2/6 tasks complete
 
 ### Tasks Completed:
 
@@ -79,8 +79,29 @@
 - Check resources, ISO, cloud-init, network, VMID all use catalog lookups
 - 9/9 tests passing (GREEN phase)
 
+#### Task 1.2: Create Ansible Role Structure (vm-llm-aimachine)
+**Commit:** 381cd5b
+**Test:** 10 unit tests validating role structure
+
+**Implementation:**
+- Created vm-llm-aimachine Ansible role directory structure
+- defaults/main.yml with NVIDIA, vLLM, Ollama configuration
+- tasks/main.yml orchestrates installation with modular includes
+- Placeholder task files: nvidia-drivers.yml, vllm-install.yml, ollama-install.yml
+
+**Key Decisions:**
+- References catalog for VM configuration (single source of truth)
+- NVIDIA: ubuntu-drivers with open-kernel preference, CUDA 12.6+ requirement
+- vLLM: Binds to 192.168.0.140:8000 AND localhost, auto-start enabled
+- Ollama: Port 11434, systemd service, auto-start enabled
+- Model storage: /opt/models (vLLM), /opt/ollama/models (Ollama)
+
+**Test Strategy:**
+- 10 tests verify directory structure, YAML validity, catalog references
+- Tests check all required task files exist
+- 10/10 tests passing (GREEN phase)
+
 ### Tasks Remaining:
-- Task 1.2: Create Ansible Role Structure (vm-llm-aimachine)
 - Task 1.3: Implement NVIDIA Driver Installation Tasks
 - Task 1.4: Implement vLLM Installation Tasks
 - Task 1.5: Implement Ollama Installation Tasks
