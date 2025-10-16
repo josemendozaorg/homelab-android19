@@ -86,7 +86,7 @@ services:
     onboot: true          # Auto-start on boot (AI workload server)
     gpu_passthrough:
       enabled: true
-      device_id: "0000:01:00"  # PCIe address for RTX 5060Ti (to be verified on actual hardware)
+      device_id: "0000:02:00"  # PCIe address for RTX 5060Ti (verified: 02:00.0)
       hostpci: "hostpci0"      # Proxmox hostpci identifier
     resources:
       cores: 32
