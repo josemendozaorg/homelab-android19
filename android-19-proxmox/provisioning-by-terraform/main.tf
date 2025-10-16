@@ -162,6 +162,18 @@ resource "proxmox_virtual_environment_vm" "vms" {
     model  = "virtio"
   }
 
+  # GPU Passthrough (for VMs with gpu_passthrough.enabled = true)
+  dynamic "hostpci" {
+    for_each = lookup(each.value, "gpu_passthrough", null) != null && lookup(each.value.gpu_passthrough, "enabled", false) ? [1] : []
+    content {
+      device  = lookup(each.value.gpu_passthrough, "hostpci", "hostpci0")
+      id      = lookup(each.value.gpu_passthrough, "device_id", "0000:01:00")
+      pcie    = true  # Enable PCIe passthrough
+      rombar  = true  # Enable ROM bar for GPU BIOS
+      xvga    = false # Disable primary VGA (GPU will be secondary initially)
+    }
+  }
+
   # VGA display - default settings for remote access
   vga {
     type = "std" # Default standard VGA (compatible with remote desktop)
