@@ -49,3 +49,41 @@
 - Ubuntu Server ISO path matches existing patterns in catalog
 
 ---
+
+## Scenario 1: Initial VM Deployment
+**Started:** 2025-10-16
+**Acceptance Test Status:** Unit tests ✓ (9/9 passing for Task 1.1)
+**Progress:** 1/6 tasks complete
+
+### Tasks Completed:
+
+#### Task 1.1: Create Terraform VM Resource with GPU Passthrough
+**Commit:** 41013e2
+**Test:** 9 unit tests validating Terraform configuration
+
+**Implementation:**
+- Added dynamic hostpci block to existing proxmox_virtual_environment_vm resource
+- GPU passthrough enabled conditionally when catalog has gpu_passthrough.enabled = true
+- Supports configurable device_id and hostpci identifier from catalog
+- PCIe passthrough, ROM bar enabled; xvga disabled (GPU as secondary initially)
+
+**Key Decisions:**
+- Used dynamic block pattern to maintain for_each loop over catalog
+- Reusable for any future GPU VMs (not hardcoded to VM 140)
+- Tests validate catalog-driven pattern, not hardcoded resource names
+- VM 140 gets RTX 5060Ti via device "0000:01:00"
+
+**Test Strategy:**
+- Tests verify for_each pattern exists and uses catalog
+- Validate GPU passthrough block presence
+- Check resources, ISO, cloud-init, network, VMID all use catalog lookups
+- 9/9 tests passing (GREEN phase)
+
+### Tasks Remaining:
+- Task 1.2: Create Ansible Role Structure (vm-llm-aimachine)
+- Task 1.3: Implement NVIDIA Driver Installation Tasks
+- Task 1.4: Implement vLLM Installation Tasks
+- Task 1.5: Implement Ollama Installation Tasks
+- Task 1.6: Create Makefile Deployment Target
+
+---
