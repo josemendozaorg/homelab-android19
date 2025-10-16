@@ -69,22 +69,26 @@
     var: nvidia_dmesg_check.stdout_lines
   when: nvidia_dmesg_check.stdout_lines is defined
 
-- name: Verify CUDA availability and version
-  ansible.builtin.shell: nvidia-smi --query-gpu=driver_version,cuda_version --format=csv,noheader
+- name: Get CUDA version from nvidia-smi output
+  ansible.builtin.shell: nvidia-smi | grep -i "CUDA Version" | sed -n 's/.*CUDA Version: \([0-9.]*\).*/\1/p'
   register: cuda_version_check
+  changed_when: false
+
+- name: Get driver version from nvidia-smi
+  ansible.builtin.shell: nvidia-smi --query-gpu=driver_version --format=csv,noheader
+  register: driver_version_check
   changed_when: false
 
 - name: Display CUDA version information
   ansible.builtin.debug:
     msg: |
       ✅ NVIDIA Driver Installation Complete
-      Driver Version: {{ cuda_version_check.stdout.split(',')[0] }}
-      CUDA Version: {{ cuda_version_check.stdout.split(',')[1] }}
-  when: cuda_version_check.stdout is defined
+      Driver Version: {{ driver_version_check.stdout | trim }}
+      CUDA Version: {{ cuda_version_check.stdout | trim }}
 
 - name: Verify CUDA version is 12.6 or higher
   ansible.builtin.assert:
     that:
-      - cuda_version_check.stdout.split(',')[1] | trim | float >= 12.6
-    fail_msg: "CUDA version {{ cuda_version_check.stdout.split(',')[1] }} is below required 12.6"
-    success_msg: "CUDA version {{ cuda_version_check.stdout.split(',')[1] }} meets requirements (>= 12.6)"
+      - cuda_version_check.stdout | trim | float >= 12.6
+    fail_msg: "CUDA version {{ cuda_version_check.stdout | trim }} is below required 12.6"
+    success_msg: "CUDA version {{ cuda_version_check.stdout | trim }} meets requirements (>= 12.6)"
