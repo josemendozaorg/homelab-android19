@@ -52,8 +52,8 @@
 
 ## Scenario 1: Initial VM Deployment
 **Started:** 2025-10-16
-**Acceptance Test Status:** Unit tests ✓ (19/19 passing across Tasks 1.1-1.2)
-**Progress:** 2/6 tasks complete
+**Acceptance Test Status:** Unit tests ✓ (29/29 passing across Tasks 1.1-1.3)
+**Progress:** 3/6 tasks complete
 
 ### Tasks Completed:
 
@@ -101,8 +101,30 @@
 - Tests check all required task files exist
 - 10/10 tests passing (GREEN phase)
 
+#### Task 1.3: Implement NVIDIA Driver Installation Tasks
+**Commit:** fe00e4f
+**Test:** 10 unit tests for NVIDIA driver installation
+
+**Implementation:**
+- Complete driver installation workflow with ubuntu-drivers autoinstall
+- Idempotent checks (nvidia-smi before install)
+- Automatic system reboot handling with wait_for_connection
+- Comprehensive verification: nvidia-smi, dmesg, CUDA version check
+- Handler for graceful system reboot (300s timeout)
+
+**Key Decisions:**
+- ubuntu-drivers autoinstall automatically selects best driver (including open-kernel)
+- Idempotency: Skip installation if nvidia-smi already works
+- Reboot handler triggered only when drivers installed
+- CUDA version assertion: >= 12.6 required
+- dmesg check for kernel module loading verification
+
+**Test Strategy:**
+- 10 tests verify detection, installation, verification, idempotency, reboot
+- All critical driver installation steps covered
+- 10/10 tests passing (GREEN phase)
+
 ### Tasks Remaining:
-- Task 1.3: Implement NVIDIA Driver Installation Tasks
 - Task 1.4: Implement vLLM Installation Tasks
 - Task 1.5: Implement Ollama Installation Tasks
 - Task 1.6: Create Makefile Deployment Target
