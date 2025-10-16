@@ -21,7 +21,7 @@ INVENTORY := inventory.yml
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-tf-rebuild-state proxmox-full-deploy \
         deploy-lxc-adguard-dns deploy-proxmox-all \
         omarchy-deploy omarchy-destroy \
-        deploy-vm-ubuntu-desktop-devmachine \
+        deploy-vm-ubuntu-desktop-devmachine deploy-vm-llm-aimachine \
         all-deploy
 
 # Help target with color output
@@ -200,6 +200,20 @@ deploy-vm-ubuntu-desktop-devmachine: proxmox-tf-init ## Deploy Ubuntu Desktop VM
 	@echo "📋 Step 2/2: Creating VM with Terraform"
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
 	@echo "✅ Ubuntu Desktop VM created! Open Proxmox console to complete installation"
+
+deploy-vm-llm-aimachine: proxmox-tf-init ## Deploy GPU-accelerated AI/LLM VM (Ubuntu Server + vLLM + Ollama)
+	@echo "🤖 Deploying AI/LLM VM with GPU passthrough..."
+	@echo "📋 Step 1/3: Creating VM with Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"140\\\"]"
+	@echo "⏳ Waiting 30s for VM to boot and cloud-init to complete..."
+	@sleep 30
+	@echo "📋 Step 2/3: Installing NVIDIA drivers, vLLM, and Ollama"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/vm-llm-aimachine-setup.yml
+	@echo "📋 Step 3/3: Verifying deployment"
+	@echo "✅ AI/LLM VM deployment complete!"
+	@echo "🌐 vLLM API: http://192.168.0.140:8000"
+	@echo "🌐 Ollama API: http://192.168.0.140:11434"
+	@echo "🎮 GPU: NVIDIA RTX 5060Ti with passthrough enabled"
 
 # All Machines
 all-deploy: ## Deploy configuration to all machines

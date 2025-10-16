@@ -1,0 +1,54 @@
+---
+# GPU-Accelerated AI/LLM VM Setup Playbook
+# vm-llm-aimachine: Ubuntu Server with NVIDIA GPU passthrough, vLLM, and Ollama
+- name: Setup AI/LLM VM with GPU Passthrough
+  hosts: proxmox
+  become: false
+  gather_facts: true
+
+  vars_files:
+    - vm-llm-aimachine/defaults/main.yml
+
+  vars:
+    # Load configuration from infrastructure catalog
+    catalog: "{{ lookup('file', '../infrastructure-catalog.yml') | from_yaml }}"
+    vm_config: "{{ catalog.services[140] }}"
+
+  roles:
+    - role: vm-llm-aimachine
+      tags: [vm-llm, ai, llm, gpu, nvidia, vllm, ollama]
+
+  post_tasks:
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg: |
+          🎉 AI/LLM VM Configuration Complete!
+
+          ✅ VM Details:
+          - VM ID: 140
+          - Name: {{ vm_config.name }}
+          - IP Address: {{ vm_config.ip }}
+          - CPU: {{ vm_config.resources.cores }} cores
+          - RAM: {{ (vm_config.resources.memory / 1024) | round(1) }}GB
+          - Disk: {{ vm_config.resources.disk }}GB
+          - GPU: {{ vm_config.gpu_passthrough.device_id }}
+
+          ✅ Installed Services:
+          - NVIDIA Drivers: Installed with CUDA {{ cuda_version_min }}+
+          - vLLM API Server: http://{{ vm_config.ip }}:{{ vllm_port }}
+          - Ollama: http://{{ vm_config.ip }}:{{ ollama_port }}
+
+          🚀 Services are configured for auto-start on boot
+          📁 Model Storage:
+          - vLLM: {{ vllm_model_dir }}
+          - Ollama: {{ ollama_model_dir }}
+
+          🎮 GPU Support: Enabled
+          🌐 Ready for AI/LLM workloads!
+
+  tags:
+    - vm-llm-aimachine
+    - vm
+    - ai
+    - llm
+    - gpu
