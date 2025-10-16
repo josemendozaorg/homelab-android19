@@ -1,0 +1,27 @@
+---
+# GPU Passthrough Configuration
+# Adds GPU to VM using qm set command (run on Proxmox host)
+
+- name: Check if GPU passthrough is already configured
+  ansible.builtin.shell: qm config {{ vm_id }} | grep -q 'hostpci0'
+  register: gpu_check
+  changed_when: false
+  failed_when: false
+  delegate_to: "{{ groups['proxmox'][0] }}"
+
+- name: Configure GPU passthrough for VM
+  ansible.builtin.command: >
+    qm set {{ vm_id }}
+    --hostpci0 {{ gpu_device_id }},pcie=1,rombar=1,x-vga=0
+  when:
+    - gpu_passthrough_enabled
+    - gpu_check.rc != 0
+  register: gpu_config
+  changed_when: gpu_config.rc == 0
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  become: yes
+
+- name: Display GPU passthrough status
+  ansible.builtin.debug:
+    msg: >
+      GPU Passthrough: {{ 'Already configured' if gpu_check.rc == 0 else 'Configured successfully' if gpu_passthrough_enabled else 'Disabled in catalog' }}
