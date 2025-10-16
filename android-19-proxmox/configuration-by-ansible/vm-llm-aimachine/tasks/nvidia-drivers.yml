@@ -39,6 +39,9 @@
   register: nvidia_driver_install
   notify: Reboot system for NVIDIA driver loading
 
+- name: Flush handlers to reboot immediately after driver installation
+  ansible.builtin.meta: flush_handlers
+
 - name: Wait for system to come back after reboot (if rebooted)
   ansible.builtin.wait_for_connection:
     delay: 30
