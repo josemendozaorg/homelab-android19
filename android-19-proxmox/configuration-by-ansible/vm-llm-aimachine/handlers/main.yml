@@ -8,3 +8,10 @@
     post_reboot_delay: 30
     reboot_timeout: 300
   become: yes
+
+- name: Restart vLLM service
+  ansible.builtin.systemd:
+    name: vllm
+    state: restarted
+    daemon_reload: yes
+  become: yes
