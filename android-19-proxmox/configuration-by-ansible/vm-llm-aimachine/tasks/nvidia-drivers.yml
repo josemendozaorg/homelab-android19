@@ -1,0 +1,17 @@
+---
+# NVIDIA Driver Installation Tasks
+# Install NVIDIA GPU drivers using ubuntu-drivers with open-kernel preference
+# Implements Task 1.3 from Scenario 1
+
+- name: Placeholder - NVIDIA driver installation
+  ansible.builtin.debug:
+    msg: "NVIDIA driver installation tasks will be implemented in Task 1.3"
+  tags: [nvidia, drivers, gpu]
+
+# TODO (Task 1.3): Implement NVIDIA driver installation
+# - Detect available drivers using 'ubuntu-drivers devices'
+# - Prefer '*-open - distro' version
+# - Install using ubuntu-drivers
+# - Verify installation with 'nvidia-smi'
+# - Check dmesg for NVIDIA kernel module loading
+# - Verify CUDA availability and version (12.6+)

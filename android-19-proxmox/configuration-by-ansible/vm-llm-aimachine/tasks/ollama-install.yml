@@ -1,0 +1,21 @@
+---
+# Ollama Installation Tasks
+# Install and configure Ollama with systemd auto-start
+# Implements Task 1.5 from Scenario 1
+
+- name: Placeholder - Ollama installation
+  ansible.builtin.debug:
+    msg: "Ollama installation tasks will be implemented in Task 1.5"
+  tags: [ollama, ai, llm]
+
+# TODO (Task 1.5): Implement Ollama installation
+# - Download and install Ollama
+# - Create model directory at {{ ollama_model_dir }}
+# - Configure Ollama to:
+#   - Bind to {{ ollama_host }}:{{ ollama_port }}
+#   - Use custom model directory
+#   - Auto-start on boot via systemd
+# - Start and enable Ollama service
+# - Verify service is running
+# - Test API endpoint (ollama --version)
+# - Optionally download a test model for verification

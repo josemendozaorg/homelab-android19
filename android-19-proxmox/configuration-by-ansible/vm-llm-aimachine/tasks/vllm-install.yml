@@ -1,0 +1,23 @@
+---
+# vLLM Installation Tasks
+# Install and configure vLLM inference server with systemd auto-start
+# Implements Task 1.4 from Scenario 1
+
+- name: Placeholder - vLLM installation
+  ansible.builtin.debug:
+    msg: "vLLM installation tasks will be implemented in Task 1.4"
+  tags: [vllm, ai, llm]
+
+# TODO (Task 1.4): Implement vLLM installation
+# - Install Python 3.11+ and pip
+# - Install vLLM via pip (with CUDA support)
+# - Create vLLM service user
+# - Create model directory at {{ vllm_model_dir }}
+# - Create systemd service file
+# - Configure vLLM to:
+#   - Bind to {{ vllm_host }}:{{ vllm_port }}
+#   - Also bind to localhost if {{ vllm_localhost_enabled }}
+#   - Auto-start on boot
+# - Start and enable vLLM service
+# - Verify service is running
+# - Test API endpoint accessibility
