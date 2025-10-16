@@ -70,7 +70,7 @@
   when: nvidia_dmesg_check.stdout_lines is defined
 
 - name: Get CUDA version from nvidia-smi output
-  ansible.builtin.shell: nvidia-smi | grep -i "CUDA Version" | sed -n 's/.*CUDA Version: \([0-9.]*\).*/\1/p'
+  ansible.builtin.shell: "nvidia-smi | grep -i 'CUDA Version' | sed -n 's/.*CUDA Version: \\([0-9.]*\\).*/\\1/p'"
   register: cuda_version_check
   changed_when: false
 
