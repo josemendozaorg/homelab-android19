@@ -16,7 +16,7 @@ INVENTORY := inventory.yml
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-host-setup proxmox-host-check proxmox-host-gpu-passthrough proxmox-host-pcie-aspm \
-        proxmox-host-storage proxmox-host-templates proxmox-host-api \
+        proxmox-host-storage proxmox-host-templates proxmox-host-cloud-templates proxmox-host-api \
         proxmox-deploy adguard-setup \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-tf-rebuild-state proxmox-full-deploy \
         deploy-lxc-adguard-dns deploy-proxmox-all \
@@ -126,6 +126,9 @@ proxmox-host-storage: ## Configure Proxmox storage only
 
 proxmox-host-templates: ## Download container and VM templates
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags templates
+
+proxmox-host-cloud-templates: ## Create Ubuntu cloud image templates for automated VM deployment
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags cloud-templates
 
 proxmox-host-api: ## Configure API tokens for automation
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags api
