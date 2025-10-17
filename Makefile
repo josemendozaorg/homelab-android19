@@ -204,8 +204,10 @@ deploy-vm-ubuntu-desktop-devmachine: proxmox-tf-init ## Deploy Ubuntu Desktop VM
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"103\\\"]"
 	@echo "✅ Ubuntu Desktop VM created! Open Proxmox console to complete installation"
 
-deploy-vm-llm-aimachine: proxmox-tf-init ## Deploy GPU-accelerated AI/LLM VM (Ubuntu Server + vLLM + Ollama)
+deploy-vm-llm-aimachine: proxmox-tf-init proxmox-host-cloud-templates proxmox-host-gpu-passthrough ## Deploy GPU-accelerated AI/LLM VM (Ubuntu Server + vLLM + Ollama)
 	@echo "🤖 Deploying AI/LLM VM with GPU passthrough..."
+	@echo "✅ Prerequisites complete: Terraform initialized, cloud templates ready, GPU passthrough configured"
+	@echo ""
 	@echo "📋 Step 1/3: Creating VM with Terraform"
 	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"140\\\"]"
 	@echo "⏳ Waiting 30s for VM to boot and cloud-init to complete..."

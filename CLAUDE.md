@@ -203,8 +203,12 @@ systemctl status AdGuardHome
 Cloud image templates enable automated VM deployment without manual OS installation. They use cloud-init for zero-touch provisioning.
 
 ### Template Creation
-**One-time setup** (run once on new Proxmox installation):
+**Automatic** (runs automatically as dependency when deploying cloud-init VMs):
 ```bash
+# Runs automatically when deploying VMs
+make deploy-vm-llm-aimachine
+
+# Or run manually if needed
 make proxmox-host-cloud-templates
 ```
 
@@ -215,6 +219,8 @@ This command:
 4. Enables QEMU guest agent
 
 **Location:** `/var/lib/vz/template/iso/ubuntu-24.04-server-cloudimg-amd64.img`
+
+**Idempotency:** Safe to run multiple times - checks if template already exists.
 
 ### Benefits
 - **No manual installation**: VMs boot ready-to-use in ~30 seconds
@@ -237,7 +243,7 @@ VMs using cloud-init templates are defined in `infrastructure-catalog.yml`:
 Terraform clones template 9000 → Creates customized VM with cloud-init → Ansible configures software
 
 ### Prerequisites
-Cloud image templates must be created **before** deploying VMs that use them. Run `make proxmox-host-cloud-templates` once during initial Proxmox setup.
+Cloud image templates are automatically created when deploying cloud-init VMs. The `deploy-vm-llm-aimachine` target includes these as idempotent dependencies, so no manual setup is required.
 
 ## Terraform Initialization Strategy
 
