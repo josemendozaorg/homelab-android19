@@ -37,6 +37,13 @@
     - proxmox
     - templates
 
+- name: Cloud image templates
+  include_tasks: cloud-image-templates.yml
+  tags:
+    - proxmox
+    - cloud-templates
+  when: cloud_template_vm_id is defined
+
 - name: API token configuration
   include_tasks: api-tokens.yml
   tags:

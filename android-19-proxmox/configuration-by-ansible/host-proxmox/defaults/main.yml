@@ -40,6 +40,16 @@ proxmox_ct_templates:
 # VM Templates/ISOs
 proxmox_vm_isos: []  # ISOs managed by specific VM roles
 
+# Cloud Image Templates
+# Ubuntu cloud images for automated VM deployment
+cloud_image_url: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+cloud_image_filename: "ubuntu-24.04-server-cloudimg-amd64.img"
+cloud_image_storage_path: "/var/lib/vz/template/iso"
+cloud_template_vm_id: 9000
+cloud_template_vm_name: "ubuntu-2404-cloud-template"
+cloud_template_memory: 2048
+proxmox_storage: "vm-storage"
+
 # API Configuration
 # SECURITY: API credentials should be provided via environment variables or ansible-vault
 # Example: ansible-playbook ... -e proxmox_api_user=terraform@pve -e proxmox_api_token_id=terraform-token
