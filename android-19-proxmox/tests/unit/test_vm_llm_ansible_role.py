@@ -81,3 +81,73 @@ def test_vm_llm_defaults_has_required_variables(role_dir):
     # At minimum, should have some configuration structure
     assert data is not None, "defaults should have configuration"
     assert isinstance(data, dict), "defaults should be a dictionary"
+
+
+def test_gpu_passthrough_task_file_exists(role_dir):
+    """Role should have tasks/gpu-passthrough.yml for GPU configuration."""
+    gpu_task = role_dir / "tasks" / "gpu-passthrough.yml"
+    assert gpu_task.exists(), "tasks/gpu-passthrough.yml not found"
+
+
+def test_gpu_passthrough_should_restart_vm_when_gpu_configured(role_dir):
+    """GPU passthrough task should restart VM (stop/start) when GPU is newly configured."""
+    gpu_task_file = role_dir / "tasks" / "gpu-passthrough.yml"
+    with open(gpu_task_file, 'r') as f:
+        tasks = yaml.safe_load(f)
+
+    assert tasks is not None, "gpu-passthrough.yml should not be empty"
+    assert isinstance(tasks, list), "gpu-passthrough.yml should contain a list of tasks"
+
+    # Find stop VM task
+    stop_task = None
+    start_task = None
+    for task in tasks:
+        if isinstance(task, dict) and 'name' in task:
+            if 'stop' in task['name'].lower() and 'vm' in task['name'].lower():
+                stop_task = task
+            if 'start' in task['name'].lower() and 'vm' in task['name'].lower():
+                start_task = task
+
+    assert stop_task is not None, "Should have task to stop VM after GPU configuration"
+    assert start_task is not None, "Should have task to start VM after GPU configuration"
+
+    # Verify stop task has correct condition (only when GPU was just configured)
+    assert 'when' in stop_task, "Stop VM task should be conditional"
+    when_condition = stop_task['when']
+    # Check if condition includes gpu_config.changed
+    if isinstance(when_condition, list):
+        condition_str = ' '.join([str(c) for c in when_condition])
+    else:
+        condition_str = str(when_condition)
+
+    assert 'gpu_config' in condition_str and 'changed' in condition_str, \
+        "Stop VM task should only run when gpu_config.changed"
+
+    # Verify start task has correct condition
+    assert 'when' in start_task, "Start VM task should be conditional"
+
+    # Verify tasks delegate to Proxmox host
+    assert 'delegate_to' in stop_task, "Stop VM task should delegate to Proxmox host"
+    assert 'delegate_to' in start_task, "Start VM task should delegate to Proxmox host"
+
+
+def test_gpu_passthrough_should_wait_for_vm_after_restart(role_dir):
+    """GPU passthrough should wait for VM to boot after restart."""
+    gpu_task_file = role_dir / "tasks" / "gpu-passthrough.yml"
+    with open(gpu_task_file, 'r') as f:
+        tasks = yaml.safe_load(f)
+
+    # Find wait task (after start task)
+    has_wait_task = False
+    for task in tasks:
+        if isinstance(task, dict) and 'name' in task:
+            if 'wait' in task['name'].lower():
+                has_wait_task = True
+                # Should have timeout/delay for VM boot
+                assert 'ansible.builtin.wait_for_connection' in str(task) or \
+                       'ansible.builtin.wait_for' in str(task) or \
+                       'ansible.builtin.pause' in str(task), \
+                       "Wait task should use appropriate wait module"
+                break
+
+    assert has_wait_task, "Should wait for VM to boot after restart"

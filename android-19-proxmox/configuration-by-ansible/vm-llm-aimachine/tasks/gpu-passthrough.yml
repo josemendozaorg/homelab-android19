@@ -21,7 +21,36 @@
   delegate_to: "{{ groups['proxmox'][0] }}"
   become: yes
 
+- name: Stop VM for GPU passthrough to take effect
+  ansible.builtin.command: "qm stop {{ vm_id }}"
+  when:
+    - gpu_passthrough_enabled
+    - gpu_config.changed
+  register: vm_stop
+  changed_when: vm_stop.rc == 0
+  failed_when: false  # Don't fail if VM already stopped
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  become: yes
+
+- name: Start VM after GPU passthrough configuration
+  ansible.builtin.command: "qm start {{ vm_id }}"
+  when:
+    - gpu_passthrough_enabled
+    - gpu_config.changed
+  register: vm_start
+  changed_when: vm_start.rc == 0
+  delegate_to: "{{ groups['proxmox'][0] }}"
+  become: yes
+
+- name: Wait for VM to boot and become accessible
+  ansible.builtin.pause:
+    seconds: 30
+  when:
+    - gpu_passthrough_enabled
+    - gpu_config.changed
+
 - name: Display GPU passthrough status
   ansible.builtin.debug:
     msg: >
       GPU Passthrough: {{ 'Already configured' if gpu_check.rc == 0 else 'Configured successfully' if gpu_passthrough_enabled else 'Disabled in catalog' }}
+      VM Restart: {{ 'Restarted for GPU activation' if (gpu_config.changed and gpu_passthrough_enabled) else 'Not needed' }}
