@@ -48,6 +48,7 @@ make setup-ssh
 ### Machine-Specific Deployment
 - `make bastion-deploy` - Deploy configuration to Android #16 bastion
 - `make proxmox-host-setup` - Configure Proxmox host infrastructure
+- `make proxmox-host-cloud-templates` - Create Ubuntu cloud image templates (VM 9000) for automated deployments
 - `make proxmox-deploy` - Deploy base configuration to Android #19 Proxmox
 - `make proxmox-services` - Deploy all Proxmox services
 
@@ -196,6 +197,48 @@ systemctl status AdGuardHome
 - **Proxmox integration**: Uses native `pct` container management
 - **Simplicity**: Single SSH connection to Proxmox manages all containers
 
+## Cloud Image Templates
+
+### Overview
+Cloud image templates enable automated VM deployment without manual OS installation. They use cloud-init for zero-touch provisioning.
+
+### Template Creation
+**One-time setup** (run once on new Proxmox installation):
+```bash
+make proxmox-host-cloud-templates
+```
+
+This command:
+1. Downloads Ubuntu 24.04 cloud image **directly on Proxmox** (no scp needed)
+2. Creates VM template 9000
+3. Configures cloud-init drive
+4. Enables QEMU guest agent
+
+**Location:** `/var/lib/vz/template/iso/ubuntu-24.04-server-cloudimg-amd64.img`
+
+### Benefits
+- **No manual installation**: VMs boot ready-to-use in ~30 seconds
+- **Automated**: Cloud-init handles SSH keys, user creation, network
+- **Repeatable**: Same configuration every time
+- **Fast**: 75% faster than ISO installation (5 min vs 20-30 min)
+- **Idempotent**: Safe to run multiple times
+
+### Usage in VM Deployment
+VMs using cloud-init templates are defined in `infrastructure-catalog.yml`:
+
+```yaml
+140:
+  name: "vm-llm-aimachine"
+  template_vm_id: 9000           # Uses cloud image template
+  cloud_init: true               # Enable cloud-init
+  cloud_init_user: "ubuntu"      # Default user
+```
+
+Terraform clones template 9000 → Creates customized VM with cloud-init → Ansible configures software
+
+### Prerequisites
+Cloud image templates must be created **before** deploying VMs that use them. Run `make proxmox-host-cloud-templates` once during initial Proxmox setup.
+
 ## Terraform Initialization Strategy
 
 ### LXC Containers (current)
@@ -203,10 +246,22 @@ systemctl status AdGuardHome
 - Limited to SSH keys, user accounts, network configuration
 - Ansible handles all software installation and service configuration
 
-### VMs (future)
-- Use full cloud-init with user-data scripts
-- Can handle package installation, service setup, custom scripts
-- Still use Ansible for complex configuration management
+### VMs (current)
+- Use cloud-init with Ubuntu cloud image templates (VM 9000)
+- Template provides base OS with cloud-init support
+- Terraform clones template and injects cloud-init configuration
+- Ansible handles complex software installation and configuration
+
+### VM Types
+**Cloud-init VMs** (automated):
+- Clone from template 9000
+- Boot ready-to-use in ~30 seconds
+- Examples: vm-llm-aimachine (VM 140)
+
+**ISO-based VMs** (manual):
+- Boot from ISO
+- Require manual OS installation
+- Examples: ubuntu-desktop-dev (VM 103), omarchy (VM 101)
 
 ## Terraform State Recovery
 
