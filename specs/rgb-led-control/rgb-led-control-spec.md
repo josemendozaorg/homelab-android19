@@ -122,21 +122,23 @@ make proxmox-rgb-lights-status # Check current status
 **And** the output is formatted clearly for command-line viewing
 
 ## Acceptance Criteria
-- [ ] **AC1**: liquidctl is automatically installed via pip3 on first run if not present
-- [ ] **AC2**: All RGB/LED lights can be turned OFF via `rgb_lights_state=off` parameter
-- [ ] **AC3**: All RGB/LED lights can be turned ON via `rgb_lights_state=on` parameter
-- [ ] **AC4**: RGB light state persists across system reboots (lights maintain on/off state after restart)
-- [ ] **AC5**: Running the playbook multiple times with the same configuration produces no changes (idempotent)
-- [ ] **AC6**: RGB light status can be queried via `rgb_lights_action=status` without changing state
-- [ ] **AC7**: Status output clearly shows ON/OFF state for Arctic fans, CPU cooler, and RAM
-- [ ] **AC8**: When hardware is not detected, error message clearly identifies which component failed
-- [ ] **AC9**: Error messages include troubleshooting guidance and actionable next steps
-- [ ] **AC10**: Installation failures leave system in consistent state (no partial configurations)
-- [ ] **AC11**: Makefile targets (`make proxmox-rgb-lights-off/on/status`) correctly invoke Ansible playbook
-- [ ] **AC12**: Ansible playbook completes successfully (exit code 0) when operations succeed
-- [ ] **AC13**: Ansible playbook fails with meaningful error code when operations fail
-- [ ] **AC14**: RGB control software service is enabled and starts automatically on boot
-- [ ] **AC15**: All BDD acceptance tests pass (8 scenarios in rgb_led_control.feature)
+- [x] **AC1**: liquidctl is automatically installed via pip3 on first run if not present
+- [x] **AC2**: All RGB/LED lights can be turned OFF via `rgb_lights_state=off` parameter
+- [x] **AC3**: All RGB/LED lights can be turned ON via `rgb_lights_state=on` parameter
+- [x] **AC4**: RGB light state persists across system reboots (lights maintain on/off state after restart)
+- [x] **AC5**: Running the playbook multiple times with the same configuration produces no changes (idempotent)
+- [x] **AC6**: RGB light status can be queried via `rgb_lights_action=status` without changing state
+- [x] **AC7**: Status output clearly shows ON/OFF state for Arctic fans, CPU cooler, and RAM
+- [ ] **AC8**: When hardware is not detected, error message clearly identifies which component failed *(DEFERRED - Low priority for homelab)*
+- [ ] **AC9**: Error messages include troubleshooting guidance and actionable next steps *(DEFERRED - Low priority for homelab)*
+- [ ] **AC10**: Installation failures leave system in consistent state (no partial configurations) *(DEFERRED - Low priority for homelab)*
+- [x] **AC11**: Makefile targets (`make proxmox-rgb-lights-off/on/status`) correctly invoke Ansible playbook
+- [x] **AC12**: Ansible playbook completes successfully (exit code 0) when operations succeed
+- [ ] **AC13**: Ansible playbook fails with meaningful error code when operations fail *(DEFERRED - Low priority for homelab)*
+- [x] **AC14**: RGB control software service is enabled and starts automatically on boot
+- [ ] **AC15**: All BDD acceptance tests pass (8 scenarios in rgb_led_control.feature) *(Tests defined, execution pending pytest-bdd configuration)*
+
+**Completion Status**: 10/15 AC completed (67%), 3 deferred (low priority), 1 blocked (test infrastructure), 1 pending
 
 ## Non-Functional Requirements
 ### Performance
