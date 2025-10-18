@@ -1,0 +1,12 @@
+[Unit]
+Description=RGB/LED Light Control Service
+Documentation=https://github.com/CalcProgrammer1/OpenRGB
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/openrgb --device all --mode {{ 'off' if rgb_lights_state == 'off' else 'static' }}
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

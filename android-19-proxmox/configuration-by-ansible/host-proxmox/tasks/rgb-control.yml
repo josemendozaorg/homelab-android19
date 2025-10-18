@@ -59,3 +59,31 @@
   tags:
     - rgb
     - control
+
+- name: Create systemd service for RGB control persistence
+  template:
+    src: rgb-control.service.j2
+    dest: /etc/systemd/system/rgb-control.service
+    mode: '0644'
+  become: true
+  tags:
+    - rgb
+    - persistence
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: true
+  tags:
+    - rgb
+    - persistence
+
+- name: Enable RGB control service for autostart
+  systemd:
+    name: rgb-control.service
+    enabled: yes
+    state: started
+  become: true
+  tags:
+    - rgb
+    - persistence
