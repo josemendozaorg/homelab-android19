@@ -1,8 +1,13 @@
 # Feature Completion Report: PCIe ASPM Kernel Parameter
 
+> **⚠️ IMPORTANT UPDATE (Oct 2025):**
+> This completion report describes the **original implementation** (`pcie_aspm=off`) which was successfully deployed to production on Oct 16, 2025, and is currently running.
+>
+> The implementation was subsequently evolved (Oct 17) to use `pcie_aspm.policy=performance`, but this new version has NOT been deployed to production. See `IMPLEMENTATION_EVOLUTION.md` for details.
+
 **Feature Branch:** `feature/pcie-aspm-kernel-parameter`
 **Completion Date:** 2025-10-15
-**Test Results:** 45/45 tests passing
+**Test Results:** 45/45 tests passing (original), 12/13 passing (evolved)
 
 ## Acceptance Criteria Status
 

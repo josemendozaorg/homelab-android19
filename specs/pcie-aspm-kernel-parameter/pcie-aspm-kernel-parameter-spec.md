@@ -1,5 +1,10 @@
 # Specification: PCIe ASPM Kernel Parameter Configuration for Network Stability
 
+> **⚠️ IMPLEMENTATION NOTE (Oct 2025):**
+> This specification describes the **original implementation** using `pcie_aspm=off`, which was successfully deployed to production on Oct 16, 2025, and is currently running.
+>
+> The codebase was subsequently evolved (Oct 17) to use `pcie_aspm.policy=performance` for more nuanced control, but this has NOT been deployed to production. See `IMPLEMENTATION_EVOLUTION.md` for details on the discrepancy between production and codebase.
+
 ## Overview
 ### Purpose
 This feature implements an automated configuration to disable PCIe Active State Power Management (ASPM) on the Proxmox host (Android #19) to resolve critical network stability issues.
