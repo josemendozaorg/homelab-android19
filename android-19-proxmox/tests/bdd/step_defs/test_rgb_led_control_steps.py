@@ -21,7 +21,7 @@ def test_context():
     return {
         'playbook_result': None,
         'ssh_result': None,
-        'openrgb_initial_state': None,
+        'liquidctl_initial_state': None,
         'systemd_service_status': None,
         'ansible_changed': None,
     }
@@ -56,31 +56,31 @@ def hardware_installed(ssh_runner):
 
 @given('no RGB control software is currently installed')
 def no_rgb_software(ssh_runner, test_context):
-    """Verify RGB control software (OpenRGB/liquidctl) is not installed."""
-    # Check if OpenRGB is installed
-    result = ssh_runner("192.168.0.19", "which openrgb", user="root")
-    test_context['openrgb_initial_state'] = 'installed' if result.returncode == 0 else 'not_installed'
+    """Verify RGB control software (liquidctl) is not installed."""
+    # Check if liquidctl is installed
+    result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
+    test_context['liquidctl_initial_state'] = 'installed' if result.returncode == 0 else 'not_installed'
 
     # If already installed, uninstall it for clean test
     if result.returncode == 0:
-        # Remove OpenRGB AppImage and systemd service
-        ssh_runner("192.168.0.19", "rm -f /usr/local/bin/openrgb", user="root")
+        # Remove liquidctl and systemd service
+        ssh_runner("192.168.0.19", "pip3 uninstall -y liquidctl", user="root")
         ssh_runner("192.168.0.19", "systemctl disable rgb-control.service || true", user="root")
         ssh_runner("192.168.0.19", "systemctl stop rgb-control.service || true", user="root")
         ssh_runner("192.168.0.19", "rm -f /etc/systemd/system/rgb-control.service", user="root")
         ssh_runner("192.168.0.19", "systemctl daemon-reload", user="root")
 
         # Verify it's gone
-        result = ssh_runner("192.168.0.19", "which openrgb", user="root")
-        assert result.returncode != 0, "OpenRGB should not be installed for this test"
+        result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
+        assert result.returncode != 0, "liquidctl should not be installed for this test"
 
 
 @given('the RGB control software is already installed')
 @given('the RGB control software is installed')
 def rgb_software_installed(ssh_runner, test_context, ansible_runner):
     """Verify RGB control software is installed."""
-    # Check if OpenRGB is installed
-    result = ssh_runner("192.168.0.19", "which openrgb", user="root")
+    # Check if liquidctl is installed
+    result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
 
     # If not installed, run the playbook to install it
     if result.returncode != 0:
@@ -92,10 +92,10 @@ def rgb_software_installed(ssh_runner, test_context, ansible_runner):
         assert playbook_result.returncode == 0, "Failed to install RGB control software"
 
         # Verify installation
-        result = ssh_runner("192.168.0.19", "which openrgb", user="root")
+        result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
 
     assert result.returncode == 0, (
-        f"OpenRGB should be installed.\n"
+        f"liquidctl should be installed.\n"
         f"Error: {result.stderr}"
     )
 
@@ -248,17 +248,17 @@ def run_command(command, project_root, test_context):
 @then('the required RGB control software is automatically installed')
 def verify_software_installed(ssh_runner):
     """Verify RGB control software was installed by Ansible."""
-    # Check if OpenRGB is installed
-    result = ssh_runner("192.168.0.19", "which openrgb", user="root")
+    # Check if liquidctl is installed
+    result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
 
     assert result.returncode == 0, (
-        f"OpenRGB should be installed after running playbook.\n"
+        f"liquidctl should be installed after running playbook.\n"
         f"Error: {result.stderr}"
     )
 
     # Verify it's executable
-    result = ssh_runner("192.168.0.19", "openrgb --version", user="root")
-    assert result.returncode == 0, "OpenRGB should be executable"
+    result = ssh_runner("192.168.0.19", "liquidctl --version", user="root")
+    assert result.returncode == 0, "liquidctl should be executable"
 
 
 @then('all RGB/LED lights on Arctic fans are turned off')
@@ -266,17 +266,15 @@ def verify_software_installed(ssh_runner):
 @then('all RGB/LED lights on RAM are turned off')
 def verify_lights_off(ssh_runner):
     """Verify RGB lights are turned off."""
-    # Check that the command was executed
-    # Note: We can't easily verify lights are physically off without RGB software queries
-    # So we verify the command executed successfully
-    result = ssh_runner("192.168.0.19", "which openrgb", user="root")
-    assert result.returncode == 0, "OpenRGB should be installed"
+    # Check that the software is installed
+    result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
+    assert result.returncode == 0, "liquidctl should be installed"
 
-    # Try to list devices (this verifies OpenRGB can run)
-    result = ssh_runner("192.168.0.19", "openrgb --list-devices || true", user="root")
+    # Try to list devices (this verifies liquidctl can run)
+    result = ssh_runner("192.168.0.19", "liquidctl list || true", user="root")
     # Command should run (even if no devices detected, it shouldn't crash)
-    assert "OpenRGB" in result.stdout or result.returncode == 0, \
-        "OpenRGB should be able to run"
+    assert result.returncode == 0 or "ASUS" in result.stdout, \
+        "liquidctl should be able to run and detect devices"
 
 
 @then('all RGB/LED lights on Arctic fans are turned on')
@@ -285,8 +283,8 @@ def verify_lights_off(ssh_runner):
 def verify_lights_on(ssh_runner):
     """Verify RGB lights are turned on."""
     # Similar to verify_lights_off - we verify the software is working
-    result = ssh_runner("192.168.0.19", "which openrgb", user="root")
-    assert result.returncode == 0, "OpenRGB should be installed"
+    result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
+    assert result.returncode == 0, "liquidctl should be installed"
 
 
 @then('the RGB light configuration persists across system reboots')
