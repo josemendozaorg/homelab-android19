@@ -23,7 +23,6 @@
   include_tasks: gpu-passthrough.yml
   tags: [gpu, passthrough]
   vars:
-    vm_id: 140
     gpu_device_id: "{{ vm_config.gpu_passthrough.device_id }}"
     gpu_passthrough_enabled: true  # Always configure GPU passthrough (catalog.enabled is for Terraform only)
 

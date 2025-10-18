@@ -30,5 +30,12 @@ all:
           vm_id: 140
           vm_type: ai_llm
           description: "GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama)"
+        vm_llm_aimachine_testing:
+          ansible_host: 192.168.0.141
+          ansible_user: ubuntu
+          ansible_python_interpreter: /usr/bin/python3
+          vm_id: 141
+          vm_type: ai_llm
+          description: "Testing instance - GPU-accelerated Ubuntu Server VM for AI/LLM workloads"
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

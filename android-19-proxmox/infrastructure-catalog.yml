@@ -96,6 +96,27 @@ services:
       disk: 500
     storage: "vm-storage"
 
+  141:
+    name: "vm-llm-aimachine-testing"
+    type: "vm"
+    ip: "192.168.0.141"
+    description: "Testing instance - GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama) with RTX 5060Ti passthrough"
+    template_vm_id: 9000  # Ubuntu 24.04 cloud image template
+    cloud_init: true      # Automated setup with cloud-init
+    cloud_init_user: "ubuntu"  # Default user created by cloud-init
+    cloud_init_password: "ubuntu"  # Initial password
+    agent: true           # QEMU guest agent enabled
+    onboot: false         # Manual start (testing VM)
+    gpu_passthrough:
+      enabled: false      # GPU passthrough added via Ansible AFTER VM creation (API limitation when cloning)
+      device_id: "0000:02:00"  # Same GPU - tests time-sharing capability
+      hostpci: "hostpci0"      # Proxmox hostpci identifier
+    resources:
+      cores: 16           # Half resources for testing
+      memory: 25600       # 25GB in MB
+      disk: 250           # Half disk space for testing
+    storage: "vm-storage"
+
 
 
 # Proxmox Host Configuration

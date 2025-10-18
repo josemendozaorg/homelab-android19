@@ -48,7 +48,6 @@ cloud_image_storage_path: "/var/lib/vz/template/iso"
 cloud_template_vm_id: 9000
 cloud_template_vm_name: "ubuntu-2404-cloud-template"
 cloud_template_memory: 2048
-proxmox_storage: "vm-storage"
 
 # API Configuration
 # SECURITY: API credentials should be provided via environment variables or ansible-vault
