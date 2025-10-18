@@ -22,3 +22,24 @@
   tags:
     - rgb
     - detection
+
+- name: Add OpenRGB PPA repository
+  apt_repository:
+    repo: 'ppa:thopiekar/openrgb'
+    state: present
+  become: true
+  when: openrgb_installed.rc != 0
+  tags:
+    - rgb
+    - installation
+
+- name: Install OpenRGB package
+  apt:
+    name: openrgb
+    state: present
+    update_cache: yes
+  become: true
+  when: openrgb_installed.rc != 0
+  tags:
+    - rgb
+    - installation
