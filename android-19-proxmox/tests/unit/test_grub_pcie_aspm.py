@@ -346,14 +346,17 @@ def test_grub_parameter_preservation(project_root):
     with open(task_file) as f:
         tasks = yaml.safe_load(f)
 
-    # Find the replace task
+    # Find the replace task that adds the new parameter (not the one that removes old param)
     replace_task = None
     for task in tasks:
         if "ansible.builtin.replace" in task or "replace" in task:
-            replace_task = task
-            break
+            task_name = task.get("name", "")
+            # Look for the task that adds the new parameter, not removes old one
+            if "Add" in task_name or "policy=performance" in str(task):
+                replace_task = task
+                break
 
-    assert replace_task is not None, "Could not find replace task"
+    assert replace_task is not None, "Could not find replace task for adding new parameter"
 
     # Extract regexp and replace patterns
     replace_module = replace_task.get("ansible.builtin.replace") or replace_task.get("replace")
@@ -366,10 +369,10 @@ def test_grub_parameter_preservation(project_root):
     # Test various GRUB configurations
     test_cases = [
         # (input, expected_output)
-        ('GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"', 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash pcie_aspm=off"'),
-        ('GRUB_CMDLINE_LINUX_DEFAULT=""', 'GRUB_CMDLINE_LINUX_DEFAULT=" pcie_aspm=off"'),
-        ('GRUB_CMDLINE_LINUX_DEFAULT="quiet"', 'GRUB_CMDLINE_LINUX_DEFAULT="quiet pcie_aspm=off"'),
-        ('GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt"', 'GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt pcie_aspm=off"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"', 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash pcie_aspm.policy=performance"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT=""', 'GRUB_CMDLINE_LINUX_DEFAULT=" pcie_aspm.policy=performance"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT="quiet"', 'GRUB_CMDLINE_LINUX_DEFAULT="quiet pcie_aspm.policy=performance"'),
+        ('GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt"', 'GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt pcie_aspm.policy=performance"'),
     ]
 
     for input_line, expected_output in test_cases:
@@ -393,13 +396,15 @@ def test_pcie_aspm_idempotence(project_root):
     assert "pcie_aspm_configured" in check_content, "Check task should set pcie_aspm_configured fact"
 
     # Test 2: Modify tasks have idempotence guards
-    modify_files = [
-        "grub-pcie-aspm-backup.yml",
-        "grub-pcie-aspm-configure.yml",
-        "grub-pcie-aspm-update.yml",
-    ]
+    # backup and configure use 'when: not pcie_aspm_configured'
+    # update uses 'when: grub_update_needed' (which is set based on changes)
+    modify_files_with_guards = {
+        "grub-pcie-aspm-backup.yml": ["pcie_aspm_configured", "not"],
+        "grub-pcie-aspm-configure.yml": ["pcie_aspm_configured", "not"],
+        "grub-pcie-aspm-update.yml": ["grub_update_needed"],  # Different guard pattern
+    }
 
-    for modify_file in modify_files:
+    for modify_file, guard_keywords in modify_files_with_guards.items():
         file_path = tasks_dir / modify_file
         with open(file_path) as f:
             tasks = yaml.safe_load(f)
@@ -409,12 +414,13 @@ def test_pcie_aspm_idempotence(project_root):
         for task in tasks:
             if "when" in task:
                 when_condition = str(task["when"])
-                if "pcie_aspm_configured" in when_condition and "not" in when_condition:
+                # Check if all required keywords are present
+                if all(keyword in when_condition for keyword in guard_keywords):
                     has_guard = True
                     break
 
         assert has_guard, \
-            f"{modify_file} should have 'when: not pcie_aspm_configured' guard for idempotence"
+            f"{modify_file} should have idempotence guard with keywords: {guard_keywords}"
 
     # Test 3: Orchestrator runs check before modifications
     orchestrator_file = tasks_dir / "grub-pcie-aspm.yml"
