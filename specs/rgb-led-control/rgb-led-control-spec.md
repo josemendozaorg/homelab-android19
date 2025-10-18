@@ -23,7 +23,7 @@ This feature enables the homelab administrator to control the visual appearance 
 - **FR1**: Turn all RGB/LED lights OFF (Arctic fans, Arctic CPU cooler, and RAM modules)
 - **FR2**: Turn all RGB/LED lights ON (Arctic fans, Arctic CPU cooler, and RAM modules)
 - **FR3**: Persist RGB light state across system reboots (lights maintain their on/off state after restart)
-- **FR4**: Auto-detect and install required RGB control software (OpenRGB or liquidctl)
+- **FR4**: Auto-detect and install required RGB control software (liquidctl)
 - **FR5**: Validate that RGB control software can communicate with the hardware components
 - **FR6**: Provide idempotent operation (running the same configuration multiple times produces the same result)
 - **FR7**: Handle hardware compatibility issues gracefully with clear error messages
@@ -64,8 +64,8 @@ make proxmox-rgb-lights-status # Check current status
 **Given** the Proxmox host has Arctic fans, Arctic CPU cooler, and RGB RAM installed
 **And** no RGB control software is currently installed
 **When** the administrator runs the Ansible playbook with `rgb_lights_state=off`
-**Then** the required RGB control software (OpenRGB or liquidctl) is automatically installed
-**And** all RGB/LED lights on Arctic fans, CPU cooler, and RAM are turned off
+**Then** liquidctl is automatically installed via pip3
+**And** all RGB/LED lights on Arctic fans, CPU cooler, and RAM are turned off using liquidctl
 **And** the configuration persists across system reboots
 
 ### Scenario 2: Turn Lights On After Being Off
@@ -122,7 +122,7 @@ make proxmox-rgb-lights-status # Check current status
 **And** the output is formatted clearly for command-line viewing
 
 ## Acceptance Criteria
-- [ ] **AC1**: RGB control software (OpenRGB or liquidctl) is automatically installed on first run if not present
+- [ ] **AC1**: liquidctl is automatically installed via pip3 on first run if not present
 - [ ] **AC2**: All RGB/LED lights can be turned OFF via `rgb_lights_state=off` parameter
 - [ ] **AC3**: All RGB/LED lights can be turned ON via `rgb_lights_state=on` parameter
 - [ ] **AC4**: RGB light state persists across system reboots (lights maintain on/off state after restart)
@@ -169,7 +169,7 @@ make proxmox-rgb-lights-status # Check current status
 ### Assumptions
 - **Hardware Connectivity**: Arctic fans, CPU cooler, and RAM are connected via standard RGB protocols (USB HID, SMBus, or I2C)
 - **Hardware Detection**: RGB hardware is detectable by Linux kernel and appears in `/sys/bus` or `/dev/`
-- **Software Availability**: OpenRGB or liquidctl packages are available in standard Linux repositories or can be installed via PPA/build
+- **Software Availability**: liquidctl is installable via pip3
 - **Network Connectivity**: Stable SSH connection to Proxmox host during playbook execution
 - **No Conflicting Software**: No other RGB control software is managing the same hardware
 - **Homelab Environment**: This is for a homelab/development environment, not production infrastructure
@@ -179,7 +179,7 @@ make proxmox-rgb-lights-status # Check current status
 - **Ansible**: Ansible 2.9+ installed in development environment
 - **Python**: Python 3.x installed on Proxmox host
 - **Package Manager**: apt (Debian/Ubuntu) package manager on Proxmox
-- **RGB Control Software**: OpenRGB (recommended) or liquidctl package availability
+- **RGB Control Software**: liquidctl installed via pip3
 - **Hardware Drivers**: Linux kernel drivers for USB/I2C/SMBus RGB communication
 - **Proxmox Host Role**: Depends on `host-proxmox` Ansible role structure
 - **Makefile**: Project Makefile for convenience target integration
@@ -188,7 +188,7 @@ make proxmox-rgb-lights-status # Check current status
 - [ ] **Q1**: Which specific Arctic fan model is installed? (Different models may require different RGB control approaches)
 - [ ] **Q2**: Which specific Arctic CPU cooler model? (e.g., Liquid Freezer II, Freezer 36)
 - [ ] **Q3**: Which RAM brand and model? (Corsair, G.Skill, Kingston, etc. - affects compatibility)
-- [ ] **Q4**: Should we support BOTH OpenRGB and liquidctl, or choose one based on hardware detection?
+- [x] **Q4**: ~~Should we support BOTH OpenRGB and liquidctl, or choose one based on hardware detection?~~ **RESOLVED:** Using liquidctl only (OpenRGB failed to control lights)
 - [ ] **Q5**: Should there be a "dry-run" or "test" mode that shows what would change without actually changing lights?
 - [ ] **Q6**: Should we support custom colors/effects in the future, or keep it strictly on/off for simplicity?
 - [ ] **Q7**: Is there a preference for how lights should look when "ON"? (Default RGB cycling, static color, etc.)

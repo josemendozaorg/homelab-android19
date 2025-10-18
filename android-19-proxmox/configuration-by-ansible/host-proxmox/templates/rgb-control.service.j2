@@ -1,11 +1,11 @@
 [Unit]
-Description=RGB/LED Light Control Service
-Documentation=https://github.com/CalcProgrammer1/OpenRGB
+Description=RGB/LED Light Control Service using liquidctl
+Documentation=https://github.com/liquidctl/liquidctl
 After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/openrgb -m static -c {{ '000000' if rgb_lights_state == 'off' else 'FFFFFF' }} --noautoconnect
+ExecStart=/bin/bash -c 'for led in led1 led2 led3 led4; do liquidctl --match "ASUS" set $led color {{ "off" if rgb_lights_state == "off" else "rainbow" }}; done'
 RemainAfterExit=yes
 
 [Install]

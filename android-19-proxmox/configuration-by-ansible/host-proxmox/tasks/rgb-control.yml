@@ -1,52 +1,42 @@
 ---
 # RGB/LED Light Control Tasks for Arctic Fans, CPU Cooler, and RAM
 #
-# This task file manages RGB lighting on the Proxmox host hardware:
+# This task file manages RGB lighting on the Proxmox host hardware using liquidctl:
 # - Arctic fans
 # - Arctic CPU cooler
 # - RAM modules
 #
-# RGB control tasks will be implemented here to:
-# - Install RGB control software (OpenRGB/liquidctl)
-# - Detect RGB hardware components
+# RGB control tasks:
+# - Install liquidctl via pip3
+# - Detect RGB hardware components via liquidctl
 # - Turn lights on/off based on rgb_lights_state variable
 # - Configure persistence across reboots via systemd service
 #
 # Tasks are executed when rgb_lights_enabled is true
 
-- name: Detect if OpenRGB is already installed
-  command: which openrgb
-  register: openrgb_installed
-  failed_when: false
-  changed_when: false
-  tags:
-    - rgb
-    - detection
-
-- name: Create OpenRGB installation directory
-  file:
-    path: /usr/local/bin
-    state: directory
-    mode: '0755'
+- name: Ensure pip3 is installed
+  apt:
+    name: python3-pip
+    state: present
+    update_cache: yes
   become: true
-  when: openrgb_installed.rc != 0
   tags:
     - rgb
     - installation
 
-- name: Download OpenRGB AppImage
-  get_url:
-    url: https://openrgb.org/releases/release_0.9/OpenRGB_0.9_x86_64_b5f46e3.AppImage
-    dest: /usr/local/bin/openrgb
-    mode: '0755'
+- name: Install liquidctl via pip3
+  pip:
+    name: liquidctl
+    state: present
+    executable: pip3
+    extra_args: --break-system-packages
   become: true
-  when: openrgb_installed.rc != 0
   tags:
     - rgb
     - installation
 
-- name: Detect RGB hardware devices
-  command: openrgb --list-devices
+- name: Detect RGB hardware devices using liquidctl
+  command: liquidctl list
   register: rgb_devices_detected
   failed_when: false
   changed_when: false
@@ -54,9 +44,34 @@
     - rgb
     - detection
 
-- name: Turn all RGB lights off
-  command: openrgb -m static -c 000000 --noautoconnect
+- name: Display detected RGB devices
+  debug:
+    var: rgb_devices_detected.stdout_lines
+  when: rgb_devices_detected.rc == 0
+  tags:
+    - rgb
+    - detection
+
+- name: Turn all RGB lights off (ASUS Aura LED Controller)
+  command: liquidctl --match 'ASUS' set {{ item }} color off
+  loop:
+    - led1
+    - led2
+    - led3
+    - led4
   when: rgb_lights_state == "off"
+  tags:
+    - rgb
+    - control
+
+- name: Turn all RGB lights on (ASUS Aura LED Controller - default rainbow)
+  command: liquidctl --match 'ASUS' set {{ item }} color rainbow
+  loop:
+    - led1
+    - led2
+    - led3
+    - led4
+  when: rgb_lights_state == "on"
   tags:
     - rgb
     - control
