@@ -1,0 +1,19 @@
+---
+# RGB/LED Light Control Tasks for Arctic Fans, CPU Cooler, and RAM
+#
+# This task file manages RGB lighting on the Proxmox host hardware:
+# - Arctic fans
+# - Arctic CPU cooler
+# - RAM modules
+#
+# RGB control tasks will be implemented here to:
+# - Install RGB control software (OpenRGB/liquidctl)
+# - Detect RGB hardware components
+# - Turn lights on/off based on rgb_lights_state variable
+# - Configure persistence across reboots via systemd service
+#
+# Tasks are executed when rgb_lights_enabled is true
+
+# Placeholder for RGB control implementation
+# Implementation tasks will be added in subsequent TDD cycles
+[]

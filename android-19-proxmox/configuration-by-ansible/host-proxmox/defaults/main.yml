@@ -120,3 +120,8 @@ proxmox_monitoring:
     enabled: false
     server: ""
     port: 8086
+
+# RGB/LED Light Control
+# Controls RGB lighting on Arctic fans, Arctic CPU cooler, and RAM modules
+rgb_lights_enabled: true
+rgb_lights_state: "off"  # Valid values: "on", "off"

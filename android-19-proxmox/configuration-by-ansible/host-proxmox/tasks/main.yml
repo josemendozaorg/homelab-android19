@@ -56,3 +56,11 @@
     - proxmox
     - backup
   when: proxmox_backup.enabled | default(true)
+
+- name: RGB/LED light control
+  include_tasks: rgb-control.yml
+  tags:
+    - proxmox
+    - rgb
+    - hardware
+  when: rgb_lights_enabled | default(false)
