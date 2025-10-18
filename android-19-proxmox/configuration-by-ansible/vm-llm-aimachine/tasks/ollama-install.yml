@@ -23,8 +23,8 @@
   ansible.builtin.file:
     path: "{{ ollama_model_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: ollama
+    group: ollama
     mode: '0755'
   become: yes
 
