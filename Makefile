@@ -133,6 +133,15 @@ proxmox-host-cloud-templates: ## Create Ubuntu cloud image templates for automat
 proxmox-host-api: ## Configure API tokens for automation
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags api
 
+proxmox-rgb-lights-off: ## Turn off RGB/LED lights on Arctic fans, CPU cooler, and RAM
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags rgb --extra-vars "rgb_lights_enabled=true rgb_lights_state=off"
+
+proxmox-rgb-lights-on: ## Turn on RGB/LED lights on Arctic fans, CPU cooler, and RAM
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags rgb --extra-vars "rgb_lights_enabled=true rgb_lights_state=on"
+
+proxmox-rgb-lights-status: ## Check current status of RGB/LED lights
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags rgb --extra-vars "rgb_lights_enabled=true rgb_lights_action=status"
+
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/playbook.yml
 
