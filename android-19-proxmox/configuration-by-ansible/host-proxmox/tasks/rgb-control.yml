@@ -14,6 +14,11 @@
 #
 # Tasks are executed when rgb_lights_enabled is true
 
-# Placeholder for RGB control implementation
-# Implementation tasks will be added in subsequent TDD cycles
-[]
+- name: Detect if OpenRGB is already installed
+  command: which openrgb
+  register: openrgb_installed
+  failed_when: false
+  changed_when: false
+  tags:
+    - rgb
+    - detection
