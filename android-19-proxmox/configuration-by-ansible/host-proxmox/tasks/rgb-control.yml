@@ -52,3 +52,10 @@
   tags:
     - rgb
     - detection
+
+- name: Turn all RGB lights off
+  command: openrgb --device all --mode off
+  when: rgb_lights_state == "off"
+  tags:
+    - rgb
+    - control
