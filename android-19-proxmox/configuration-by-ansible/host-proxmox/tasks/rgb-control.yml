@@ -43,3 +43,12 @@
   tags:
     - rgb
     - installation
+
+- name: Detect RGB hardware devices
+  command: openrgb --list-devices
+  register: rgb_devices_detected
+  failed_when: false
+  changed_when: false
+  tags:
+    - rgb
+    - detection
