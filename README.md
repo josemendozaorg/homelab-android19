@@ -122,7 +122,7 @@ make proxmox-host-pcie-aspm
 cat /proc/cmdline | grep pcie_aspm=off
 ```
 
-**Reference**: See [spec-proxmox-pcie-aspm-fix.md](docs/specs/spec-proxmox-pcie-aspm-fix.md) for technical details.
+**Reference**: See [spec-proxmox-pcie-aspm-fix.md](specs/pcie-aspm-kernel-parameter/spec-proxmox-pcie-aspm-fix.md) for technical details.
 
 ### Safety Procedures
 

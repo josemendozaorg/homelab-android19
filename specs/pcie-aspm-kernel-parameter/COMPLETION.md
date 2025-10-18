@@ -51,7 +51,7 @@
 11. **✅ Documentation**: Comprehensive documentation in README
     - File: `README.md:96-125`
     - Section: "PCIe Network Card Stability"
-    - Also: Technical spec at `docs/specs/spec-proxmox-pcie-aspm-fix.md`
+    - Also: Technical spec at `specs/pcie-aspm-kernel-parameter/spec-proxmox-pcie-aspm-fix.md`
 
 ### ✅ Deployment Verified (14/15)
 
