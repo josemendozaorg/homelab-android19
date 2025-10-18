@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/openrgb --device all --mode {{ 'off' if rgb_lights_state == 'off' else 'static' }}
+ExecStart=/usr/local/bin/openrgb -m static -c {{ '000000' if rgb_lights_state == 'off' else 'FFFFFF' }} --noautoconnect
 RemainAfterExit=yes
 
 [Install]

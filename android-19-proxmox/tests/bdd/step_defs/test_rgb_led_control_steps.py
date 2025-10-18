@@ -63,9 +63,12 @@ def no_rgb_software(ssh_runner, test_context):
 
     # If already installed, uninstall it for clean test
     if result.returncode == 0:
-        # Remove OpenRGB and the PPA
-        ssh_runner("192.168.0.19", "apt-get remove -y openrgb || true", user="root")
-        ssh_runner("192.168.0.19", "add-apt-repository --remove -y ppa:thopiekar/openrgb || true", user="root")
+        # Remove OpenRGB AppImage and systemd service
+        ssh_runner("192.168.0.19", "rm -f /usr/local/bin/openrgb", user="root")
+        ssh_runner("192.168.0.19", "systemctl disable rgb-control.service || true", user="root")
+        ssh_runner("192.168.0.19", "systemctl stop rgb-control.service || true", user="root")
+        ssh_runner("192.168.0.19", "rm -f /etc/systemd/system/rgb-control.service", user="root")
+        ssh_runner("192.168.0.19", "systemctl daemon-reload", user="root")
 
         # Verify it's gone
         result = ssh_runner("192.168.0.19", "which openrgb", user="root")

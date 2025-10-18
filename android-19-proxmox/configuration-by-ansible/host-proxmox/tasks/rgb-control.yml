@@ -23,21 +23,22 @@
     - rgb
     - detection
 
-- name: Add OpenRGB PPA repository
-  apt_repository:
-    repo: 'ppa:thopiekar/openrgb'
-    state: present
+- name: Create OpenRGB installation directory
+  file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
   become: true
   when: openrgb_installed.rc != 0
   tags:
     - rgb
     - installation
 
-- name: Install OpenRGB package
-  apt:
-    name: openrgb
-    state: present
-    update_cache: yes
+- name: Download OpenRGB AppImage
+  get_url:
+    url: https://openrgb.org/releases/release_0.9/OpenRGB_0.9_x86_64_b5f46e3.AppImage
+    dest: /usr/local/bin/openrgb
+    mode: '0755'
   become: true
   when: openrgb_installed.rc != 0
   tags:
@@ -54,7 +55,7 @@
     - detection
 
 - name: Turn all RGB lights off
-  command: openrgb --device all --mode off
+  command: openrgb -m static -c 000000 --noautoconnect
   when: rgb_lights_state == "off"
   tags:
     - rgb

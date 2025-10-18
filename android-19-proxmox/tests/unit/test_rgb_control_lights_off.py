@@ -44,7 +44,7 @@ def test_should_turn_all_rgb_lights_off_when_state_is_off(rgb_control_tasks):
                 # Check if it's actually controlling lights (not just detecting)
                 if 'command' in task or 'shell' in task:
                     command = task.get('command') or task.get('shell', '')
-                    if 'openrgb' in command and ('off' in command or 'mode' in command):
+                    if 'openrgb' in command and ('-m' in command or '--mode' in command):
                         lights_off_task = task
                         break
 
@@ -60,16 +60,14 @@ def test_should_turn_all_rgb_lights_off_when_state_is_off(rgb_control_tasks):
     assert 'openrgb' in command_value.lower(), \
         "Should use OpenRGB to control lights"
 
-    # Assert - Sets mode to off
-    assert '--mode off' in command_value or '--mode=off' in command_value or \
-           '-m off' in command_value or '-m=off' in command_value, \
-        "Should set mode to 'off' to turn lights off"
+    # Assert - Sets mode to static with black color (lights off)
+    assert '-m static' in command_value or '--mode static' in command_value, \
+        "Should set mode to 'static' to turn lights off"
 
-    # Assert - Targets all devices
-    assert '--device all' in command_value or '--device=all' in command_value or \
-           '-d all' in command_value or '-d=all' in command_value or \
-           'all' in command_value, \
-        "Should target all RGB devices"
+    # Assert - Sets color to black (000000)
+    assert '-c 000000' in command_value or '--color 000000' in command_value or \
+           '-c=000000' in command_value or '--color=000000' in command_value, \
+        "Should set color to black (000000) to turn lights off"
 
     # Assert - Conditional on rgb_lights_state
     assert 'when' in lights_off_task, \
@@ -141,7 +139,7 @@ def test_lights_off_should_have_proper_privilege_escalation(rgb_control_tasks):
             if 'off' in task_name and ('light' in task_name or 'rgb' in task_name):
                 if 'command' in task or 'shell' in task:
                     command = task.get('command') or task.get('shell', '')
-                    if 'openrgb' in command and 'off' in command:
+                    if 'openrgb' in command and ('-m' in command or '--mode' in command):
                         lights_off_task = task
                         break
 

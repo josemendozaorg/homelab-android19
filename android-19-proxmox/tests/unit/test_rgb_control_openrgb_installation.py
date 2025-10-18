@@ -17,13 +17,14 @@ def rgb_control_tasks(project_root):
 
 
 def test_should_install_openrgb_automatically_when_not_already_present(rgb_control_tasks):
-    """Should install OpenRGB package when detection shows it's not installed.
+    """Should install OpenRGB when detection shows it's not installed.
 
     Validates:
-    - Task exists to install openrgb package
-    - Uses apt module for package installation
+    - Task exists to download OpenRGB AppImage
+    - Uses get_url module to download AppImage
+    - Installs to /usr/local/bin/openrgb
+    - Sets executable permissions
     - Conditional execution based on detection result (openrgb_installed.rc != 0)
-    - Updates apt cache before installation
     - Uses privilege escalation (become: true)
 
     Supporting BDD Scenario: First-time Setup and Turn Lights Off
@@ -34,119 +35,116 @@ def test_should_install_openrgb_automatically_when_not_already_present(rgb_contr
     assert rgb_control_tasks is not None, "RGB control tasks should be loaded"
     assert isinstance(rgb_control_tasks, list), "Tasks should be a list"
 
-    # Act - Find the OpenRGB installation task
-    install_task = None
+    # Act - Find the OpenRGB download task
+    download_task = None
     for task in rgb_control_tasks:
         if task and 'name' in task:
             task_name = task['name'].lower()
-            if 'install' in task_name and 'openrgb' in task_name and 'detect' not in task_name:
-                install_task = task
+            if 'download' in task_name and 'openrgb' in task_name and 'appimage' in task_name:
+                download_task = task
                 break
 
-    # Assert - Installation task exists
-    assert install_task is not None, \
-        "Should have a task that installs OpenRGB package"
+    # Assert - Download task exists
+    assert download_task is not None, \
+        "Should have a task that downloads OpenRGB AppImage"
 
-    # Assert - Uses apt module
-    assert 'apt' in install_task, \
-        "Installation task should use 'apt' module for package management"
+    # Assert - Uses get_url module
+    assert 'get_url' in download_task, \
+        "Download task should use 'get_url' module"
 
-    # Assert - Installs openrgb package
-    apt_config = install_task['apt']
-    if isinstance(apt_config, dict):
-        assert 'name' in apt_config, "apt task should specify package name"
-        assert apt_config['name'] == 'openrgb', \
-            "Should install 'openrgb' package"
-    elif isinstance(apt_config, str):
-        assert 'openrgb' in apt_config, "Should install openrgb package"
+    # Assert - Downloads to correct location
+    get_url_config = download_task['get_url']
+    assert isinstance(get_url_config, dict), "get_url config should be a dict"
+    assert 'dest' in get_url_config, "Should specify destination"
+    assert get_url_config['dest'] == '/usr/local/bin/openrgb', \
+        "Should install to /usr/local/bin/openrgb"
+
+    # Assert - Sets executable permission
+    assert 'mode' in get_url_config, "Should set file permissions"
+    assert '755' in str(get_url_config['mode']), "Should be executable (755)"
 
     # Assert - Conditional on detection result
-    assert 'when' in install_task, \
+    assert 'when' in download_task, \
         "Installation should be conditional on detection result"
-    when_condition = str(install_task['when'])
+    when_condition = str(download_task['when'])
     assert 'openrgb_installed' in when_condition, \
         "Condition should reference openrgb_installed detection result"
     assert 'rc' in when_condition and '!=0' in when_condition.replace(' ', ''), \
         "Should only install when detection failed (rc != 0)"
 
     # Assert - Uses privilege escalation
-    assert 'become' in install_task, \
+    assert 'become' in download_task, \
         "Installation should use privilege escalation"
-    assert install_task['become'] == True or install_task['become'] == 'yes', \
+    assert download_task['become'] == True or download_task['become'] == 'yes', \
         "Should set become: true for root privileges"
 
-    # Assert - Updates cache
-    if isinstance(apt_config, dict):
-        assert 'update_cache' in apt_config, \
-            "Should update apt cache before installation"
-        assert apt_config['update_cache'] == True or apt_config['update_cache'] == 'yes', \
-            "Should set update_cache: yes"
 
-
-def test_should_add_openrgb_ppa_before_installation(rgb_control_tasks):
-    """Should add OpenRGB PPA repository before installing package.
+def test_should_create_installation_directory_before_download(rgb_control_tasks):
+    """Should create installation directory before downloading AppImage.
 
     Validates:
-    - Task exists to add OpenRGB PPA
-    - Uses apt_repository module
+    - Task exists to create /usr/local/bin directory
+    - Uses file module
     - Conditional execution based on detection result
     - Uses privilege escalation
-    - Appears before installation task
+    - Appears before download task
 
     Supporting BDD Scenario: First-time Setup and Turn Lights Off
     """
     # Arrange
     assert isinstance(rgb_control_tasks, list), "Tasks should be a list"
 
-    # Act - Find PPA and installation tasks
-    ppa_task = None
-    ppa_index = None
-    install_index = None
+    # Act - Find directory creation and download tasks
+    dir_task = None
+    dir_index = None
+    download_index = None
 
     for i, task in enumerate(rgb_control_tasks):
         if task and 'name' in task:
             task_name = task['name'].lower()
-            # PPA task
-            if ppa_task is None and 'ppa' in task_name and 'openrgb' in task_name:
-                ppa_task = task
-                ppa_index = i
-            # Installation task
-            if install_index is None and 'install' in task_name and 'openrgb' in task_name and 'detect' not in task_name:
-                install_index = i
+            # Directory creation task
+            if dir_task is None and 'create' in task_name and 'directory' in task_name and 'openrgb' in task_name:
+                dir_task = task
+                dir_index = i
+            # Download task
+            if download_index is None and 'download' in task_name and 'openrgb' in task_name and 'appimage' in task_name:
+                download_index = i
 
-    # Assert - PPA task exists
-    assert ppa_task is not None, \
-        "Should have a task that adds OpenRGB PPA repository"
+    # Assert - Directory creation task exists
+    assert dir_task is not None, \
+        "Should have a task that creates OpenRGB installation directory"
 
-    # Assert - Uses apt_repository module
-    assert 'apt_repository' in ppa_task, \
-        "PPA task should use 'apt_repository' module"
+    # Assert - Uses file module
+    assert 'file' in dir_task, \
+        "Directory creation task should use 'file' module"
 
-    # Assert - Specifies PPA repository
-    apt_repo_config = ppa_task['apt_repository']
-    if isinstance(apt_repo_config, dict):
-        assert 'repo' in apt_repo_config, "apt_repository should specify repo"
-        repo = apt_repo_config['repo']
-        assert 'ppa:' in repo.lower() and 'openrgb' in repo.lower(), \
-            "Should add OpenRGB PPA repository"
+    # Assert - Creates /usr/local/bin directory
+    file_config = dir_task['file']
+    if isinstance(file_config, dict):
+        assert 'path' in file_config, "file task should specify path"
+        assert file_config['path'] == '/usr/local/bin', \
+            "Should create /usr/local/bin directory"
+        assert 'state' in file_config, "file task should specify state"
+        assert file_config['state'] == 'directory', \
+            "Should set state to directory"
 
     # Assert - Conditional on detection result
-    assert 'when' in ppa_task, \
-        "PPA addition should be conditional on detection result"
-    when_condition = str(ppa_task['when'])
+    assert 'when' in dir_task, \
+        "Directory creation should be conditional on detection result"
+    when_condition = str(dir_task['when'])
     assert 'openrgb_installed' in when_condition, \
         "Condition should reference openrgb_installed detection result"
 
     # Assert - Uses privilege escalation
-    assert 'become' in ppa_task, \
-        "PPA addition should use privilege escalation"
-    assert ppa_task['become'] == True or ppa_task['become'] == 'yes', \
+    assert 'become' in dir_task, \
+        "Directory creation should use privilege escalation"
+    assert dir_task['become'] == True or dir_task['become'] == 'yes', \
         "Should set become: true for root privileges"
 
-    # Assert - PPA task appears before installation
-    if ppa_index is not None and install_index is not None:
-        assert ppa_index < install_index, \
-            "PPA addition should occur before package installation"
+    # Assert - Directory creation occurs before download
+    if dir_index is not None and download_index is not None:
+        assert dir_index < download_index, \
+            "Directory creation should occur before AppImage download"
 
 
 def test_installation_tasks_should_run_after_detection(rgb_control_tasks):
