@@ -368,6 +368,38 @@ The Docker development environment provides:
 5. For infrastructure changes: `make proxmox-tf-plan` → `make proxmox-tf-apply`
 6. Validate with: `make test-ping` or service-specific tests
 
+### Testing VM Deployment Workflow
+
+For validating complete deployment automation (e.g., AI/LLM VMs):
+
+**Testing Instance:** VM 141 (vm-llm-aimachine-testing)
+- Configuration preserved in catalog, inventory, and playbooks
+- VM instance destroyed after testing (clean slate for next test)
+- Recreate anytime with: `make deploy-vm-llm-aimachine-testing`
+
+**Full Testing Cycle:**
+```bash
+# 1. Deploy testing VM (9 min automated deployment)
+make deploy-vm-llm-aimachine-testing
+
+# 2. Validate deployment
+# - Check services running (vLLM, Ollama)
+# - Verify GPU passthrough
+# - Test API endpoints
+
+# 3. Destroy testing VM (cleanup)
+cd android-19-proxmox/provisioning-by-terraform
+terraform destroy -auto-approve -target=proxmox_virtual_environment_vm.vms[\"141\"]
+```
+
+**Benefits:**
+- Validates complete automation from scratch
+- No leftover state between tests
+- Resource efficient (no idle testing VM)
+- Production VM (140) remains untouched
+
+**Note:** Testing and production VMs cannot run simultaneously (GPU time-sharing limitation).
+
 ## TDD Development Example
 
 This project follows strict Test-Driven Development (TDD) practices with small, testable incremental changes.

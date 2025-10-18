@@ -266,6 +266,40 @@ Can easily deploy additional AI/LLM VMs by:
 
 ---
 
+## Testing VM Cleanup
+
+**Status:** VM 141 has been destroyed after successful testing validation.
+
+**Reason:** To enable clean, repeatable testing from scratch each time.
+
+**How to Recreate:**
+```bash
+make deploy-vm-llm-aimachine-testing
+```
+
+This single command will:
+1. Create VM 141 from scratch using Terraform
+2. Configure GPU passthrough
+3. Install NVIDIA drivers
+4. Deploy vLLM and Ollama services
+5. Validate the complete deployment
+
+**Configuration Preserved:**
+- ✅ Infrastructure catalog entry (VM 141 definition)
+- ✅ Inventory configuration (vm_llm_aimachine_testing)
+- ✅ Ansible playbook (vm-llm-aimachine-testing-setup.yml)
+- ✅ Makefile target (deploy-vm-llm-aimachine-testing)
+- ❌ VM instance (destroyed - can be recreated anytime)
+
+**Benefits:**
+- Clean testing environment every time
+- Validates complete deployment process
+- No leftover state from previous tests
+- Resource efficiency (no idle testing VM)
+
+---
+
 **Validation Status:** ✅ COMPLETE
 **Production Readiness:** ✅ APPROVED
 **Automation Quality:** ✅ EXCELLENT
+**Testing VM Status:** 🗑️ DESTROYED (Can be recreated with `make deploy-vm-llm-aimachine-testing`)
