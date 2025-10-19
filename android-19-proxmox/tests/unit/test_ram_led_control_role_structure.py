@@ -111,3 +111,38 @@ def test_ram_led_control_should_support_off_state(host_proxmox_role_path):
     # Assert - Has changed_when: false for idempotency
     assert 'changed_when: false' in content or 'changed_when:false' in content, \
         "RAM LED control tasks should be marked as unchanged for idempotency"
+
+
+def test_should_define_ram_led_control_default_variables_in_host_proxmox_role(host_proxmox_role_path):
+    """RAM LED control default variables should be defined in host-proxmox role.
+
+    Validates:
+    - defaults/main.yml contains ram_lights_enabled variable
+    - defaults/main.yml contains ram_lights_state variable
+    - Variables have appropriate default values
+
+    This supports BDD Scenario 1: Turn RAM LEDs Off Independently
+    Linked to Task 1.2: Add variable handling for ram_lights_state in defaults
+    """
+    # Arrange
+    defaults_file = host_proxmox_role_path / "defaults" / "main.yml"
+
+    # Act
+    assert defaults_file.exists(), "defaults/main.yml should exist"
+
+    with open(defaults_file) as f:
+        defaults = yaml.safe_load(f)
+
+    # Assert - Required RAM LED variables are defined
+    assert 'ram_lights_enabled' in defaults, \
+        "ram_lights_enabled variable should be defined in defaults"
+
+    assert 'ram_lights_state' in defaults, \
+        "ram_lights_state variable should be defined in defaults"
+
+    # Assert - Variables have sensible types/values
+    assert isinstance(defaults['ram_lights_enabled'], bool), \
+        "ram_lights_enabled should be a boolean"
+
+    assert defaults['ram_lights_state'] in ['on', 'off'], \
+        "ram_lights_state should be 'on' or 'off'"
