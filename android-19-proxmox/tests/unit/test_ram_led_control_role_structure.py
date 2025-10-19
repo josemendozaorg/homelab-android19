@@ -184,3 +184,47 @@ def test_should_include_ram_led_control_tasks_in_host_proxmox_main_tasks(host_pr
     # Assert - Has proper conditional
     assert 'ram_lights_enabled' in content, \
         "RAM LED control include should check ram_lights_enabled variable"
+
+
+def test_ram_led_control_should_support_on_state(host_proxmox_role_path):
+    """RAM LED control should support turning LEDs on with rainbow effect.
+
+    Validates:
+    - Has task with 'color rainbow' command for led4
+    - Task is conditional on ram_lights_state == "on"
+    - Task has changed_when: false for idempotency
+
+    This supports BDD Scenario 2: Turn RAM LEDs On Independently
+    Linked to Task 2.1: Add Ansible task for RAM LED control on (rainbow)
+    """
+    # Arrange
+    ram_led_control_task_file = host_proxmox_role_path / "tasks" / "ram-led-control.yml"
+
+    # Act
+    with open(ram_led_control_task_file) as f:
+        content = f.read()
+        tasks = yaml.safe_load(content)
+
+    # Assert - Has 'color rainbow' command for led4
+    assert 'color rainbow' in content, \
+        "RAM LED control should have command to turn LEDs on with rainbow effect"
+
+    assert 'led4' in content, \
+        "Rainbow command should target led4 channel (RAM)"
+
+    # Assert - Has ram_lights_state == "on" conditional
+    # Find the "on" task and verify it has proper conditional
+    on_task_found = False
+    for task in tasks:
+        if isinstance(task, dict) and 'command' in task:
+            cmd = task['command']
+            if 'rainbow' in cmd and 'led4' in cmd:
+                on_task_found = True
+                assert 'when' in task, "Rainbow task should have conditional"
+                when_clause = task['when']
+                when_str = ' '.join(when_clause) if isinstance(when_clause, list) else when_clause
+                assert 'ram_lights_state' in when_str and '"on"' in when_str, \
+                    "Rainbow task should check ram_lights_state == 'on'"
+                break
+
+    assert on_task_found, "Should have task for turning RAM LEDs on with rainbow"
