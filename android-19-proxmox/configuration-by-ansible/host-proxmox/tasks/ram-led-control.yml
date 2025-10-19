@@ -15,6 +15,44 @@
 #
 # Important: This feature does NOT affect Arctic lights (led1, led2, led3)
 
+# ============================================================================
+# Dependency Check
+# ============================================================================
+
+- name: Check if liquidctl is installed
+  command: liquidctl --version
+  register: liquidctl_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - ram
+    - dependency
+
+- name: Fail gracefully if liquidctl is not installed
+  fail:
+    msg: |
+      ❌ ERROR: liquidctl is not installed on this system.
+
+      RAM LED control requires liquidctl to communicate with the ASUS Aura LED Controller.
+
+      📋 To fix this issue:
+      1. Run the RGB control feature first, which installs liquidctl:
+         make proxmox-rgb-lights-off
+
+      2. Or manually install liquidctl on the Proxmox host:
+         ssh root@192.168.0.19 'pip3 install liquidctl --break-system-packages'
+
+      ℹ️  Note: liquidctl is a lightweight Python package that enables RGB hardware control.
+            RAM LED control depends on the RGB control feature being configured first.
+  when: liquidctl_check.rc != 0
+  tags:
+    - ram
+    - dependency
+
+# ============================================================================
+# RAM LED Control Operations
+# ============================================================================
+
 - name: Turn RAM LEDs off (led4 channel only)
   command: liquidctl --match 'ASUS' set led4 color off
   when:
