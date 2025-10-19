@@ -56,3 +56,37 @@
   tags:
     - ram
     - control
+
+- name: Create systemd service for RAM LED control persistence
+  template:
+    src: ram-led-control.service.j2
+    dest: /etc/systemd/system/ram-led-control.service
+    mode: '0644'
+  become: true
+  when: ram_lights_action is not defined or ram_lights_action != 'status'
+  tags:
+    - ram
+    - persistence
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: true
+  when: ram_lights_action is not defined or ram_lights_action != 'status'
+  tags:
+    - ram
+    - persistence
+
+- name: Enable RAM LED control service for autostart
+  systemd:
+    name: ram-led-control.service
+    enabled: yes
+    # Note: We don't use state: started because:
+    # 1. The RAM LED state is already set by the liquidctl commands above
+    # 2. This is a oneshot service meant for boot-time persistence
+    # 3. Starting it here would be redundant
+  become: true
+  when: ram_lights_action is not defined or ram_lights_action != 'status'
+  tags:
+    - ram
+    - persistence

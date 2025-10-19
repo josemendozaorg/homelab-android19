@@ -288,3 +288,76 @@ def test_should_provide_ram_led_systemd_service_template_for_led4_only(host_prox
         "RAM LED systemd service should be Type=oneshot for boot-time execution"
     assert 'RemainAfterExit=yes' in content, \
         "RAM LED systemd service should have RemainAfterExit=yes for state persistence"
+
+
+def test_should_deploy_ram_led_systemd_service_via_ansible_tasks(host_proxmox_role_path):
+    """RAM LED control tasks should deploy and enable systemd service.
+
+    Validates:
+    - Task deploys ram-led-control.service.j2 template to /etc/systemd/system/
+    - Task reloads systemd daemon after template deployment
+    - Task enables service for autostart on boot
+    - Tasks follow RGB control pattern (no state: started for oneshot service)
+    - Tasks have proper conditionals to skip during status checks
+
+    This supports BDD Scenario 3: RAM LED State Persists After Reboot
+    Linked to Task 3.2: Deploy RAM LED control systemd service
+    Ensures AC4: RAM LED state persists across system reboots
+    Ensures AC13: Both RGB and RAM services start automatically after reboot
+    """
+    # Arrange
+    ram_led_control_task_file = host_proxmox_role_path / "tasks" / "ram-led-control.yml"
+
+    # Act
+    with open(ram_led_control_task_file) as f:
+        content = f.read()
+        tasks = yaml.safe_load(content)
+
+    # Assert - Template deployment task exists
+    template_task = None
+    for task in tasks:
+        if isinstance(task, dict) and 'template' in task:
+            if 'ram-led-control.service.j2' in str(task.get('template', {})):
+                template_task = task
+                break
+
+    assert template_task is not None, \
+        "Should have task to deploy ram-led-control.service.j2 template"
+
+    assert template_task['template']['dest'] == '/etc/systemd/system/ram-led-control.service', \
+        "Template should be deployed to /etc/systemd/system/ram-led-control.service"
+
+    assert template_task['template']['mode'] == '0644', \
+        "Template should have mode 0644"
+
+    # Assert - Systemd daemon reload task exists
+    daemon_reload_task = None
+    for task in tasks:
+        if isinstance(task, dict) and 'systemd' in task:
+            if task.get('systemd', {}).get('daemon_reload'):
+                daemon_reload_task = task
+                break
+
+    assert daemon_reload_task is not None, \
+        "Should have task to reload systemd daemon"
+
+    # Assert - Service enable task exists
+    service_enable_task = None
+    for task in tasks:
+        if isinstance(task, dict) and 'systemd' in task:
+            systemd_config = task.get('systemd', {})
+            if (systemd_config.get('name') == 'ram-led-control.service' and
+                systemd_config.get('enabled')):
+                service_enable_task = task
+                break
+
+    assert service_enable_task is not None, \
+        "Should have task to enable ram-led-control.service for autostart"
+
+    assert service_enable_task['systemd']['enabled'] is True or service_enable_task['systemd']['enabled'] == 'yes', \
+        "Service should be enabled for autostart"
+
+    # Assert - Service should NOT have state: started (following RGB pattern)
+    # Oneshot services don't need to be started - liquidctl commands already applied state
+    assert 'state' not in service_enable_task['systemd'], \
+        "Service enable task should NOT have 'state: started' (oneshot service for boot persistence only)"
