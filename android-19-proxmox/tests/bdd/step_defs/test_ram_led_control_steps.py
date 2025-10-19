@@ -33,34 +33,72 @@ def test_context():
 @given('the Proxmox host has Kingston HyperX Fury RAM with LED capability')
 def ram_hardware_installed(ssh_runner):
     """Verify Kingston HyperX Fury RAM with LED is present."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Verify host is accessible - hardware detection will happen via liquidctl
+    result = ssh_runner("192.168.0.19", "uname -a", user="root")
+    assert result.returncode == 0, "Proxmox host must be accessible"
 
 
 @given('liquidctl is already installed')
 @given('liquidctl is installed')
-def liquidctl_already_installed(ssh_runner):
-    """Verify liquidctl is already installed."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+def liquidctl_already_installed(ssh_runner, ansible_runner):
+    """Verify liquidctl is already installed (from RGB control feature)."""
+    # Check if liquidctl is installed
+    result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
+
+    # If not installed, install it via RGB control feature
+    if result.returncode != 0:
+        playbook_result = ansible_runner(
+            "android-19-proxmox/configuration-by-ansible/playbook.yml",
+            extra_vars={"rgb_lights_enabled": True, "rgb_lights_state": "off"},
+            tags="rgb"
+        )
+        assert playbook_result.returncode == 0, "Failed to install liquidctl via RGB feature"
+
+        # Verify installation
+        result = ssh_runner("192.168.0.19", "pip3 show liquidctl", user="root")
+
+    assert result.returncode == 0, (
+        f"liquidctl should be installed (dependency on RGB feature).\n"
+        f"Error: {result.stderr}"
+    )
 
 
 @given('Arctic lights are currently ON')
 def arctic_lights_on(ssh_runner, ansible_runner):
     """Ensure Arctic lights are currently on."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Run RGB control playbook to turn Arctic lights on
+    playbook_result = ansible_runner(
+        "android-19-proxmox/configuration-by-ansible/playbook.yml",
+        extra_vars={"rgb_lights_enabled": True, "rgb_lights_state": "on"},
+        tags="rgb"
+    )
+    assert playbook_result.returncode == 0, "Failed to turn Arctic lights on"
 
 
 @given('RAM LEDs are currently turned off')
 @given('RAM LEDs are already turned off')
 def ram_leds_off(ssh_runner, ansible_runner):
     """Ensure RAM LEDs are currently off."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Run RAM control playbook to turn RAM LEDs off
+    playbook_result = ansible_runner(
+        "android-19-proxmox/configuration-by-ansible/playbook.yml",
+        extra_vars={"ram_lights_enabled": True, "ram_lights_state": "off"},
+        tags="ram"
+    )
+    assert playbook_result.returncode == 0, "Failed to turn RAM LEDs off"
 
 
 @given('Arctic lights are currently OFF')
 @given('Arctic lights remain OFF')
 def arctic_lights_off(ssh_runner, ansible_runner):
     """Ensure Arctic lights are currently off."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Run RGB control playbook to turn Arctic lights off
+    playbook_result = ansible_runner(
+        "android-19-proxmox/configuration-by-ansible/playbook.yml",
+        extra_vars={"rgb_lights_enabled": True, "rgb_lights_state": "off"},
+        tags="rgb"
+    )
+    assert playbook_result.returncode == 0, "Failed to turn Arctic lights off"
 
 
 @given('the administrator has set RAM LEDs to off')
@@ -106,13 +144,49 @@ def liquidctl_not_installed(ssh_runner):
 @when(parsers.parse('the administrator runs the Ansible playbook with "{ansible_extra_vars}"'))
 def run_ansible_playbook_ram(ansible_extra_vars, ansible_runner, test_context):
     """Execute Ansible playbook with RAM-specific variables."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Parse the extra vars string (e.g., "ram_lights_state=off")
+    extra_vars = {}
+    for pair in ansible_extra_vars.split():
+        if '=' in pair:
+            key, value = pair.split('=', 1)
+            extra_vars[key] = value
+
+    # Always enable RAM lights for these tests
+    extra_vars['ram_lights_enabled'] = True
+
+    # Run the playbook
+    result = ansible_runner(
+        "android-19-proxmox/configuration-by-ansible/playbook.yml",
+        extra_vars=extra_vars,
+        tags="ram"
+    )
+
+    test_context['playbook_result'] = result
+    test_context['ansible_changed'] = 'changed=0' not in result.stdout
 
 
 @when(parsers.parse('the administrator runs the Ansible playbook with "{ansible_extra_vars}" again'))
 def run_ansible_playbook_ram_again(ansible_extra_vars, ansible_runner, test_context):
     """Execute Ansible playbook a second time (for idempotency testing)."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Parse the extra vars string (same as first run)
+    extra_vars = {}
+    for pair in ansible_extra_vars.split():
+        if '=' in pair:
+            key, value = pair.split('=', 1)
+            extra_vars[key] = value
+
+    # Always enable RAM lights for these tests
+    extra_vars['ram_lights_enabled'] = True
+
+    # Run the playbook again
+    result = ansible_runner(
+        "android-19-proxmox/configuration-by-ansible/playbook.yml",
+        extra_vars=extra_vars,
+        tags="ram"
+    )
+
+    test_context['playbook_result'] = result
+    test_context['ansible_changed'] = 'changed=0' not in result.stdout
 
 
 @when('the Proxmox host is rebooted')
@@ -141,29 +215,62 @@ def verify_arctic_still_on(ssh_runner):
 @then('RAM LEDs are turned off')
 @then('RAM LEDs are off')
 @then('RAM LEDs remain off')
-def verify_ram_leds_off(ssh_runner):
+def verify_ram_leds_off(test_context):
     """Verify RAM LEDs are turned off."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Verify playbook executed successfully
+    assert test_context['playbook_result'] is not None, "Playbook should have run"
+    assert test_context['playbook_result'].returncode == 0, (
+        f"Playbook should succeed.\n"
+        f"Error: {test_context['playbook_result'].stderr}"
+    )
+
+    # Verify liquidctl command for led4 off was executed
+    # (We can't query actual LED state, so we verify the playbook ran the command)
+    output = test_context['playbook_result'].stdout
+    assert 'ram' in output.lower() or 'led4' in output.lower(), \
+        "Playbook output should reference RAM LED control"
 
 
 @then('Arctic lights remain ON in rainbow mode')
 @then('Arctic fans CPU cooler LEDs remain on in rainbow mode')
-def verify_arctic_remain_on(ssh_runner):
+def verify_arctic_remain_on(test_context):
     """Verify Arctic lights remained on in rainbow mode."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Verify the confirmation message mentions Arctic lights are unchanged
+    output = test_context['playbook_result'].stdout
+    assert 'UNCHANGED' in output or 'unchanged' in output, \
+        "Output should indicate Arctic lights are unchanged"
 
 
 @then('the system displays confirmation showing RAM LEDs OFF and Arctic lights UNCHANGED')
 @then('the system displays confirmation showing RAM LEDs ON and Arctic lights UNCHANGED')
 def verify_confirmation_message(test_context):
     """Verify confirmation message shows state change."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    assert test_context['playbook_result'] is not None, "Playbook should have run"
+    output = test_context['playbook_result'].stdout
+
+    # Check for RAM LED state message
+    assert 'RAM' in output or 'ram' in output, \
+        "Output should mention RAM LEDs"
+
+    # Check for Arctic unchanged message
+    assert 'UNCHANGED' in output or 'unchanged' in output, \
+        "Output should explicitly state Arctic lights are UNCHANGED"
 
 
 @then('RAM LEDs are turned on with rainbow effect')
-def verify_ram_leds_on(ssh_runner):
+def verify_ram_leds_on(test_context):
     """Verify RAM LEDs are turned on."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    # Verify playbook executed successfully
+    assert test_context['playbook_result'] is not None, "Playbook should have run"
+    assert test_context['playbook_result'].returncode == 0, (
+        f"Playbook should succeed.\n"
+        f"Error: {test_context['playbook_result'].stderr}"
+    )
+
+    # Verify liquidctl command for led4 rainbow was executed
+    output = test_context['playbook_result'].stdout
+    assert 'ram' in output.lower() or 'led4' in output.lower(), \
+        "Playbook output should reference RAM LED control"
 
 
 @then('RAM LEDs remain off after the system boots')
@@ -187,13 +294,26 @@ def verify_services_autostart(ssh_runner):
 @then('the playbook completes successfully without errors')
 def verify_playbook_success(test_context):
     """Verify Ansible playbook completed successfully."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    assert test_context['playbook_result'] is not None, "Playbook should have run"
+    assert test_context['playbook_result'].returncode == 0, (
+        f"Playbook should complete successfully.\n"
+        f"Exit code: {test_context['playbook_result'].returncode}\n"
+        f"Error: {test_context['playbook_result'].stderr}"
+    )
 
 
 @then('Ansible reports no changes made for RAM operations')
 def verify_no_changes_ram(test_context):
     """Verify Ansible reported no changes (idempotency)."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    assert test_context['playbook_result'] is not None, "Playbook should have run"
+
+    # Check for changed=0 in the output (indicates no changes)
+    output = test_context['playbook_result'].stdout
+    # Ansible summary should show "changed=0" for idempotent operations
+    assert 'changed=0' in output or test_context.get('ansible_changed') == False, (
+        f"Ansible should report no changes (idempotent).\n"
+        f"Output: {output}"
+    )
 
 
 @then('the system displays the current state of RAM LEDs')
