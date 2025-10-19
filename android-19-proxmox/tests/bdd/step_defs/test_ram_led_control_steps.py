@@ -296,8 +296,22 @@ def verify_arctic_on_after_boot(ssh_runner):
 
 @then('both RGB control service and RAM control service start automatically')
 def verify_services_autostart(ssh_runner):
-    """Verify both services start automatically."""
-    pytest.skip("Not yet implemented - awaiting RAM LED control implementation")
+    """Verify both services start automatically on boot."""
+    # Check RGB control service
+    rgb_service_check = ssh_runner("192.168.0.19", "systemctl is-enabled rgb-control.service", user="root")
+    assert rgb_service_check.returncode == 0, \
+        f"RGB control service should be enabled for autostart. Error: {rgb_service_check.stderr}"
+    assert "enabled" in rgb_service_check.stdout.lower(), \
+        f"RGB control service should be enabled. Output: {rgb_service_check.stdout}"
+
+    # Check RAM LED control service
+    ram_service_check = ssh_runner("192.168.0.19", "systemctl is-enabled ram-led-control.service", user="root")
+    assert ram_service_check.returncode == 0, \
+        f"RAM LED control service should be enabled for autostart. Error: {ram_service_check.stderr}"
+    assert "enabled" in ram_service_check.stdout.lower(), \
+        f"RAM LED control service should be enabled. Output: {ram_service_check.stdout}"
+
+    # Both services are now confirmed to start automatically on boot
 
 
 @then('the playbook completes successfully without errors')
