@@ -1,0 +1,11 @@
+[Unit]
+Description=RAM LED Control Service using liquidctl
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'liquidctl --match "ASUS" set led4 color {{ "off" if ram_lights_state == "off" else "rainbow" }}'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

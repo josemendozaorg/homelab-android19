@@ -228,3 +228,63 @@ def test_ram_led_control_should_support_on_state(host_proxmox_role_path):
                 break
 
     assert on_task_found, "Should have task for turning RAM LEDs on with rainbow"
+
+
+def test_should_provide_ram_led_systemd_service_template_for_led4_only(host_proxmox_role_path):
+    """RAM LED systemd service template should exist and target led4 only.
+
+    Validates:
+    - templates/ram-led-control.service.j2 exists
+    - Template targets led4 channel only
+    - Template does NOT target led1, led2, or led3 (Arctic channels)
+    - Template uses ram_lights_state variable
+    - Template has valid systemd structure ([Unit], [Service], [Install])
+
+    This supports BDD Scenario 3: RAM LED State Persists After Reboot
+    Linked to Task 3.1: Create systemd service template for RAM LED control
+    Ensures AC4: RAM LED state persists across system reboots
+    """
+    # Arrange
+    service_template_file = host_proxmox_role_path / "templates" / "ram-led-control.service.j2"
+
+    # Act & Assert - File exists
+    assert service_template_file.exists(), \
+        f"RAM LED systemd service template should exist at {service_template_file}"
+
+    # Act - Read template content
+    with open(service_template_file) as f:
+        content = f.read()
+
+    # Assert - Contains led4 references (RAM channel)
+    assert 'led4' in content, \
+        "RAM LED systemd service should target led4 channel"
+
+    # Assert - Does NOT contain Arctic light channel references
+    assert 'led1' not in content, \
+        "RAM LED systemd service should NOT target led1 (Arctic light channel)"
+    assert 'led2' not in content, \
+        "RAM LED systemd service should NOT target led2 (Arctic light channel)"
+    assert 'led3' not in content, \
+        "RAM LED systemd service should NOT target led3 (Arctic light channel)"
+
+    # Assert - Uses ram_lights_state variable
+    assert 'ram_lights_state' in content, \
+        "RAM LED systemd service should use ram_lights_state variable"
+
+    # Assert - Valid systemd unit file structure
+    assert '[Unit]' in content, \
+        "Systemd service template should have [Unit] section"
+    assert '[Service]' in content, \
+        "Systemd service template should have [Service] section"
+    assert '[Install]' in content, \
+        "Systemd service template should have [Install] section"
+
+    # Assert - Uses liquidctl with ASUS matcher
+    assert "liquidctl --match 'ASUS'" in content or 'liquidctl --match "ASUS"' in content, \
+        "RAM LED systemd service should use liquidctl with ASUS device matcher"
+
+    # Assert - Systemd service type and persistence
+    assert 'Type=oneshot' in content, \
+        "RAM LED systemd service should be Type=oneshot for boot-time execution"
+    assert 'RemainAfterExit=yes' in content, \
+        "RAM LED systemd service should have RemainAfterExit=yes for state persistence"
