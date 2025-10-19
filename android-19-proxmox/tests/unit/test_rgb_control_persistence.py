@@ -182,3 +182,44 @@ def test_should_reload_systemd_daemon_after_service_creation(rgb_control_tasks):
     if service_create_index is not None and reload_index is not None:
         assert service_create_index < reload_index, \
             "Daemon reload should occur after service file creation"
+
+
+def test_should_control_only_arctic_lights_channels_not_ram(project_root):
+    """RGB service template should control only Arctic lights (led1-led3), not RAM (led4).
+
+    Validates:
+    - rgb-control.service.j2 template controls led1, led2, led3
+    - Template does NOT control led4 (RAM channel)
+    - This ensures service isolation between RGB and RAM control
+
+    Supporting BDD Scenario 3: RAM LED State Persists After Reboot
+    Linked to Task 3.3: Modify RGB service to only control led1-led3
+    Ensures AC8: Turning RAM LEDs off does NOT affect Arctic lights
+    Ensures AC9: Turning Arctic lights off does NOT affect RAM LEDs
+    """
+    # Arrange
+    template_file = project_root / "configuration-by-ansible" / "host-proxmox" / "templates" / "rgb-control.service.j2"
+
+    # Act
+    assert template_file.exists(), \
+        f"RGB control service template should exist at {template_file}"
+
+    with open(template_file) as f:
+        content = f.read()
+
+    # Assert - Template controls Arctic light channels (led1, led2, led3)
+    assert 'led1' in content, \
+        "RGB service should control led1 channel (Arctic lights)"
+    assert 'led2' in content, \
+        "RGB service should control led2 channel (Arctic lights)"
+    assert 'led3' in content, \
+        "RGB service should control led3 channel (Arctic lights)"
+
+    # Assert - Template does NOT control RAM channel (led4)
+    assert 'led4' not in content, \
+        "RGB service should NOT control led4 channel (RAM - managed by ram-led-control.service)"
+
+    # Assert - Template targets exactly 3 channels
+    # Check the for loop structure
+    assert 'for led in led1 led2 led3' in content or 'led1 led2 led3' in content, \
+        "RGB service should iterate over exactly led1, led2, led3 (Arctic channels only)"
