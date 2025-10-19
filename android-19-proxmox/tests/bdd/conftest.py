@@ -10,6 +10,7 @@ from pathlib import Path
 pytest_plugins = [
     "tests.bdd.step_defs.test_vm_llm_gpu_passthrough_steps",
     "tests.bdd.step_defs.test_rgb_led_control_steps",
+    "tests.bdd.step_defs.test_ram_led_control_steps",
 ]
 
 

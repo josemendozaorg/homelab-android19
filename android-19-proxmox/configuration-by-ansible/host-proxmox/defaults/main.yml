@@ -125,3 +125,9 @@ proxmox_monitoring:
 # Controls RGB lighting on Arctic fans, Arctic CPU cooler, and RAM modules
 rgb_lights_enabled: true
 rgb_lights_state: "off"  # Valid values: "on", "off"
+
+# RAM LED Control (Independent)
+# Controls ONLY Kingston HyperX Fury RAM LEDs (led4 channel)
+# This is separate from Arctic lights control (led1-led3)
+ram_lights_enabled: true
+ram_lights_state: "off"  # Valid values: "on", "off"

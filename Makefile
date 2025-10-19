@@ -17,6 +17,8 @@ INVENTORY := inventory.yml
         bastion-setup-sudo bastion-deploy \
         proxmox-host-setup proxmox-host-check proxmox-host-gpu-passthrough proxmox-host-pcie-aspm \
         proxmox-host-storage proxmox-host-templates proxmox-host-cloud-templates proxmox-host-api \
+        proxmox-rgb-lights-off proxmox-rgb-lights-on proxmox-rgb-lights-status \
+        proxmox-ram-lights-off proxmox-ram-lights-on proxmox-ram-lights-status \
         proxmox-deploy adguard-setup \
         proxmox-tf-init proxmox-tf-plan proxmox-tf-apply proxmox-tf-destroy proxmox-tf-show proxmox-tf-rebuild-state proxmox-full-deploy \
         deploy-lxc-adguard-dns deploy-proxmox-all \
@@ -141,6 +143,15 @@ proxmox-rgb-lights-on: ## Turn on RGB/LED lights on Arctic fans, CPU cooler, and
 
 proxmox-rgb-lights-status: ## Check current status of RGB/LED lights
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags rgb --extra-vars "rgb_lights_enabled=true rgb_lights_action=status"
+
+proxmox-ram-lights-off: ## Turn off RAM LEDs (Kingston HyperX Fury)
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags ram --extra-vars "ram_lights_enabled=true ram_lights_state=off"
+
+proxmox-ram-lights-on: ## Turn on RAM LEDs with rainbow effect
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags ram --extra-vars "ram_lights_enabled=true ram_lights_state=on"
+
+proxmox-ram-lights-status: ## Check current status of RAM LEDs
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml --tags ram --extra-vars "ram_lights_enabled=true ram_lights_action=status"
 
 proxmox-deploy: ## Deploy base configuration to Proxmox server
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/playbook.yml

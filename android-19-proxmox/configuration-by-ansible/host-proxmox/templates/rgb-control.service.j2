@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'for led in led1 led2 led3 led4; do liquidctl --match "ASUS" set $led color {{ "off" if rgb_lights_state == "off" else "rainbow" }}; done'
+ExecStart=/bin/bash -c 'for led in led1 led2 led3; do liquidctl --match "ASUS" set $led color {{ "off" if rgb_lights_state == "off" else "rainbow" }}; done'
 RemainAfterExit=yes
 
 [Install]

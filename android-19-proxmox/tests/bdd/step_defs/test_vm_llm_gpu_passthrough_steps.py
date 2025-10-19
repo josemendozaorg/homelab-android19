@@ -424,7 +424,7 @@ def verify_vllm_server_starts():
     raise NotImplementedError("vLLM server startup check not yet implemented")
 
 
-@then('the health endpoint responds: "curl http://localhost:8000/health"')
+@then(parsers.parse('the health endpoint responds: "curl http://localhost:8000/health"'))
 def verify_vllm_health_endpoint():
     """Verify vLLM health endpoint is accessible.
 
