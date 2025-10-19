@@ -1,0 +1,94 @@
+---
+# NVIDIA Driver Installation Tasks
+# Install NVIDIA GPU drivers using ubuntu-drivers with open-kernel preference
+# Implements Task 1.3 from Scenario 1
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+- name: Install ubuntu-drivers-common package
+  ansible.builtin.apt:
+    name: ubuntu-drivers-common
+    state: present
+  become: yes
+
+- name: Detect available NVIDIA drivers
+  ansible.builtin.command: ubuntu-drivers devices
+  register: nvidia_drivers_available
+  changed_when: false
+  failed_when: false
+
+- name: Display available NVIDIA drivers
+  ansible.builtin.debug:
+    var: nvidia_drivers_available.stdout_lines
+  when: nvidia_drivers_available.stdout_lines is defined
+
+- name: Check if NVIDIA drivers are already installed
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_smi_check
+  changed_when: false
+  failed_when: false
+
+- name: Install NVIDIA drivers using ubuntu-drivers
+  ansible.builtin.command: ubuntu-drivers autoinstall
+  become: yes
+  when: nvidia_smi_check.rc != 0
+  register: nvidia_driver_install
+  notify: Reboot system for NVIDIA driver loading
+
+- name: Flush handlers to reboot immediately after driver installation
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for system to come back after reboot (if rebooted)
+  ansible.builtin.wait_for_connection:
+    delay: 30
+    timeout: 300
+  when: nvidia_driver_install is changed
+
+- name: Verify NVIDIA driver installation with nvidia-smi
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_smi_output
+  changed_when: false
+  failed_when: nvidia_smi_output.rc != 0
+
+- name: Display nvidia-smi output
+  ansible.builtin.debug:
+    var: nvidia_smi_output.stdout_lines
+
+- name: Check dmesg for NVIDIA kernel module loading
+  ansible.builtin.shell: dmesg | grep -i nvidia
+  register: nvidia_dmesg_check
+  changed_when: false
+  failed_when: false
+
+- name: Display NVIDIA kernel module messages
+  ansible.builtin.debug:
+    var: nvidia_dmesg_check.stdout_lines
+  when: nvidia_dmesg_check.stdout_lines is defined
+
+- name: Get CUDA version from nvidia-smi output
+  ansible.builtin.shell: "nvidia-smi | grep -i 'CUDA Version' | sed -n 's/.*CUDA Version: \\([0-9.]*\\).*/\\1/p'"
+  register: cuda_version_check
+  changed_when: false
+
+- name: Get driver version from nvidia-smi
+  ansible.builtin.shell: nvidia-smi --query-gpu=driver_version --format=csv,noheader
+  register: driver_version_check
+  changed_when: false
+
+- name: Display CUDA version information
+  ansible.builtin.debug:
+    msg: |
+      ✅ NVIDIA Driver Installation Complete
+      Driver Version: {{ driver_version_check.stdout | trim }}
+      CUDA Version: {{ cuda_version_check.stdout | trim }}
+
+- name: Verify CUDA version is 12.6 or higher
+  ansible.builtin.assert:
+    that:
+      - cuda_version_check.stdout | trim | float >= 12.6
+    fail_msg: "CUDA version {{ cuda_version_check.stdout | trim }} is below required 12.6"
+    success_msg: "CUDA version {{ cuda_version_check.stdout | trim }} meets requirements (>= 12.6)"

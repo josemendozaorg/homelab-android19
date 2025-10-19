@@ -1,0 +1,57 @@
+---
+# vm-llm-aimachine Role
+# GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama)
+
+- name: Display VM configuration from catalog
+  ansible.builtin.debug:
+    msg: |
+      🚀 Configuring GPU-accelerated AI/LLM VM
+
+      📋 VM Configuration (from infrastructure-catalog.yml):
+      - VM ID: {{ vm_config.id | default('140') }}
+      - VM Name: {{ vm_config.name }}
+      - IP Address: {{ vm_config.ip }}
+      - CPU: {{ vm_config.resources.cores }} cores
+      - RAM: {{ (vm_config.resources.memory / 1024) | round(1) }}GB
+      - Disk: {{ vm_config.resources.disk }}GB
+      - GPU Passthrough: {{ vm_config.gpu_passthrough.enabled | default(false) }}
+      {% if vm_config.gpu_passthrough.enabled | default(false) %}
+      - GPU Device ID: {{ vm_config.gpu_passthrough.device_id }}
+      {% endif %}
+
+- name: Include GPU passthrough configuration
+  include_tasks: gpu-passthrough.yml
+  tags: [gpu, passthrough]
+  vars:
+    gpu_device_id: "{{ vm_config.gpu_passthrough.device_id }}"
+    gpu_passthrough_enabled: true  # Always configure GPU passthrough (catalog.enabled is for Terraform only)
+
+- name: Include NVIDIA driver installation tasks
+  include_tasks: nvidia-drivers.yml
+  tags: [nvidia, drivers, gpu]
+
+- name: Include vLLM installation tasks
+  include_tasks: vllm-install.yml
+  tags: [vllm, ai, llm]
+
+- name: Include Ollama installation tasks
+  include_tasks: ollama-install.yml
+  tags: [ollama, ai, llm]
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg: |
+      ✅ AI/LLM VM Configuration Complete
+
+      🔧 Installed Components:
+      - NVIDIA Drivers: {{ nvidia_driver_preference }}-kernel modules
+      - vLLM API Server: http://{{ vllm_host }}:{{ vllm_port }}
+      - Ollama: http://{{ vm_config.ip }}:{{ ollama_port }}
+
+      📁 Model Storage:
+      - vLLM models: {{ vllm_model_dir }}
+      - Ollama models: {{ ollama_model_dir }}
+
+      🚀 Services Auto-start: {{ vllm_service_enabled and ollama_service_enabled }}
+
+      ✅ Ready for AI/LLM workloads!

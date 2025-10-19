@@ -1,0 +1,218 @@
+---
+# RGB/LED Light Control Tasks for Arctic Fans, CPU Cooler, and RAM
+#
+# This task file manages RGB lighting on the Proxmox host hardware using liquidctl:
+# - Arctic fans
+# - Arctic CPU cooler
+# - RAM modules
+#
+# RGB control tasks:
+# - Install liquidctl via pip3
+# - Detect RGB hardware components via liquidctl
+# - Turn lights on/off based on rgb_lights_state variable
+# - Configure persistence across reboots via systemd service
+#
+# Tasks are executed when rgb_lights_enabled is true
+
+- name: Check if pip3 is already installed
+  command: pip3 --version
+  register: pip3_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - rgb
+    - installation
+
+- name: Ensure pip3 is installed
+  apt:
+    name: python3-pip
+    state: present
+    update_cache: no  # Avoid enterprise repo issues, package should be available
+  become: true
+  when: pip3_check.rc != 0  # Only install if pip3 isn't already available
+  tags:
+    - rgb
+    - installation
+
+- name: Install liquidctl via pip3
+  pip:
+    name: liquidctl
+    state: present
+    executable: pip3
+    extra_args: --break-system-packages
+  become: true
+  tags:
+    - rgb
+    - installation
+
+- name: Detect RGB hardware devices using liquidctl
+  command: liquidctl list
+  register: rgb_devices_detected
+  failed_when: false
+  changed_when: false
+  tags:
+    - rgb
+    - detection
+
+- name: Display detected RGB devices
+  debug:
+    var: rgb_devices_detected.stdout_lines
+  when: rgb_devices_detected.rc == 0
+  tags:
+    - rgb
+    - detection
+
+- name: Turn all RGB lights off (ASUS Aura LED Controller)
+  command: liquidctl --match 'ASUS' set {{ item }} color off
+  loop:
+    - led1
+    - led2
+    - led3
+    - led4
+  when:
+    - rgb_lights_state == "off"
+    - rgb_lights_action is not defined or rgb_lights_action != 'status'
+  # liquidctl commands are idempotent - safe to run multiple times
+  # We mark as unchanged since we can't reliably query current state
+  changed_when: false
+  tags:
+    - rgb
+    - control
+
+- name: Turn all RGB lights on (ASUS Aura LED Controller - default rainbow)
+  command: liquidctl --match 'ASUS' set {{ item }} color rainbow
+  loop:
+    - led1
+    - led2
+    - led3
+    - led4
+  when:
+    - rgb_lights_state == "on"
+    - rgb_lights_action is not defined or rgb_lights_action != 'status'
+  # liquidctl commands are idempotent - safe to run multiple times
+  # We mark as unchanged since we can't reliably query current state
+  changed_when: false
+  tags:
+    - rgb
+    - control
+
+- name: Display RGB lights state confirmation
+  debug:
+    msg: |
+      ✓ RGB/LED lights have been set to: {{ rgb_lights_state | upper }}
+
+      Affected components:
+        - Arctic fans (ARGB headers 1-3)
+        - Arctic CPU cooler (ARGB headers)
+        - RAM modules (RGB header)
+
+      State: {{ 'Rainbow cycling effect' if rgb_lights_state == 'on' else 'All lights off (black)' }}
+  when:
+    - rgb_lights_state is defined and rgb_lights_state in ['on', 'off']
+    - rgb_lights_action is not defined or rgb_lights_action != 'status'
+  tags:
+    - rgb
+    - control
+
+# ============================================================================
+# Status Checking Tasks
+# ============================================================================
+
+- name: Check if RGB control service exists
+  stat:
+    path: /etc/systemd/system/rgb-control.service
+  register: rgb_service_file
+  when: rgb_lights_action is defined and rgb_lights_action == 'status'
+  tags:
+    - rgb
+    - status
+
+- name: Get RGB control service status
+  systemd:
+    name: rgb-control.service
+  register: rgb_service_status
+  failed_when: false
+  when:
+    - rgb_lights_action is defined and rgb_lights_action == 'status'
+    - rgb_service_file.stat.exists
+  tags:
+    - rgb
+    - status
+
+- name: Read systemd service configuration
+  slurp:
+    path: /etc/systemd/system/rgb-control.service
+  register: rgb_service_config
+  when:
+    - rgb_lights_action is defined and rgb_lights_action == 'status'
+    - rgb_service_file.stat.exists
+  tags:
+    - rgb
+    - status
+
+- name: Display RGB lights status
+  debug:
+    msg: |
+      ═══════════════════════════════════════════════════════════
+      RGB/LED LIGHTS STATUS
+      ═══════════════════════════════════════════════════════════
+
+      📦 Hardware Detected:
+      {{ rgb_devices_detected.stdout_lines | default(['No devices detected']) | join('\n      ') }}
+
+      🔧 Software Version:
+      {{ '      liquidctl installed via pip3' if ansible_facts.packages is defined else '      Status unknown' }}
+
+      ⚙️  Systemd Service:
+      {{ '      ✓ Service configured and enabled' if rgb_service_file.stat.exists else '      ✗ Service not configured' }}
+      {{ '      State: ' + rgb_service_status.status.ActiveState | default('unknown') if rgb_service_file.stat.exists else '' }}
+
+      🎨 Configured RGB State (from service):
+      {{ '      ON (rainbow effect)' if rgb_service_file.stat.exists and 'rainbow' in (rgb_service_config.content | b64decode) else '      OFF (all lights black)' if rgb_service_file.stat.exists else '      Not configured' }}
+
+      💡 Components Managed:
+        - Arctic fans (ARGB headers 1-3)
+        - Arctic CPU cooler (ARGB headers)
+        - RAM modules (RGB header)
+
+      ℹ️  Note: Actual light state may differ if changed manually.
+          This shows the configured state that persists across reboots.
+      ═══════════════════════════════════════════════════════════
+  when: rgb_lights_action is defined and rgb_lights_action == 'status'
+  tags:
+    - rgb
+    - status
+
+- name: Create systemd service for RGB control persistence
+  template:
+    src: rgb-control.service.j2
+    dest: /etc/systemd/system/rgb-control.service
+    mode: '0644'
+  become: true
+  when: rgb_lights_action is not defined or rgb_lights_action != 'status'
+  tags:
+    - rgb
+    - persistence
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: true
+  when: rgb_lights_action is not defined or rgb_lights_action != 'status'
+  tags:
+    - rgb
+    - persistence
+
+- name: Enable RGB control service for autostart
+  systemd:
+    name: rgb-control.service
+    enabled: yes
+    # Note: We don't use state: started because:
+    # 1. The RGB state is already set by the liquidctl commands above
+    # 2. This is a oneshot service meant for boot-time persistence
+    # 3. Starting it here would be redundant
+  become: true
+  when: rgb_lights_action is not defined or rgb_lights_action != 'status'
+  tags:
+    - rgb
+    - persistence

@@ -1,0 +1,12 @@
+[Unit]
+Description=RGB/LED Light Control Service using liquidctl
+Documentation=https://github.com/liquidctl/liquidctl
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'for led in led1 led2 led3 led4; do liquidctl --match "ASUS" set $led color {{ "off" if rgb_lights_state == "off" else "rainbow" }}; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

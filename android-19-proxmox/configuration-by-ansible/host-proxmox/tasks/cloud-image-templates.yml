@@ -1,0 +1,107 @@
+---
+# Cloud Image Template Creation
+# Downloads Ubuntu cloud images directly on Proxmox and creates reusable VM templates
+
+- name: Check if Ubuntu 24.04 cloud image already exists
+  ansible.builtin.stat:
+    path: "{{ cloud_image_storage_path }}/{{ cloud_image_filename }}"
+  register: cloud_image_stat
+  become: yes
+
+- name: Download Ubuntu 24.04 cloud image directly on Proxmox
+  ansible.builtin.get_url:
+    url: "{{ cloud_image_url }}"
+    dest: "{{ cloud_image_storage_path }}/{{ cloud_image_filename }}"
+    mode: '0644'
+    timeout: 600
+  when: not cloud_image_stat.stat.exists
+  become: yes
+
+- name: Check if template VM already exists
+  ansible.builtin.shell: "qm list | grep -q '{{ cloud_template_vm_id }}'"
+  register: template_vm_check
+  changed_when: false
+  failed_when: false
+  become: yes
+
+- name: Create template VM
+  ansible.builtin.command: >
+    qm create {{ cloud_template_vm_id }}
+    --name {{ cloud_template_vm_name }}
+    --memory {{ cloud_template_memory }}
+    --net0 virtio,bridge=vmbr0
+    --scsihw virtio-scsi-pci
+  when: template_vm_check.rc != 0
+  register: vm_create
+  changed_when: vm_create.rc == 0
+  become: yes
+
+- name: Import cloud image disk to template VM
+  ansible.builtin.command: >
+    qm importdisk {{ cloud_template_vm_id }}
+    {{ cloud_image_storage_path }}/{{ cloud_image_filename }}
+    {{ proxmox_storage }}
+  when: template_vm_check.rc != 0
+  register: disk_import
+  changed_when: disk_import.rc == 0
+  become: yes
+
+- name: Attach imported disk to template VM
+  ansible.builtin.command: >
+    qm set {{ cloud_template_vm_id }}
+    --scsi0 {{ proxmox_storage }}:vm-{{ cloud_template_vm_id }}-disk-0
+  when: template_vm_check.rc != 0
+  register: disk_attach
+  changed_when: disk_attach.rc == 0
+  become: yes
+
+- name: Configure cloud-init drive on IDE2
+  ansible.builtin.command: >
+    qm set {{ cloud_template_vm_id }}
+    --ide2 {{ proxmox_storage }}:cloudinit
+  when: template_vm_check.rc != 0
+  register: cloudinit_drive
+  changed_when: cloudinit_drive.rc == 0
+  become: yes
+
+- name: Configure boot settings
+  ansible.builtin.command: >
+    qm set {{ cloud_template_vm_id }}
+    --boot c --bootdisk scsi0
+  when: template_vm_check.rc != 0
+  register: boot_config
+  changed_when: boot_config.rc == 0
+  become: yes
+
+- name: Enable serial console
+  ansible.builtin.command: >
+    qm set {{ cloud_template_vm_id }}
+    --serial0 socket --vga serial0
+  when: template_vm_check.rc != 0
+  register: serial_config
+  changed_when: serial_config.rc == 0
+  become: yes
+
+- name: Enable QEMU guest agent
+  ansible.builtin.command: >
+    qm set {{ cloud_template_vm_id }}
+    --agent enabled=1
+  when: template_vm_check.rc != 0
+  register: agent_config
+  changed_when: agent_config.rc == 0
+  become: yes
+
+- name: Convert VM to template
+  ansible.builtin.command: "qm template {{ cloud_template_vm_id }}"
+  when: template_vm_check.rc != 0
+  register: template_convert
+  changed_when: template_convert.rc == 0
+  become: yes
+
+- name: Display cloud image template status
+  ansible.builtin.debug:
+    msg: >
+      Cloud Image Template: {{ 'Already exists' if template_vm_check.rc == 0 else 'Created successfully' }}
+      Template VM ID: {{ cloud_template_vm_id }}
+      Template Name: {{ cloud_template_vm_name }}
+      Cloud Image: {{ cloud_image_filename }}

@@ -6,10 +6,14 @@
     src: /etc/default/grub
   register: grub_config
 
-- name: Check if pcie_aspm=off is already configured
+- name: Check if pcie_aspm.policy=performance is already configured
   ansible.builtin.set_fact:
-    pcie_aspm_configured: "{{ 'pcie_aspm=off' in (grub_config.content | b64decode) }}"
+    pcie_aspm_configured: "{{ 'pcie_aspm.policy=performance' in (grub_config.content | b64decode) }}"
+
+- name: Check if old pcie_aspm=off parameter exists
+  ansible.builtin.set_fact:
+    pcie_aspm_old_param_exists: "{{ 'pcie_aspm=off' in (grub_config.content | b64decode) }}"
 
 - name: Display PCIe ASPM configuration status
   ansible.builtin.debug:
-    msg: "PCIe ASPM parameter {{ 'already configured' if pcie_aspm_configured else 'not configured' }}"
+    msg: "PCIe ASPM parameter {{ 'already configured (policy=performance)' if pcie_aspm_configured else 'needs update' }}{{ ' (old pcie_aspm=off found)' if pcie_aspm_old_param_exists else '' }}"

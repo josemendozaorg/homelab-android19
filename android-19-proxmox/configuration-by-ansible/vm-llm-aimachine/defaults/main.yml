@@ -1,0 +1,50 @@
+---
+# vm-llm-aimachine role defaults
+# GPU-accelerated Ubuntu Server VM for AI/LLM workloads (vLLM, Ollama)
+
+# NOTE: VM configuration (ID, name, IP, resources, GPU passthrough) comes from infrastructure-catalog.yml
+# The playbook loads this automatically from catalog.services[140]
+# Do not duplicate VM config here - maintain single source of truth in catalog
+
+# Ubuntu Server ISO configuration
+ubuntu_server_iso_name: "ubuntu-24.04.1-live-server-amd64.iso"
+
+# Proxmox storage configuration
+iso_storage_path: "/var/lib/vz/template/iso"
+proxmox_iso_storage: "local"
+
+# NVIDIA Driver Configuration
+# Strategy: Use ubuntu-drivers with auto-detection
+# Preference: *-open distro versions (open-kernel modules)
+nvidia_driver_package: "ubuntu-drivers"  # Use ubuntu-drivers auto-install
+nvidia_driver_preference: "open"  # Prefer open-kernel drivers
+cuda_version_min: "12.6"  # Minimum CUDA version for forward compatibility
+
+# vLLM Configuration
+# See: https://docs.vllm.ai/en/latest/
+vllm_version: "latest"  # Can pin to specific version if needed
+vllm_port: 8000
+vllm_host: "{{ vm_config.ip | default('192.168.0.140') }}"  # Bind to VM IP
+vllm_localhost_enabled: true  # Also bind to localhost
+vllm_model_dir: "/opt/models"  # Directory for downloaded models
+vllm_venv_path: "/opt/vllm-env"  # Python virtual environment path (Ubuntu 24.04 PEP 668)
+vllm_model_name: "Qwen/Qwen2.5-7B-Instruct-AWQ"  # AWQ quantized for 16GB GPU (10-11GB VRAM)
+vllm_gpu_memory_utilization: 0.85  # Reserve 15% for system overhead
+vllm_service_user: "vllm"
+vllm_service_enabled: true  # Auto-start on boot
+vllm_systemd_service: true  # Install as systemd service
+
+# Ollama Configuration
+# See: https://github.com/ollama/ollama
+ollama_version: "latest"  # Can pin to specific version
+ollama_port: 11434
+ollama_host: "0.0.0.0"  # Listen on all interfaces
+ollama_model_dir: "/opt/ollama/models"
+ollama_service_enabled: true  # Auto-start on boot
+ollama_systemd_service: true  # Install as systemd service
+
+# GPU Verification
+# Tests to verify GPU passthrough and drivers working correctly
+verify_gpu_passthrough: true
+verify_nvidia_drivers: true
+verify_cuda_availability: true

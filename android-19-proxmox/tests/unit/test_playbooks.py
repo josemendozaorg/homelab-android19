@@ -169,3 +169,62 @@ def test_ubuntu_desktop_no_hardcoded_credentials(project_root):
                 f"Insecure password '{value}' found in defaults file at key '{key}'. "
                 "Use ansible-vault, environment variable, or prompt for password instead."
             )
+
+
+def test_vm_llm_aimachine_playbook_exists(playbook_dir):
+    """VM LLM AI machine playbook file exists."""
+    playbook = playbook_dir / "vm-llm-aimachine-setup.yml"
+    assert playbook.exists(), f"Playbook not found: {playbook}"
+
+
+def test_vm_llm_aimachine_playbook_targets_vm(playbook_dir):
+    """VM LLM playbook should target vm_llm_aimachine, not proxmox host."""
+    playbook = playbook_dir / "vm-llm-aimachine-setup.yml"
+    content = playbook.read_text()
+
+    # Check that playbook targets the VM, not Proxmox host
+    assert "hosts: vm_llm_aimachine" in content, \
+        "Playbook should target vm_llm_aimachine (not proxmox)"
+
+    # Ensure it doesn't target proxmox
+    assert "hosts: proxmox" not in content, \
+        "Playbook should not target proxmox host (should target VM directly)"
+
+
+def test_vm_llm_aimachine_playbook_references_catalog(playbook_dir):
+    """VM LLM playbook references infrastructure catalog."""
+    playbook = playbook_dir / "vm-llm-aimachine-setup.yml"
+    content = playbook.read_text()
+
+    # Check that playbook loads catalog
+    assert "infrastructure-catalog.yml" in content, \
+        "Playbook should reference infrastructure-catalog.yml"
+    assert "catalog.services[140]" in content, \
+        "Playbook should reference VM 140 from catalog"
+
+
+def test_vm_llm_aimachine_inventory_entry(project_root):
+    """Inventory should have vm_llm_aimachine entry with correct configuration."""
+    inventory = project_root.parent / "inventory.yml"
+
+    import yaml
+    with open(inventory) as f:
+        inv_data = yaml.safe_load(f)
+
+    # Check that ai_vms group exists
+    assert 'ai_vms' in inv_data['all']['children'], \
+        "Inventory should have ai_vms group"
+
+    # Check that vm_llm_aimachine host exists
+    ai_vms = inv_data['all']['children']['ai_vms']['hosts']
+    assert 'vm_llm_aimachine' in ai_vms, \
+        "ai_vms group should contain vm_llm_aimachine host"
+
+    # Validate host configuration
+    vm_config = ai_vms['vm_llm_aimachine']
+    assert vm_config['ansible_host'] == '192.168.0.140', \
+        "VM should be at IP 192.168.0.140"
+    assert vm_config['ansible_user'] == 'ubuntu', \
+        "VM should use ubuntu user (cloud-init default)"
+    assert vm_config['vm_id'] == 140, \
+        "VM ID should be 140"
