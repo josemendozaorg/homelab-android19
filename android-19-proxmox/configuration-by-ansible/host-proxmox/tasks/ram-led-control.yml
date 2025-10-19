@@ -1,0 +1,58 @@
+---
+# RAM LED Control Tasks - Kingston HyperX Fury modules
+#
+# This task file provides INDEPENDENT control of RAM LED lights separate from
+# Arctic cooling RGB control (led1-led3). Only targets led4 channel (RAM RGB header).
+#
+# Dependencies:
+# - liquidctl already installed (via RGB control feature)
+# - ASUS Aura LED Controller hardware
+#
+# Variables:
+# - ram_lights_state: "on" or "off"
+# - ram_lights_action: "status" to check current state (optional)
+# - ram_lights_enabled: boolean to enable/disable this feature
+#
+# Important: This feature does NOT affect Arctic lights (led1, led2, led3)
+
+- name: Turn RAM LEDs off (led4 channel only)
+  command: liquidctl --match 'ASUS' set led4 color off
+  when:
+    - ram_lights_state == "off"
+    - ram_lights_action is not defined or ram_lights_action != 'status'
+  # liquidctl commands are idempotent - safe to run multiple times
+  # We mark as unchanged since we can't reliably query current state
+  changed_when: false
+  tags:
+    - ram
+    - control
+
+- name: Turn RAM LEDs on (led4 channel - rainbow effect)
+  command: liquidctl --match 'ASUS' set led4 color rainbow
+  when:
+    - ram_lights_state == "on"
+    - ram_lights_action is not defined or ram_lights_action != 'status'
+  # liquidctl commands are idempotent - safe to run multiple times
+  # We mark as unchanged since we can't reliably query current state
+  changed_when: false
+  tags:
+    - ram
+    - control
+
+- name: Display RAM LED state confirmation
+  debug:
+    msg: |
+      ✓ RAM LEDs have been set to: {{ ram_lights_state | upper }}
+
+      Affected components:
+        - Kingston HyperX Fury RAM (led4 channel only)
+
+      State: {{ 'Rainbow cycling effect' if ram_lights_state == 'on' else 'All RAM LEDs off (black)' }}
+
+      ⚠️  Arctic lights: UNCHANGED (led1, led2, led3 not affected)
+  when:
+    - ram_lights_state is defined and ram_lights_state in ['on', 'off']
+    - ram_lights_action is not defined or ram_lights_action != 'status'
+  tags:
+    - ram
+    - control
