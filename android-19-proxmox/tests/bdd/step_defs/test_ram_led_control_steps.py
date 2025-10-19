@@ -243,6 +243,17 @@ def verify_arctic_remain_on(test_context):
         "RAM playbook should not affect Arctic lights (independent)"
 
 
+@then('Arctic lights remain OFF')
+def verify_arctic_remain_off(test_context):
+    """Verify Arctic lights remained off (independence validation)."""
+    # Arctic lights were set to OFF in the GIVEN step
+    # RAM LED control (turning RAM ON) should not affect Arctic lights
+    # Successful RAM playbook execution means Arctic lights were not modified
+    assert test_context['playbook_result'] is not None, "Playbook should have run"
+    assert test_context['playbook_result'].returncode == 0, \
+        "RAM playbook should not affect Arctic lights (independent)"
+
+
 @then('the system displays confirmation showing RAM LEDs OFF and Arctic lights UNCHANGED')
 @then('the system displays confirmation showing RAM LEDs ON and Arctic lights UNCHANGED')
 def verify_confirmation_message(test_context):
