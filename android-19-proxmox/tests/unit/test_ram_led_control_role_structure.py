@@ -361,3 +361,56 @@ def test_should_deploy_ram_led_systemd_service_via_ansible_tasks(host_proxmox_ro
     # Oneshot services don't need to be started - liquidctl commands already applied state
     assert 'state' not in service_enable_task['systemd'], \
         "Service enable task should NOT have 'state: started' (oneshot service for boot persistence only)"
+
+
+def test_should_support_ram_led_status_checking(host_proxmox_role_path):
+    """RAM LED control should support status checking mode.
+
+    Validates:
+    - Tasks exist to check RAM LED systemd service status
+    - Tasks are conditional on ram_lights_action == 'status'
+    - Tasks check service file existence, service status, and configuration
+    - Status tasks follow RGB control pattern
+
+    This supports BDD Scenario 5: Check RAM LED Status
+    Linked to Task 5.1: Add status checking tasks for RAM LED
+    """
+    # Arrange
+    ram_led_control_task_file = host_proxmox_role_path / "tasks" / "ram-led-control.yml"
+
+    # Act
+    with open(ram_led_control_task_file) as f:
+        content = f.read()
+        tasks = yaml.safe_load(content)
+
+    # Assert - File contains ram_lights_action variable references
+    assert 'ram_lights_action' in content, \
+        "RAM LED control should support ram_lights_action variable"
+
+    # Assert - Has status checking conditional
+    assert "ram_lights_action == 'status'" in content, \
+        "RAM LED control should have tasks conditional on ram_lights_action == 'status'"
+
+    # Assert - Check for service status tasks
+    status_tasks_found = []
+    for task in tasks:
+        if isinstance(task, dict) and 'when' in task:
+            when_clause = task['when']
+            when_str = ' '.join(when_clause) if isinstance(when_clause, list) else str(when_clause)
+            if 'ram_lights_action' in when_str and 'status' in when_str:
+                status_tasks_found.append(task)
+
+    assert len(status_tasks_found) >= 3, \
+        f"Should have at least 3 status checking tasks (found {len(status_tasks_found)}): " \
+        f"check service file, get service status, read service config"
+
+    # Assert - Tasks use appropriate modules for status checking
+    status_task_modules = []
+    for task in status_tasks_found:
+        # Collect module names used in status tasks
+        for module in ['stat', 'systemd', 'slurp', 'debug']:
+            if module in task:
+                status_task_modules.append(module)
+
+    assert 'stat' in status_task_modules or 'systemd' in status_task_modules, \
+        "Status tasks should use 'stat' or 'systemd' module to check service"

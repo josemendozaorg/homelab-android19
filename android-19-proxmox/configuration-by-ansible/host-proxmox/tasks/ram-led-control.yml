@@ -57,6 +57,42 @@
     - ram
     - control
 
+# ============================================================================
+# Status Checking Tasks
+# ============================================================================
+
+- name: Check if RAM LED control service exists
+  stat:
+    path: /etc/systemd/system/ram-led-control.service
+  register: ram_service_file
+  when: ram_lights_action is defined and ram_lights_action == 'status'
+  tags:
+    - ram
+    - status
+
+- name: Get RAM LED control service status
+  systemd:
+    name: ram-led-control.service
+  register: ram_service_status
+  failed_when: false
+  when:
+    - ram_lights_action is defined and ram_lights_action == 'status'
+    - ram_service_file.stat.exists
+  tags:
+    - ram
+    - status
+
+- name: Read RAM LED systemd service configuration
+  slurp:
+    path: /etc/systemd/system/ram-led-control.service
+  register: ram_service_config
+  when:
+    - ram_lights_action is defined and ram_lights_action == 'status'
+    - ram_service_file.stat.exists
+  tags:
+    - ram
+    - status
+
 - name: Create systemd service for RAM LED control persistence
   template:
     src: ram-led-control.service.j2
