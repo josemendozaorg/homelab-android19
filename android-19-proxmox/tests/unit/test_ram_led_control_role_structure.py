@@ -414,3 +414,54 @@ def test_should_support_ram_led_status_checking(host_proxmox_role_path):
 
     assert 'stat' in status_task_modules or 'systemd' in status_task_modules, \
         "Status tasks should use 'stat' or 'systemd' module to check service"
+
+
+def test_should_display_formatted_ram_led_status_output(host_proxmox_role_path):
+    """RAM LED status output should be formatted clearly with Arctic lights comparison.
+
+    Validates:
+    - Status output task exists with debug module
+    - Output includes RAM LED state information
+    - Output mentions Arctic lights for comparison
+    - Output is formatted with visual separators
+    - Task is conditional on ram_lights_action == 'status'
+
+    This supports BDD Scenario 5: Check RAM LED Status
+    Linked to Task 5.2: Add formatted output for RAM LED status display
+    """
+    # Arrange
+    ram_led_control_task_file = host_proxmox_role_path / "tasks" / "ram-led-control.yml"
+
+    # Act
+    with open(ram_led_control_task_file) as f:
+        content = f.read()
+        tasks = yaml.safe_load(content)
+
+    # Assert - Has status display task (must check for == 'status', not != 'status')
+    status_display_task = None
+    for task in tasks:
+        if isinstance(task, dict) and 'debug' in task and 'when' in task:
+            when_clause = task['when']
+            when_str = ' '.join(when_clause) if isinstance(when_clause, list) else str(when_clause)
+            # Must be checking FOR status mode (not excluding it)
+            if 'ram_lights_action' in when_str and "== 'status'" in when_str:
+                status_display_task = task
+                break
+
+    assert status_display_task is not None, \
+        "Should have a debug task to display RAM LED status (conditional on ram_lights_action == 'status')"
+
+    # Assert - Output includes key information
+    debug_msg = str(status_display_task.get('debug', {}))
+    assert 'RAM LED' in debug_msg or 'RAM' in debug_msg, \
+        "Status output should mention RAM LEDs"
+
+    # Assert - Output mentions Arctic lights for comparison
+    assert 'Arctic' in debug_msg or 'RGB' in debug_msg, \
+        "Status output should show Arctic lights status for comparison"
+
+    # Assert - Has visual formatting
+    # Check for common formatting patterns (borders, headers, sections)
+    formatted = '═' in content or '─' in content or 'STATUS' in content.upper()
+    assert formatted, \
+        "Status output should have visual formatting (borders/headers/sections)"
