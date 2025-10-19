@@ -146,3 +146,41 @@ def test_should_define_ram_led_control_default_variables_in_host_proxmox_role(ho
 
     assert defaults['ram_lights_state'] in ['on', 'off'], \
         "ram_lights_state should be 'on' or 'off'"
+
+
+def test_should_include_ram_led_control_tasks_in_host_proxmox_main_tasks(host_proxmox_role_path):
+    """RAM LED control task file should be included in main task list.
+
+    Validates:
+    - tasks/main.yml includes ram-led-control.yml
+    - Include is enabled (not commented out)
+    - Include has proper conditional (ram_lights_enabled)
+
+    This supports BDD Scenario 1: Turn RAM LEDs Off Independently
+    Linked to Task 1.3: Include RAM LED control tasks in main playbook
+    """
+    # Arrange
+    main_tasks_file = host_proxmox_role_path / "tasks" / "main.yml"
+
+    # Act
+    assert main_tasks_file.exists(), "tasks/main.yml should exist"
+
+    with open(main_tasks_file) as f:
+        content = f.read()
+
+    # Assert - ram-led-control.yml is included
+    assert 'ram-led-control.yml' in content, \
+        "tasks/main.yml should include ram-led-control.yml task file"
+
+    # Assert - Include is not commented out
+    # Check that the line containing ram-led-control.yml doesn't start with #
+    for line in content.split('\n'):
+        if 'ram-led-control.yml' in line:
+            stripped = line.strip()
+            assert not stripped.startswith('#'), \
+                "ram-led-control.yml include should not be commented out"
+            break
+
+    # Assert - Has proper conditional
+    assert 'ram_lights_enabled' in content, \
+        "RAM LED control include should check ram_lights_enabled variable"
