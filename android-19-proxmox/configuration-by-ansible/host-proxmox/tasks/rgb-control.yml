@@ -14,12 +14,22 @@
 #
 # Tasks are executed when rgb_lights_enabled is true
 
+- name: Check if pip3 is already installed
+  command: pip3 --version
+  register: pip3_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - rgb
+    - installation
+
 - name: Ensure pip3 is installed
   apt:
     name: python3-pip
     state: present
-    update_cache: yes
+    update_cache: no  # Avoid enterprise repo issues, package should be available
   become: true
+  when: pip3_check.rc != 0  # Only install if pip3 isn't already available
   tags:
     - rgb
     - installation
