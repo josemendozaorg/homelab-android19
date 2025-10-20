@@ -531,10 +531,40 @@ def verify_ansible_install(test_context, project_root):
     assert 'docker' in docker_content and ('user' in docker_content or 'group' in docker_content), \
         "Should add user to docker group for non-root access"
 
-    # NOTE: Full Coolify installation validation happens in later tasks
-    # This step currently validates Docker dependency is configured
-    # TODO: Add Coolify binary/installation verification when Task 1.6 is complete
+    # Verify Coolify installation
+    install_coolify_path = (
+        project_root / "configuration-by-ansible" / "vm-coolify" /
+        "tasks" / "install-coolify.yml"
+    )
+
+    assert install_coolify_path.exists(), \
+        "vm-coolify role should have install-coolify.yml for Coolify installation"
+
+    # Load and verify Coolify installation tasks
+    with open(install_coolify_path, 'r') as f:
+        coolify_tasks = yaml.safe_load(f)
+
+    coolify_content = install_coolify_path.read_text()
+
+    # Verify official installation script is used
+    assert 'get.coollabs.io' in coolify_content or 'coolify_install_script_url' in coolify_content, \
+        "Should use official Coolify installation script"
+
+    # Verify idempotency check exists
+    has_stat_check = any(
+        'ansible.builtin.stat' in str(task) or 'stat' in task
+        for task in coolify_tasks
+    )
+    assert has_stat_check, \
+        "Should check if Coolify is already installed for idempotency"
+
+    # Verify systemd service management
+    assert 'systemd' in coolify_content and 'coolify' in coolify_content, \
+        "Should verify Coolify systemd service is running"
+
+    # Mark both dependencies configured
     test_context['docker_dependency_configured'] = True
+    test_context['coolify_installation_configured'] = True
 
 
 @then(parsers.parse('the Coolify web UI is accessible at "{url}"'))

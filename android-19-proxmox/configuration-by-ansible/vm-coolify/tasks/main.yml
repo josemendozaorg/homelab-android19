@@ -30,8 +30,11 @@
 - name: Include Docker installation tasks
   ansible.builtin.include_tasks: install-docker.yml
 
-# TODO: Implement Coolify installation tasks
-# - Coolify installation via official script
+# Install Coolify platform
+- name: Include Coolify installation tasks
+  ansible.builtin.include_tasks: install-coolify.yml
+
+# TODO: Implement remaining tasks
 # - Traefik reverse proxy setup
 # - Network configuration
 # - Initial admin account setup
