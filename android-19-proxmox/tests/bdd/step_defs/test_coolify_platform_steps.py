@@ -242,6 +242,46 @@ def run_deploy_command(terraform_runner, ansible_runner, project_root, test_cont
     test_context['terraform_result'] = tf_result
     print(f"✓ Terraform completed successfully")
 
+    # Phase 1.5: Enable SSH service via guest agent
+    # WORKAROUND: Ubuntu 24.04 cloud image doesn't enable SSH by default
+    # This will be removed once cloud-init is configured to enable SSH
+    print("\n=== Phase 1.5: Enable SSH Service (cloud-init workaround) ===")
+    import time
+    import subprocess
+
+    # Wait for cloud-init to complete
+    print("Waiting for cloud-init to complete...")
+    max_retries = 30
+    for attempt in range(max_retries):
+        result = subprocess.run(
+            "docker compose exec -T homelab-dev ssh root@192.168.0.19 'qm guest exec 160 -- cloud-init status'",
+            shell=True,
+            cwd=str(project_root),
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0 and 'status: done' in result.stdout:
+            print(f"✓ Cloud-init completed")
+            break
+        time.sleep(2)
+    else:
+        raise AssertionError("Cloud-init did not complete within expected time")
+
+    # Enable SSH service
+    print("Enabling SSH service via guest agent...")
+    ssh_enable_result = subprocess.run(
+        "docker compose exec -T homelab-dev ssh root@192.168.0.19 'qm guest exec 160 -- systemctl enable --now ssh'",
+        shell=True,
+        cwd=str(project_root),
+        capture_output=True,
+        text=True
+    )
+    assert ssh_enable_result.returncode == 0, \
+        f"Failed to enable SSH service:\n{ssh_enable_result.stderr}\n{ssh_enable_result.stdout}"
+
+    print("✓ SSH service enabled")
+    time.sleep(3)  # Give SSH a moment to start
+
     # Phase 2: Ansible - Configure VM with Coolify
     print("\n=== Phase 2: Ansible Configuration ===")
     playbook_path = "android-19-proxmox/configuration-by-ansible/vm-coolify-platform.yml"
