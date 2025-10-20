@@ -244,7 +244,7 @@ def run_deploy_command(terraform_runner, ansible_runner, project_root, test_cont
 
     # Phase 2: Ansible - Configure VM with Coolify
     print("\n=== Phase 2: Ansible Configuration ===")
-    playbook_path = "android-19-proxmox/playbooks/vm-coolify-platform.yml"
+    playbook_path = "android-19-proxmox/configuration-by-ansible/vm-coolify-platform.yml"
     ansible_result = ansible_runner(playbook_path)
 
     assert ansible_result.returncode == 0, \
