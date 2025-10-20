@@ -1,0 +1,17 @@
+---
+- name: Configure Coolify Platform VM
+  hosts: vm_coolify_platform
+  become: yes
+
+  vars:
+    # Load VM configuration from infrastructure catalog
+    vm_config: "{{ catalog.services[160] }}"
+
+  pre_tasks:
+    - name: Load infrastructure catalog
+      include_vars:
+        file: "{{ playbook_dir }}/../infrastructure-catalog.yml"
+        name: catalog
+
+  roles:
+    - vm-coolify
