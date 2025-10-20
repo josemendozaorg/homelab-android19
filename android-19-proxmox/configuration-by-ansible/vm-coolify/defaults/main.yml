@@ -1,0 +1,27 @@
+---
+# vm-coolify role defaults
+# Coolify Platform - Self-hosted PaaS for application deployment
+
+# NOTE: VM configuration (ID, name, IP, resources) comes from infrastructure-catalog.yml
+# The playbook loads this automatically from catalog.services[160]
+# Do not duplicate VM config here - maintain single source of truth in catalog
+
+# Coolify installation configuration
+coolify_version: "latest"  # Coolify version to install
+coolify_install_script_url: "https://get.coollabs.io/coolify/install.sh"
+
+# Coolify service configuration
+coolify_web_port: 8000  # Coolify web UI port
+coolify_domain: "coolify.homelab.local"  # Local domain for Coolify
+
+# Docker configuration
+docker_compose_version: "latest"  # Docker Compose version
+
+# Traefik reverse proxy configuration
+traefik_enabled: true  # Enable Traefik reverse proxy
+traefik_http_port: 80
+traefik_https_port: 443
+
+# Let's Encrypt configuration
+letsencrypt_email: "admin@homelab.local"  # Email for Let's Encrypt
+letsencrypt_staging: true  # Use staging environment initially (recommended for testing)
