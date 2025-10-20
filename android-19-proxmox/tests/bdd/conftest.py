@@ -115,3 +115,42 @@ def ssh_runner(ansible_exec, project_root):
         return result
 
     return run
+
+
+@pytest.fixture
+def terraform_runner(ansible_exec, project_root):
+    """Helper to run Terraform commands via Docker."""
+    def run(command, cwd=None, capture_output=True):
+        """Run Terraform command.
+
+        Args:
+            command: Terraform command (e.g., 'init', 'plan', 'apply')
+            cwd: Working directory (default: provisioning-by-terraform)
+            capture_output: Capture stdout/stderr (default: True)
+
+        Returns:
+            subprocess.CompletedProcess result
+        """
+        if cwd is None:
+            cwd = "android-19-proxmox/provisioning-by-terraform"
+
+        # Build terraform command
+        tf_cmd = f"{ansible_exec} terraform -chdir={cwd} {command}"
+
+        result = subprocess.run(
+            tf_cmd,
+            shell=True,
+            cwd=str(project_root),
+            capture_output=capture_output,
+            text=True,
+        )
+
+        return result
+
+    return run
+
+
+@pytest.fixture(scope="session")
+def test_context():
+    """Shared test context for BDD scenarios."""
+    return {}

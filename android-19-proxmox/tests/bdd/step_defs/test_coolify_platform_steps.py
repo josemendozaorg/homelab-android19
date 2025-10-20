@@ -37,25 +37,29 @@ def test_context():
 @given('the Proxmox host "192.168.0.19" is accessible')
 def proxmox_accessible(ssh_runner):
     """Verify Proxmox host is accessible via SSH."""
-    raise NotImplementedError(
-        "Step not yet implemented: Verify Proxmox host connectivity\n"
-        "Implementation needed:\n"
-        "1. Use ssh_runner fixture to connect to 192.168.0.19\n"
-        "2. Run basic command (e.g., 'uname -a')\n"
-        "3. Assert returncode == 0"
-    )
+    # Test SSH connectivity to Proxmox host
+    result = ssh_runner("192.168.0.19", "uname -a")
+
+    assert result.returncode == 0, \
+        f"Failed to connect to Proxmox host 192.168.0.19:\n{result.stderr}"
+
+    # Verify it's a Linux system
+    assert "Linux" in result.stdout, \
+        f"Unexpected response from Proxmox host:\n{result.stdout}"
 
 
 @given('the cloud image template VM 9000 exists')
 def cloud_template_exists(ssh_runner):
     """Verify cloud image template (VM 9000) exists on Proxmox."""
-    raise NotImplementedError(
-        "Step not yet implemented: Check VM 9000 template exists\n"
-        "Implementation needed:\n"
-        "1. Run 'qm config 9000' via ssh_runner on Proxmox host\n"
-        "2. Assert command succeeds and shows template configuration\n"
-        "3. Verify it's marked as a template"
-    )
+    # Check if template VM 9000 exists
+    result = ssh_runner("192.168.0.19", "qm config 9000")
+
+    assert result.returncode == 0, \
+        f"Cloud image template VM 9000 does not exist. Run 'make proxmox-host-cloud-templates' first.\n{result.stderr}"
+
+    # Verify it's marked as a template
+    assert "template:" in result.stdout, \
+        f"VM 9000 exists but is not marked as a template:\n{result.stdout}"
 
 
 @given('the infrastructure catalog defines VM 160 for Coolify')
