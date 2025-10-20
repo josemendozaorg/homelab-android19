@@ -26,8 +26,11 @@
 - name: Include cloud-init verification tasks
   ansible.builtin.include_tasks: verify-cloudinit.yml
 
+# Install Docker and Docker Compose
+- name: Include Docker installation tasks
+  ansible.builtin.include_tasks: install-docker.yml
+
 # TODO: Implement Coolify installation tasks
-# - Docker installation
 # - Coolify installation via official script
 # - Traefik reverse proxy setup
 # - Network configuration
