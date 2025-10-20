@@ -17,9 +17,9 @@ pytest_plugins = [
 
 @pytest.fixture(scope="session")
 def project_root():
-    """Get the project root directory."""
-    # tests/bdd/conftest.py -> tests/bdd -> tests -> android-19-proxmox -> homelab-android19
-    return Path(__file__).parent.parent.parent.parent
+    """Get the project root directory (android-19-proxmox)."""
+    # tests/bdd/conftest.py -> tests/bdd -> tests -> android-19-proxmox
+    return Path(__file__).parent.parent.parent
 
 
 @pytest.fixture(scope="session")

@@ -13,6 +13,7 @@ def project_root():
 @pytest.fixture(scope="session")
 def catalog(project_root):
     """Load infrastructure catalog once for all tests."""
+    # project_root is android-19-proxmox directory
     catalog_path = project_root / "infrastructure-catalog.yml"
     with open(catalog_path) as f:
         return yaml.safe_load(f)
