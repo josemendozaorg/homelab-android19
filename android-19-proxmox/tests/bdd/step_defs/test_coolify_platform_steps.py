@@ -642,7 +642,7 @@ def verify_web_ui_accessible(url, ssh_runner, test_context):
 
     for attempt in range(max_retries):
         # Check if Coolify service is running on the VM
-        result = ssh_runner("192.168.0.160", "docker ps | grep -i coolify || systemctl status coolify || true")
+        result = ssh_runner("192.168.0.160", "docker ps | grep -i coolify || systemctl status coolify || true", user="ubuntu")
 
         if result.returncode == 0 and ('coolify' in result.stdout.lower() or 'running' in result.stdout.lower()):
             print(f"✓ Coolify service detected (attempt {attempt + 1}/{max_retries})")
@@ -654,7 +654,7 @@ def verify_web_ui_accessible(url, ssh_runner, test_context):
             time.sleep(retry_delay)
     else:
         # If we exhausted retries, show diagnostic info
-        status_result = ssh_runner("192.168.0.160", "systemctl status coolify; docker ps -a")
+        status_result = ssh_runner("192.168.0.160", "systemctl status coolify; docker ps -a", user="ubuntu")
         raise AssertionError(
             f"Coolify service not running after {max_retries * retry_delay} seconds.\n"
             f"Service status:\n{status_result.stdout}\n{status_result.stderr}"
