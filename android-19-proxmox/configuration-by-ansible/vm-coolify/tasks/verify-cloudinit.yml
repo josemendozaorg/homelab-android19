@@ -2,11 +2,23 @@
 # Cloud-init verification tasks
 # Verify cloud-init completed successfully before proceeding with Coolify installation
 
-- name: Check cloud-init status completed successfully
+- name: Wait for cloud-init to complete
   ansible.builtin.command: cloud-init status --long
   register: cloudinit_status
   changed_when: false
-  failed_when: "'status: done' not in cloudinit_status.stdout"
+  retries: 60
+  delay: 5
+  until: "'status: done' in cloudinit_status.stdout"
+  failed_when: false
+
+- name: Verify cloud-init completed successfully
+  ansible.builtin.assert:
+    that:
+      - "'status: done' in cloudinit_status.stdout"
+    fail_msg: |
+      Cloud-init did not complete within expected time.
+      Status: {{ cloudinit_status.stdout | default('unknown') }}
+    success_msg: "Cloud-init completed successfully"
 
 - name: Verify SSH authorized_keys installed by cloud-init
   ansible.builtin.stat:

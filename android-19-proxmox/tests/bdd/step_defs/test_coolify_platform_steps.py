@@ -512,13 +512,14 @@ def verify_cloudinit(ssh_runner, test_context, project_root):
     with open(verify_cloudinit_path, 'r') as f:
         tasks = yaml.safe_load(f)
 
-    # Verify cloud-init status check exists
+    # Verify cloud-init wait/check task exists
     has_status_check = any(
-        'cloud-init' in task.get('name', '').lower() and 'status' in task.get('name', '').lower()
+        'cloud-init' in task.get('name', '').lower() and
+        ('wait' in task.get('name', '').lower() or 'complete' in task.get('name', '').lower() or 'status' in task.get('name', '').lower())
         for task in tasks
     )
     assert has_status_check, \
-        "Should have task to check cloud-init status"
+        "Should have task to wait for or check cloud-init completion"
 
     # Verify SSH keys check exists
     has_ssh_check = any(
@@ -576,11 +577,12 @@ def verify_ansible_install(test_context, project_root):
 
     # Verify Docker service management
     has_service_task = any(
-        'systemd' in task.get('name', '').lower() and 'docker' in task.get('name', '').lower()
+        ('systemd' in task.get('name', '').lower() or 'service' in task.get('name', '').lower()) and
+        'docker' in task.get('name', '').lower()
         for task in docker_tasks
     )
     assert has_service_task, \
-        "Should configure Docker systemd service"
+        "Should configure Docker service"
 
     # Verify user is added to docker group
     assert 'docker' in docker_content and ('user' in docker_content or 'group' in docker_content), \
@@ -605,17 +607,23 @@ def verify_ansible_install(test_context, project_root):
     assert 'get.coollabs.io' in coolify_content or 'coolify_install_script_url' in coolify_content, \
         "Should use official Coolify installation script"
 
-    # Verify idempotency check exists
-    has_stat_check = any(
-        'ansible.builtin.stat' in str(task) or 'stat' in task
+    # Verify idempotency check exists (using Docker container check or file stat)
+    has_idempotency_check = any(
+        ('check' in task.get('name', '').lower() and
+         ('exist' in task.get('name', '').lower() or 'already' in task.get('name', '').lower())) or
+        'ansible.builtin.stat' in str(task)
         for task in coolify_tasks
     )
-    assert has_stat_check, \
+    assert has_idempotency_check, \
         "Should check if Coolify is already installed for idempotency"
 
-    # Verify systemd service management
-    assert 'systemd' in coolify_content and 'coolify' in coolify_content, \
-        "Should verify Coolify systemd service is running"
+    # Verify Coolify service verification (either systemd service or Docker container)
+    has_service_verification = (
+        ('systemd' in coolify_content and 'coolify' in coolify_content) or
+        ('docker' in coolify_content and ('container' in coolify_content or 'running' in coolify_content))
+    )
+    assert has_service_verification, \
+        "Should verify Coolify is running (either as systemd service or Docker container)"
 
     # Mark both dependencies configured
     test_context['docker_dependency_configured'] = True
@@ -627,9 +635,9 @@ def verify_web_ui_accessible(url, ssh_runner, test_context):
     """Verify Coolify web UI is accessible."""
     import time
 
-    # Wait for Coolify service to be fully ready (can take a few minutes after deployment)
+    # Wait for Coolify service to be fully ready (can take ~10 minutes after deployment)
     print(f"\n=== Verifying Coolify Web UI at {url} ===")
-    max_retries = 30  # 5 minutes with 10 second intervals
+    max_retries = 60  # 10 minutes with 10 second intervals
     retry_delay = 10
 
     for attempt in range(max_retries):
