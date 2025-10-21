@@ -242,45 +242,42 @@ def run_deploy_command(terraform_runner, ansible_runner, project_root, test_cont
     test_context['terraform_result'] = tf_result
     print(f"✓ Terraform completed successfully")
 
-    # Phase 1.5: Enable SSH service via guest agent
-    # WORKAROUND: Ubuntu 24.04 cloud image doesn't enable SSH by default
-    # This will be removed once cloud-init is configured to enable SSH
-    print("\n=== Phase 1.5: Enable SSH Service (cloud-init workaround) ===")
+    # Phase 1.5: Wait for SSH to become available (cloud-init completion)
+    print("\n=== Phase 1.5: Waiting for VM to be ready (SSH available) ===")
     import time
-    import subprocess
+    import socket
 
-    # Wait for cloud-init to complete
-    print("Waiting for cloud-init to complete...")
-    max_retries = 30
-    for attempt in range(max_retries):
-        result = subprocess.run(
-            "docker compose exec -T homelab-dev ssh root@192.168.0.19 'qm guest exec 160 -- cloud-init status'",
-            shell=True,
-            cwd=str(project_root),
-            capture_output=True,
-            text=True
-        )
-        if result.returncode == 0 and 'status: done' in result.stdout:
-            print(f"✓ Cloud-init completed")
-            break
-        time.sleep(2)
+    vm_ip = "192.168.0.160"
+    ssh_port = 22
+    max_wait_seconds = 300  # 5 minutes
+    check_interval = 5  # Check every 5 seconds
+
+    print(f"Waiting for SSH on {vm_ip}:{ssh_port} (timeout: {max_wait_seconds}s)...")
+    start_time = time.time()
+
+    while time.time() - start_time < max_wait_seconds:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
+            result = sock.connect_ex((vm_ip, ssh_port))
+            sock.close()
+
+            if result == 0:
+                elapsed = int(time.time() - start_time)
+                print(f"✓ SSH is available (took {elapsed}s)")
+                time.sleep(5)  # Give SSH a moment to fully initialize
+                break
+        except socket.error:
+            pass
+
+        elapsed = int(time.time() - start_time)
+        print(f"  Waiting for SSH... ({elapsed}s elapsed)")
+        time.sleep(check_interval)
     else:
-        raise AssertionError("Cloud-init did not complete within expected time")
-
-    # Enable SSH service
-    print("Enabling SSH service via guest agent...")
-    ssh_enable_result = subprocess.run(
-        "docker compose exec -T homelab-dev ssh root@192.168.0.19 'qm guest exec 160 -- systemctl enable --now ssh'",
-        shell=True,
-        cwd=str(project_root),
-        capture_output=True,
-        text=True
-    )
-    assert ssh_enable_result.returncode == 0, \
-        f"Failed to enable SSH service:\n{ssh_enable_result.stderr}\n{ssh_enable_result.stdout}"
-
-    print("✓ SSH service enabled")
-    time.sleep(3)  # Give SSH a moment to start
+        raise AssertionError(
+            f"SSH did not become available on {vm_ip}:{ssh_port} within {max_wait_seconds}s. "
+            f"Cloud-init may have failed or SSH service is not enabled."
+        )
 
     # Phase 2: Ansible - Configure VM with Coolify
     print("\n=== Phase 2: Ansible Configuration ===")
