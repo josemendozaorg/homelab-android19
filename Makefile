@@ -257,6 +257,22 @@ deploy-vm-llm-aimachine-testing: proxmox-tf-init proxmox-host-cloud-templates pr
 	@echo "🎮 GPU: NVIDIA RTX 5060Ti with passthrough enabled"
 	@echo "🧪 Testing instance with half resources (16 cores, 25GB RAM, 250GB disk)"
 
+deploy-vm-coolify-containerplatform: proxmox-tf-init proxmox-host-cloud-templates ## Deploy Coolify container platform (Ubuntu Server + Docker + Coolify)
+	@echo "🐳 Deploying Coolify Container Platform..."
+	@echo "✅ Prerequisites complete: Terraform initialized, cloud templates ready"
+	@echo ""
+	@echo "📋 Step 1/3: Creating VM with Terraform"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"160\\\"]"
+	@echo "⏳ Waiting 30s for VM to boot and cloud-init to complete..."
+	@sleep 30
+	@echo "📋 Step 2/3: Installing Docker and Coolify"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/vm-coolify-platform.yml
+	@echo "📋 Step 3/3: Verifying deployment"
+	@echo "✅ Coolify platform deployment complete!"
+	@echo "🌐 Coolify Web UI: https://192.168.0.160:8000"
+	@echo "🐳 Container platform ready for deploying applications"
+	@echo "📝 Next step: Access web UI to create admin account and configure projects"
+
 # All Machines
 all-deploy: ## Deploy configuration to all machines
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml android-19-proxmox/configuration-by-ansible/playbook.yml
