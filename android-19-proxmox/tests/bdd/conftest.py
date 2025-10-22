@@ -102,7 +102,7 @@ def ssh_runner(ansible_exec, project_root):
         Returns:
             subprocess.CompletedProcess result
         """
-        ssh_cmd = f"{ansible_exec} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {user}@{host} '{command}'"
+        ssh_cmd = f"{ansible_exec} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null {user}@{host} '{command}'"
 
         result = subprocess.run(
             ssh_cmd,
