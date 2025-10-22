@@ -1,0 +1,58 @@
+---
+# Cloud-init verification tasks
+# Verify cloud-init completed successfully before proceeding with Coolify installation
+
+- name: Wait for cloud-init to complete
+  ansible.builtin.command: cloud-init status --long
+  register: cloudinit_status
+  changed_when: false
+  retries: 60
+  delay: 5
+  until: "'status: done' in cloudinit_status.stdout"
+  failed_when: false
+
+- name: Verify cloud-init completed successfully
+  ansible.builtin.assert:
+    that:
+      - "'status: done' in cloudinit_status.stdout"
+    fail_msg: |
+      Cloud-init did not complete within expected time.
+      Status: {{ cloudinit_status.stdout | default('unknown') }}
+    success_msg: "Cloud-init completed successfully"
+
+- name: Verify SSH authorized_keys installed by cloud-init
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.ssh/authorized_keys"
+  register: ssh_keys_stat
+  failed_when: not ssh_keys_stat.stat.exists or ssh_keys_stat.stat.size == 0
+
+- name: Install QEMU guest agent
+  ansible.builtin.apt:
+    name: qemu-guest-agent
+    state: present
+    update_cache: yes
+  become: yes
+  when: vm_config.agent | default(false)
+
+- name: Start and enable QEMU guest agent service
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+    state: started
+    enabled: yes
+  become: yes
+  when: vm_config.agent | default(false)
+
+- name: Verify QEMU guest agent service running
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+  register: guest_agent_status
+  failed_when: guest_agent_status.status.ActiveState != 'active'
+  when: vm_config.agent | default(false)
+
+- name: Verify network configuration matches catalog
+  ansible.builtin.assert:
+    that:
+      - ansible_default_ipv4.address is defined
+      - ansible_default_ipv4.address == vm_config.ip
+    fail_msg: "VM IP address {{ ansible_default_ipv4.address | default('unknown') }} does not match catalog IP {{ vm_config.ip }}"
+    success_msg: "Network configured correctly: {{ vm_config.ip }}"

@@ -37,5 +37,14 @@ all:
           vm_id: 141
           vm_type: ai_llm
           description: "Testing instance - GPU-accelerated Ubuntu Server VM for AI/LLM workloads"
+    platform_vms:
+      hosts:
+        vm_coolify_platform:
+          ansible_host: 192.168.0.160
+          ansible_user: ubuntu
+          ansible_python_interpreter: /usr/bin/python3
+          vm_id: 160
+          vm_type: platform
+          description: "Coolify - Self-hosted PaaS platform for application deployment"
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

@@ -1,0 +1,40 @@
+---
+# vm-coolify Role
+# Coolify Platform - Self-hosted PaaS for application deployment with automatic SSL and GitHub integration
+
+- name: Display VM configuration from catalog
+  ansible.builtin.debug:
+    msg: |
+      🚀 Configuring Coolify Platform VM
+
+      📋 VM Configuration (from infrastructure-catalog.yml):
+      - VM ID: {{ vm_config.id | default('160') }}
+      - VM Name: {{ vm_config.name }}
+      - IP Address: {{ vm_config.ip }}
+      - CPU: {{ vm_config.resources.cores }} cores
+      - RAM: {{ (vm_config.resources.memory / 1024) | round(1) }}GB
+      - Disk: {{ vm_config.resources.disk }}GB
+      - Cloud-init: {{ vm_config.cloud_init | default(false) }}
+
+      🎯 Coolify Configuration:
+      - Web UI Port: {{ coolify_web_port }}
+      - Domain: {{ coolify_domain }}
+      - Traefik Enabled: {{ traefik_enabled }}
+      - Let's Encrypt Staging: {{ letsencrypt_staging }}
+
+# Verify cloud-init completed successfully before proceeding
+- name: Include cloud-init verification tasks
+  ansible.builtin.include_tasks: verify-cloudinit.yml
+
+# Install Docker and Docker Compose
+- name: Include Docker installation tasks
+  ansible.builtin.include_tasks: install-docker.yml
+
+# Install Coolify platform
+- name: Include Coolify installation tasks
+  ansible.builtin.include_tasks: install-coolify.yml
+
+# TODO: Implement remaining tasks
+# - Traefik reverse proxy setup
+# - Network configuration
+# - Initial admin account setup

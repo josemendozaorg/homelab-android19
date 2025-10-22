@@ -11,14 +11,15 @@ pytest_plugins = [
     "tests.bdd.step_defs.test_vm_llm_gpu_passthrough_steps",
     "tests.bdd.step_defs.test_rgb_led_control_steps",
     "tests.bdd.step_defs.test_ram_led_control_steps",
+    "tests.bdd.step_defs.test_coolify_platform_steps",
 ]
 
 
 @pytest.fixture(scope="session")
 def project_root():
-    """Get the project root directory."""
-    # tests/bdd/conftest.py -> tests/bdd -> tests -> android-19-proxmox -> homelab-android19
-    return Path(__file__).parent.parent.parent.parent
+    """Get the project root directory (android-19-proxmox)."""
+    # tests/bdd/conftest.py -> tests/bdd -> tests -> android-19-proxmox
+    return Path(__file__).parent.parent.parent
 
 
 @pytest.fixture(scope="session")
@@ -101,7 +102,7 @@ def ssh_runner(ansible_exec, project_root):
         Returns:
             subprocess.CompletedProcess result
         """
-        ssh_cmd = f"{ansible_exec} ssh -o StrictHostKeyChecking=no {user}@{host} '{command}'"
+        ssh_cmd = f"{ansible_exec} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null {user}@{host} '{command}'"
 
         result = subprocess.run(
             ssh_cmd,
@@ -114,3 +115,42 @@ def ssh_runner(ansible_exec, project_root):
         return result
 
     return run
+
+
+@pytest.fixture
+def terraform_runner(ansible_exec, project_root):
+    """Helper to run Terraform commands via Docker."""
+    def run(command, cwd=None, capture_output=True):
+        """Run Terraform command.
+
+        Args:
+            command: Terraform command (e.g., 'init', 'plan', 'apply')
+            cwd: Working directory (default: provisioning-by-terraform)
+            capture_output: Capture stdout/stderr (default: True)
+
+        Returns:
+            subprocess.CompletedProcess result
+        """
+        if cwd is None:
+            cwd = "android-19-proxmox/provisioning-by-terraform"
+
+        # Build terraform command
+        tf_cmd = f"{ansible_exec} terraform -chdir={cwd} {command}"
+
+        result = subprocess.run(
+            tf_cmd,
+            shell=True,
+            cwd=str(project_root),
+            capture_output=capture_output,
+            text=True,
+        )
+
+        return result
+
+    return run
+
+
+@pytest.fixture(scope="session")
+def test_context():
+    """Shared test context for BDD scenarios."""
+    return {}

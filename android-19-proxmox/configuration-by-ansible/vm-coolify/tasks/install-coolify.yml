@@ -1,0 +1,38 @@
+---
+# Coolify installation tasks
+# Install Coolify platform using official installation script
+
+- name: Check if Coolify container already exists
+  ansible.builtin.shell: docker ps -a --filter "name=coolify" --format {% raw %}'{{.Names}}'{% endraw %}
+  register: coolify_container_check
+  changed_when: false
+  failed_when: false
+
+- name: Download Coolify installation script
+  ansible.builtin.get_url:
+    url: "{{ coolify_install_script_url }}"
+    dest: /tmp/coolify-install.sh
+    mode: '0755'
+  when: coolify_container_check.stdout == ""
+  become: yes
+
+- name: Execute Coolify installation script
+  ansible.builtin.shell: /tmp/coolify-install.sh
+  when: coolify_container_check.stdout == ""
+  become: yes
+  register: coolify_install_result
+
+- name: Wait for Coolify container to start
+  ansible.builtin.shell: docker ps --filter "name=coolify" --filter "status=running" --format {% raw %}'{{.Names}}'{% endraw %}
+  register: coolify_running
+  retries: 30
+  delay: 2
+  until: "'coolify' in coolify_running.stdout"
+  changed_when: false
+
+- name: Verify Coolify container is running
+  ansible.builtin.assert:
+    that:
+      - "'coolify' in coolify_running.stdout"
+    fail_msg: "Coolify container is not running"
+    success_msg: "Coolify is running in Docker container"
