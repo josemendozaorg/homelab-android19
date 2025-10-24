@@ -233,3 +233,80 @@ def test_should_use_docker_compose_exec_when_running_terraform_commands():
         f"Found {len(violations)} Terraform command(s) not using container pattern:\n" + \
         "\n".join(violations) + \
         "\n\nAll Terraform commands must use $(DOCKER_COMPOSE) exec -T homelab-dev sh -c pattern"
+
+
+def test_should_not_have_any_direct_host_command_execution():
+    """
+    Comprehensive validation: No direct host command execution allowed.
+
+    BEHAVIOR: All tool commands must execute through container patterns.
+    This is the final catch-all test to ensure 100% compliance with the
+    specification requirement that ALL command executions happen through
+    the Docker development container.
+
+    PROHIBITED PATTERNS:
+    - Direct bash/sh commands (except within container exec)
+    - Direct docker commands (must use $(DOCKER_COMPOSE))
+    - Direct ssh commands
+    - Direct ansible/ansible-playbook (must use $(ANSIBLE_EXEC/INTERACTIVE))
+    - Direct terraform commands (must use container exec pattern)
+
+    ALLOWED PATTERNS:
+    - $(DOCKER_COMPOSE) exec ... bash/sh/terraform
+    - $(ANSIBLE_EXEC) ansible...
+    - $(ANSIBLE_INTERACTIVE) ansible...
+    - $(MAKE) ... (internal make commands)
+
+    Related to specs/makefile-command-standardization/spec.md (Scenario 7)
+    """
+    # Get Makefile path
+    project_root = Path(__file__).parent.parent.parent
+    makefile_path = project_root / "Makefile"
+
+    assert makefile_path.exists(), f"Makefile not found at {makefile_path}"
+
+    # Read Makefile
+    with open(makefile_path, 'r') as f:
+        makefile_content = f.read()
+
+    # Extract all command lines (tab-indented lines)
+    command_lines = []
+    for line in makefile_content.split('\n'):
+        if line.startswith('\t'):
+            command_lines.append(line.strip())
+
+    # Define prohibited direct command patterns
+    # These commands should NEVER run directly on the host
+    prohibited_commands = {
+        'ssh': r'\bssh\s+',
+    }
+
+    # Check each command line for violations
+    violations = []
+
+    for line_num, line in enumerate(command_lines, 1):
+        # Skip comments, variable definitions
+        if line.startswith('#') or ':=' in line:
+            continue
+
+        # Skip echo statements (may mention command names)
+        if re.match(r'@?echo\s+', line):
+            continue
+
+        # Skip $(MAKE) commands (internal make recursion)
+        if '$(MAKE)' in line:
+            continue
+
+        # Skip lines that already use approved container patterns
+        if '$(DOCKER_COMPOSE)' in line or '$(ANSIBLE_EXEC)' in line or '$(ANSIBLE_INTERACTIVE)' in line:
+            continue
+
+        # Check for prohibited direct command patterns
+        for cmd_name, cmd_pattern in prohibited_commands.items():
+            if re.search(cmd_pattern, line):
+                violations.append(f"Line {line_num}: Direct '{cmd_name}' command - {line}")
+
+    assert len(violations) == 0, \
+        f"Found {len(violations)} direct host command(s) violating container execution policy:\n" + \
+        "\n".join(violations) + \
+        "\n\nAll tool executions must use container patterns: $(DOCKER_COMPOSE), $(ANSIBLE_EXEC), or $(ANSIBLE_INTERACTIVE)"
