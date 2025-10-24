@@ -162,3 +162,74 @@ def test_should_use_ansible_variables_when_running_ansible_commands():
         f"Found {len(violations)} Ansible command(s) not using container variables:\n" + \
         "\n".join(violations) + \
         "\n\nAll Ansible commands must use $(ANSIBLE_EXEC) or $(ANSIBLE_INTERACTIVE)"
+
+
+def test_should_use_docker_compose_exec_when_running_terraform_commands():
+    """
+    Validates that all Terraform commands use container execution pattern.
+
+    BEHAVIOR: Any Makefile target running Terraform should:
+    - Use $(DOCKER_COMPOSE) exec -T homelab-dev for container execution
+    - Use sh -c wrapper for directory changes
+    - NOT run direct 'terraform' commands on host system
+
+    RATIONALE: Direct 'terraform' commands run on the host system with host's
+    Terraform installation, not in the controlled container environment with
+    pinned versions and all dependencies.
+
+    EXPECTED PATTERN: $(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd ... && terraform ..."
+    """
+    # Get Makefile path
+    project_root = Path(__file__).parent.parent.parent
+    makefile_path = project_root / "Makefile"
+
+    assert makefile_path.exists(), f"Makefile not found at {makefile_path}"
+
+    # Read Makefile
+    with open(makefile_path, 'r') as f:
+        makefile_content = f.read()
+
+    # Extract all command lines (tab-indented lines)
+    command_lines = []
+    for line in makefile_content.split('\n'):
+        if line.startswith('\t'):
+            command_lines.append(line.strip())
+
+    # Check for direct terraform commands
+    violations = []
+    for line_num, line in enumerate(command_lines, 1):
+        # Skip variable definitions, comments, and echo statements
+        if line.startswith('#') or ':=' in line:
+            continue
+
+        # Skip echo statements (they may mention 'terraform' in messages)
+        if re.match(r'@?echo\s+', line):
+            continue
+
+        # Skip $(MAKE) commands (they may have 'Terraform' in section names)
+        if '$(MAKE)' in line:
+            continue
+
+        # Check if line contains actual 'terraform' command (not just the word in quotes)
+        # Look for terraform as a command, not just anywhere in the line
+        if re.search(r'\bterraform\s+', line, re.IGNORECASE):
+            # Ensure it uses $(DOCKER_COMPOSE) exec pattern
+            if '$(DOCKER_COMPOSE)' not in line:
+                violations.append(f"Line {line_num}: Missing $(DOCKER_COMPOSE) - {line}")
+                continue
+
+            # Ensure it uses exec
+            if 'exec' not in line:
+                violations.append(f"Line {line_num}: Missing 'exec' - {line}")
+                continue
+
+            # Ensure it uses sh -c wrapper for directory changes
+            # (This is important for cd commands before terraform)
+            if 'sh -c' not in line:
+                violations.append(f"Line {line_num}: Missing 'sh -c' wrapper - {line}")
+                continue
+
+    assert len(violations) == 0, \
+        f"Found {len(violations)} Terraform command(s) not using container pattern:\n" + \
+        "\n".join(violations) + \
+        "\n\nAll Terraform commands must use $(DOCKER_COMPOSE) exec -T homelab-dev sh -c pattern"
