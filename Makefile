@@ -63,7 +63,7 @@ help-section:
 
 # Environment
 setup-ssh: ## Set up SSH key authentication for Ansible
-	@bash scripts/setup-ssh.sh
+	@$(DOCKER_COMPOSE) exec -T homelab-dev bash scripts/setup-ssh.sh
 
 env-all: env-setup test-ping ## Build environment and test connections
 
