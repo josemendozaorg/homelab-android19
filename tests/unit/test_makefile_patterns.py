@@ -55,3 +55,51 @@ def test_should_execute_setup_ssh_in_container_when_target_invoked():
 
     assert 'homelab-dev' in command, \
         f"setup-ssh should execute in homelab-dev container: {command}"
+
+
+def test_should_not_use_direct_docker_commands_when_cleaning_environment():
+    """
+    Validates that env-clean target does not use direct docker commands on host.
+
+    BEHAVIOR: The env-clean target should only use Docker Compose commands
+    (via $(DOCKER_COMPOSE) variable) and should NOT execute direct 'docker'
+    commands on the host system.
+
+    RATIONALE: Direct 'docker' commands affect ALL Docker resources on the host,
+    not just this project. The target should only clean up project-specific
+    resources using Docker Compose.
+
+    CURRENT STATE: Uses 'docker system prune -f' (non-compliant)
+    EXPECTED: Should only use $(DOCKER_COMPOSE) commands
+    """
+    # Get Makefile path
+    project_root = Path(__file__).parent.parent.parent
+    makefile_path = project_root / "Makefile"
+
+    assert makefile_path.exists(), f"Makefile not found at {makefile_path}"
+
+    # Read Makefile
+    with open(makefile_path, 'r') as f:
+        makefile_content = f.read()
+
+    # Find the env-clean target with all its commands
+    # Pattern: env-clean: (anything) followed by all tab-indented commands
+    env_clean_pattern = r'env-clean:.*?\n((?:\t.+\n)+)'
+    match = re.search(env_clean_pattern, makefile_content, re.MULTILINE)
+
+    assert match, "env-clean target not found in Makefile"
+
+    commands_block = match.group(1)
+
+    # Check that NO direct 'docker' commands are used
+    # Direct docker commands look like: docker <subcommand>
+    # But $(DOCKER_COMPOSE) is okay
+    # Pattern: match 'docker' NOT preceded by $( or other make variable syntax
+    direct_docker_pattern = r'(?<!\$\()(?<!\w)docker\s+'
+
+    direct_docker_match = re.search(direct_docker_pattern, commands_block)
+
+    assert not direct_docker_match, \
+        f"env-clean uses direct docker command (non-compliant). " \
+        f"Found: {direct_docker_match.group(0) if direct_docker_match else 'N/A'}. " \
+        f"Commands block: {commands_block.strip()}"

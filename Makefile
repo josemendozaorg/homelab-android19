@@ -76,7 +76,6 @@ env-shell: ## Open interactive shell in development container
 
 env-clean: ## Stop containers and clean Docker resources
 	$(DOCKER_COMPOSE) down -v
-	docker system prune -f
 
 env-check: ## Validate Ansible configuration
 	$(ANSIBLE_EXEC) ansible-inventory --list --inventory $(INVENTORY)
