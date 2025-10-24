@@ -102,6 +102,12 @@ adguard_dns_rewrites:
   # Service-specific domains for easy access
   - domain: "dns.homelab"
     ip: "{{ adguard_static_ip }}"
+  - domain: "coolify.homelab"
+    ip: "{{ catalog.services[160].ip }}"
+  - domain: "ollama.homelab"
+    ip: "{{ catalog.services[140].ip }}"
+  - domain: "vllm.homelab"
+    ip: "{{ catalog.services[140].ip }}"
 
 # Custom filtering rules for homelab
 adguard_custom_filtering_rules:

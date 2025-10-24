@@ -63,7 +63,7 @@ help-section:
 
 # Environment
 setup-ssh: ## Set up SSH key authentication for Ansible
-	@bash scripts/setup-ssh.sh
+	@$(DOCKER_COMPOSE) exec -T homelab-dev bash scripts/setup-ssh.sh
 
 env-all: env-setup test-ping ## Build environment and test connections
 
@@ -76,7 +76,6 @@ env-shell: ## Open interactive shell in development container
 
 env-clean: ## Stop containers and clean Docker resources
 	$(DOCKER_COMPOSE) down -v
-	docker system prune -f
 
 env-check: ## Validate Ansible configuration
 	$(ANSIBLE_EXEC) ansible-inventory --list --inventory $(INVENTORY)
