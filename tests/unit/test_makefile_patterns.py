@@ -103,3 +103,62 @@ def test_should_not_use_direct_docker_commands_when_cleaning_environment():
         f"env-clean uses direct docker command (non-compliant). " \
         f"Found: {direct_docker_match.group(0) if direct_docker_match else 'N/A'}. " \
         f"Commands block: {commands_block.strip()}"
+
+
+def test_should_use_ansible_variables_when_running_ansible_commands():
+    """
+    Validates that all Ansible commands use container execution variables.
+
+    BEHAVIOR: Any Makefile target running Ansible should use:
+    - $(ANSIBLE_EXEC) for non-interactive execution
+    - $(ANSIBLE_INTERACTIVE) for interactive execution
+
+    RATIONALE: Direct 'ansible' or 'ansible-playbook' commands run on the host
+    system with host's Python environment, not in the controlled container
+    environment with all dependencies.
+
+    EXPECTED: All ansible/ansible-playbook commands should be preceded by
+    $(ANSIBLE_EXEC) or $(ANSIBLE_INTERACTIVE) variables
+    """
+    # Get Makefile path
+    project_root = Path(__file__).parent.parent.parent
+    makefile_path = project_root / "Makefile"
+
+    assert makefile_path.exists(), f"Makefile not found at {makefile_path}"
+
+    # Read Makefile
+    with open(makefile_path, 'r') as f:
+        makefile_content = f.read()
+
+    # Extract all command lines (tab-indented lines)
+    # Pattern: lines starting with tab
+    command_lines = []
+    for line in makefile_content.split('\n'):
+        if line.startswith('\t'):
+            command_lines.append(line.strip())
+
+    # Check for direct ansible/ansible-playbook commands
+    # Pattern: 'ansible' or 'ansible-playbook' NOT preceded by $(
+    # We need to exclude $(ANSIBLE_EXEC) and $(ANSIBLE_INTERACTIVE)
+    violations = []
+    for line_num, line in enumerate(command_lines, 1):
+        # Skip variable definitions, comments, and echo statements
+        if line.startswith('#') or ':=' in line:
+            continue
+
+        # Skip echo statements (they may mention 'ansible' in messages)
+        if re.match(r'@?echo\s+', line):
+            continue
+
+        # Check if line contains 'ansible' or 'ansible-playbook'
+        if 'ansible' in line.lower():
+            # Ensure it's used with a variable (contains $(ANSIBLE_)
+            if '$(ANSIBLE_EXEC)' not in line and '$(ANSIBLE_INTERACTIVE)' not in line:
+                # Check if it's an actual ansible command (not just word 'ansible' in a path)
+                if re.search(r'\bansible\b|\bansible-playbook\b', line, re.IGNORECASE):
+                    violations.append(f"Line {line_num}: {line}")
+
+    assert len(violations) == 0, \
+        f"Found {len(violations)} Ansible command(s) not using container variables:\n" + \
+        "\n".join(violations) + \
+        "\n\nAll Ansible commands must use $(ANSIBLE_EXEC) or $(ANSIBLE_INTERACTIVE)"
