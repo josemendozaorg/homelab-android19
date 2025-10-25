@@ -108,6 +108,9 @@ bastion-setup-sudo: ## Configure passwordless sudo on bastion (run once)
 bastion-deploy: ## Deploy configuration to bastion host
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml
 
+bastion-deploy-dns: ## Deploy DNS configuration to bastion host
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml --tags dns
+
 # Android #19 Proxmox
 proxmox-host-setup: ## Configure Proxmox host (storage, templates, API)
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/proxmox-host-setup.yml

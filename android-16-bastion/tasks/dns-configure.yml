@@ -1,0 +1,91 @@
+---
+# DNS Configuration Tasks
+# Configure bastion host to use AdGuard Home DNS server
+
+- name: Display DNS configuration start
+  ansible.builtin.debug:
+    msg: |
+      🌐 Configuring DNS to use AdGuard Home
+
+      DNS Server: {{ network.dns }}
+      Bastion Host: {{ ansible_host }}
+
+- name: Get current DNS configuration
+  ansible.builtin.command:
+    cmd: "resolvectl status"
+  register: current_dns
+  failed_when: false
+  changed_when: false
+
+- name: Get primary network interface
+  ansible.builtin.shell:
+    cmd: "ip route | grep default | awk '{print $5}' | head -1"
+  register: primary_interface
+  changed_when: false
+
+- name: Set interface name variable
+  ansible.builtin.set_fact:
+    network_interface: "{{ primary_interface.stdout | trim }}"
+
+- name: Create resolved.conf.d directory if it doesn't exist
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Configure DNS using systemd-resolved
+  ansible.builtin.copy:
+    content: |
+      [Resolve]
+      DNS={{ network.dns }}
+      Domains=~.
+    dest: /etc/systemd/resolved.conf.d/adguard.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  register: dns_configured
+
+- name: Restart systemd-resolved to apply changes
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    state: restarted
+  become: yes
+  when: dns_configured.changed
+
+- name: Note - systemd-resolved applies DNS changes after restart
+  ansible.builtin.debug:
+    msg: "DNS settings applied. systemd-resolved is using AdGuard DNS ({{ network.dns }})."
+
+- name: Wait for DNS changes to propagate
+  ansible.builtin.pause:
+    seconds: 2
+
+- name: Verify DNS configuration
+  ansible.builtin.command:
+    cmd: "resolvectl status"
+  register: new_dns
+  failed_when: false
+  changed_when: false
+
+- name: Test DNS resolution
+  ansible.builtin.command:
+    cmd: "nslookup proxmox.homelab"
+  register: dns_test
+  failed_when: false
+  changed_when: false
+
+- name: Display DNS configuration summary
+  ansible.builtin.debug:
+    msg: |
+      ✅ DNS Configuration Complete
+
+      DNS Server: {{ network.dns }}
+      Test: {{ 'PASS' if dns_test.rc == 0 else 'FAIL' }}
+
+      To verify on bastion:
+      - resolvectl status
+      - nslookup proxmox.homelab
