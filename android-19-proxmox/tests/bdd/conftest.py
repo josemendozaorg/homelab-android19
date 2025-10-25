@@ -12,6 +12,7 @@ pytest_plugins = [
     "tests.bdd.step_defs.test_rgb_led_control_steps",
     "tests.bdd.step_defs.test_ram_led_control_steps",
     "tests.bdd.step_defs.test_coolify_platform_steps",
+    "tests.bdd.step_defs.test_adguard_dhcp_server_steps",
 ]
 
 

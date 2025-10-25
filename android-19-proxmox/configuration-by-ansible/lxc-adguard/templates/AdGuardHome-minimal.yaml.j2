@@ -109,16 +109,16 @@ user_rules:
   - "{{ rule }}"
 {% endfor %}
 dhcp:
-  enabled: false
-  interface_name: ""
-  local_domain_name: lan
+  enabled: {{ adguard_dhcp_enabled | lower }}
+  interface_name: "{{ adguard_dhcp_interface }}"
+  local_domain_name: {{ adguard_dhcp_local_domain }}
   dhcpv4:
-    gateway_ip: ""
-    subnet_mask: ""
-    range_start: ""
-    range_end: ""
-    lease_duration: 86400
-    icmp_timeout_msec: 1000
+    gateway_ip: "{{ adguard_dhcp_gateway }}"
+    subnet_mask: "{{ adguard_dhcp_subnet_mask }}"
+    range_start: "{{ adguard_dhcp_range_start }}"
+    range_end: "{{ adguard_dhcp_range_end }}"
+    lease_duration: {{ adguard_dhcp_lease_duration }}
+    icmp_timeout_msec: {{ adguard_dhcp_icmp_timeout }}
     options: []
   dhcpv6:
     range_start: ""

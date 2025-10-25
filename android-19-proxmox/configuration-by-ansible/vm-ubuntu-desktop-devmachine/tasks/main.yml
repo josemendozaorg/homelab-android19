@@ -6,6 +6,11 @@
   include_tasks: iso-download.yml
   tags: [iso, download]
 
+- name: Include DNS configuration tasks
+  include_tasks: dns-configure.yml
+  tags: [dns, configure]
+  when: vm_config is defined
+
 - name: Display installation instructions
   ansible.builtin.debug:
     msg: |
