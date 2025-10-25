@@ -111,28 +111,18 @@ def dns_tasks_tagged(bastion_dir, tag):
 
 
 @given('the bastion is configured to use AdGuard DNS')
-def bastion_configured_with_adguard():
+def bastion_configured_with_adguard(ssh_runner):
     """Verify bastion is already configured with AdGuard DNS."""
     # Check current DNS configuration on bastion
-    result = subprocess.run(
-        ['ssh', 'josemendoza@192.168.0.10', 'resolvectl status'],
-        capture_output=True,
-        text=True,
-        timeout=10
-    )
+    result = ssh_runner('192.168.0.10', 'resolvectl status', user='josemendoza')
     assert result.returncode == 0, "Cannot check DNS status on bastion"
     # Don't assert DNS is configured yet - test might be setting it up
 
 
 @given('the bastion is already configured with AdGuard DNS')
-def bastion_already_configured():
+def bastion_already_configured(ssh_runner):
     """Verify bastion already has AdGuard DNS configured (for idempotency test)."""
-    result = subprocess.run(
-        ['ssh', 'josemendoza@192.168.0.10', 'resolvectl status'],
-        capture_output=True,
-        text=True,
-        timeout=10
-    )
+    result = ssh_runner('192.168.0.10', 'resolvectl status', user='josemendoza')
     assert result.returncode == 0, "Cannot check DNS status on bastion"
     assert "192.168.0.25" in result.stdout, \
         "Bastion should already have AdGuard DNS configured"
@@ -157,18 +147,13 @@ def playbook_loaded(bastion_playbook):
 
 
 @when('the administrator deploys bastion DNS configuration')
-def deploy_bastion_dns(deployment_result):
+def deploy_bastion_dns(deployment_result, ansible_runner):
     """Deploy bastion DNS configuration using Ansible."""
     # Run ansible-playbook with DNS tag
-    result = subprocess.run(
-        ['ansible-playbook',
-         '--inventory', 'inventory.yml',
-         'android-16-bastion/playbook.yml',
-         '--tags', 'dns'],
-        capture_output=True,
-        text=True,
-        timeout=60,
-        cwd='/home/dev/repos/homelab-android19'
+    # Path is relative to Docker container working_dir (/workspace)
+    result = ansible_runner(
+        playbook='android-16-bastion/playbook.yml',
+        tags='dns'
     )
 
     deployment_result['returncode'] = result.returncode
@@ -177,14 +162,14 @@ def deploy_bastion_dns(deployment_result):
 
 
 @when('the administrator re-deploys DNS configuration')
-def redeploy_bastion_dns(deployment_result):
+def redeploy_bastion_dns(deployment_result, ansible_runner):
     """Re-deploy bastion DNS to test idempotency."""
     # Same as initial deployment
-    deploy_bastion_dns(deployment_result)
+    deploy_bastion_dns(deployment_result, ansible_runner)
 
 
 @when('DNS is queried for homelab domains')
-def query_homelab_domains(deployment_result):
+def query_homelab_domains(deployment_result, ssh_runner):
     """Query DNS for .homelab domains from bastion."""
     # Store query results for validation
     deployment_result['dns_queries'] = {}
@@ -196,12 +181,7 @@ def query_homelab_domains(deployment_result):
     ]
 
     for domain, expected_ip in domains:
-        result = subprocess.run(
-            ['ssh', 'josemendoza@192.168.0.10', f'nslookup {domain}'],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
+        result = ssh_runner('192.168.0.10', f'nslookup {domain}', user='josemendoza')
         deployment_result['dns_queries'][domain] = {
             'returncode': result.returncode,
             'stdout': result.stdout,
@@ -218,7 +198,7 @@ def examine_dns_tasks(bastion_dir):
 
 
 @when('DNS queries are made from bastion')
-def dns_queries_from_bastion(deployment_result):
+def dns_queries_from_bastion(deployment_result, ssh_runner):
     """Make DNS queries for various hosts."""
     # Test a mix of internal and external domains
     test_domains = [
@@ -229,12 +209,7 @@ def dns_queries_from_bastion(deployment_result):
 
     deployment_result['dns_queries'] = {}
     for domain in test_domains:
-        result = subprocess.run(
-            ['ssh', 'josemendoza@192.168.0.10', f'nslookup {domain}'],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
+        result = ssh_runner('192.168.0.10', f'nslookup {domain}', user='josemendoza')
         deployment_result['dns_queries'][domain] = {
             'returncode': result.returncode,
             'stdout': result.stdout
@@ -262,8 +237,9 @@ def dns_references_catalog(bastion_dir):
     assert dns_tasks_file.exists(), "DNS tasks file should exist"
 
     content = dns_tasks_file.read_text()
-    assert 'catalog.network.dns' in content, \
-        "DNS tasks should reference catalog.network.dns"
+    # Check for network.dns (loaded via vars_files from infrastructure-catalog.yml)
+    assert 'network.dns' in content, \
+        "DNS tasks should reference network.dns variable from catalog"
 
 
 @then(parsers.parse('DNS server should be "{expected_dns}"'))
@@ -294,31 +270,23 @@ def no_hardcoded_dns(bastion_dir):
 
 
 @then(parsers.parse('the bastion should use DNS server "{expected_dns}"'))
-def bastion_uses_dns_server(expected_dns):
+def bastion_uses_dns_server(expected_dns, ssh_runner):
     """Verify bastion is using the correct DNS server."""
-    result = subprocess.run(
-        ['ssh', 'josemendoza@192.168.0.10', 'resolvectl status'],
-        capture_output=True,
-        text=True,
-        timeout=10
-    )
+    result = ssh_runner('192.168.0.10', 'resolvectl status', user='josemendoza')
     assert result.returncode == 0, "Cannot check DNS status on bastion"
     assert expected_dns in result.stdout, \
         f"Bastion should use DNS server {expected_dns}"
 
 
 @then('DNS priority should be set to manual')
-def dns_priority_manual():
-    """Verify DNS is set to manual (ignore DHCP)."""
-    result = subprocess.run(
-        ['ssh', 'josemendoza@192.168.0.10',
-         'nmcli -f ipv4.ignore-auto-dns connection show'],
-        capture_output=True,
-        text=True,
-        timeout=10
-    )
-    assert result.returncode == 0, "Cannot check NetworkManager settings"
-    # Should show yes for ignore-auto-dns
+def dns_priority_manual(ssh_runner):
+    """Verify DNS is configured via drop-in file (overrides DHCP)."""
+    result = ssh_runner('192.168.0.10',
+                       'test -f /etc/systemd/resolved.conf.d/adguard.conf && echo "exists"',
+                       user='josemendoza')
+    assert result.returncode == 0, "Cannot check systemd-resolved configuration"
+    assert "exists" in result.stdout, \
+        "DNS drop-in configuration file should exist"
 
 
 @then('the deployment should complete without errors')
@@ -361,27 +329,22 @@ def deployment_reports_status(deployment_result, status):
 
 
 @then('DNS resolution should still work')
-def dns_still_works():
+def dns_still_works(ssh_runner):
     """Verify DNS resolution still works after re-deployment."""
-    result = subprocess.run(
-        ['ssh', 'josemendoza@192.168.0.10', 'nslookup proxmox.homelab'],
-        capture_output=True,
-        text=True,
-        timeout=10
-    )
+    result = ssh_runner('192.168.0.10', 'nslookup proxmox.homelab', user='josemendoza')
     assert result.returncode == 0, "DNS resolution should still work"
     assert "192.168.0.19" in result.stdout, \
         "proxmox.homelab should still resolve correctly"
 
 
-@then('tasks should use nmcli commands')
-def tasks_use_nmcli(bastion_dir):
-    """Verify tasks use NetworkManager CLI."""
+@then('tasks should use systemd-resolved')
+def tasks_use_systemd_resolved(bastion_dir):
+    """Verify tasks use systemd-resolved."""
     dns_tasks_file = bastion_dir / "tasks" / "dns-configure.yml"
     content = dns_tasks_file.read_text()
 
-    assert 'nmcli' in content, \
-        "DNS tasks should use nmcli (NetworkManager)"
+    assert 'systemd-resolved' in content or 'resolvectl' in content, \
+        "DNS tasks should use systemd-resolved"
 
 
 @then(parsers.re(r'tasks should NOT use direct file editing of (?P<path>.+)'))
@@ -395,14 +358,16 @@ def tasks_dont_edit_resolv_conf(bastion_dir, path):
         f"Tasks should not directly edit {path} (use NetworkManager)"
 
 
-@then('tasks should set ignore-auto-dns to prevent DHCP override')
-def tasks_set_ignore_auto_dns(bastion_dir):
-    """Verify tasks set ignore-auto-dns."""
+@then('tasks should configure resolved.conf.d drop-in file')
+def tasks_configure_resolved_conf_d(bastion_dir):
+    """Verify tasks configure resolved.conf.d drop-in file."""
     dns_tasks_file = bastion_dir / "tasks" / "dns-configure.yml"
     content = dns_tasks_file.read_text()
 
-    assert 'ignore-auto-dns' in content, \
-        "Tasks should set ignore-auto-dns to prevent DHCP from overriding DNS"
+    assert '/etc/systemd/resolved.conf.d' in content, \
+        "Tasks should configure resolved.conf.d drop-in file"
+    assert 'adguard.conf' in content, \
+        "Tasks should create adguard.conf drop-in file"
 
 
 @then('static IP hosts should be resolvable')

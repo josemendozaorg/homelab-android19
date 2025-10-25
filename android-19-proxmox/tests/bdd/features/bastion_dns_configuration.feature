@@ -40,16 +40,16 @@ Feature: Bastion Host DNS Configuration
     Given the bastion is already configured with AdGuard DNS
     When the administrator re-deploys DNS configuration
     Then no changes should be made
-    And the deployment should report "ok" or "changed=0"
+    And the deployment should report "changed=0"
     And DNS resolution should still work
 
   @safety @bastion_dns
-  Scenario: DNS Configuration Uses NetworkManager
+  Scenario: DNS Configuration Uses systemd-resolved
     Given the bastion playbook includes DNS configuration tasks
     When the DNS tasks are examined
-    Then tasks should use nmcli commands
+    Then tasks should use systemd-resolved
     And tasks should NOT use direct file editing of /etc/resolv.conf
-    And tasks should set ignore-auto-dns to prevent DHCP override
+    And tasks should configure resolved.conf.d drop-in file
 
   @integration @bastion_dns @safe
   Scenario: Bastion DNS Works with Static and DHCP Hosts
