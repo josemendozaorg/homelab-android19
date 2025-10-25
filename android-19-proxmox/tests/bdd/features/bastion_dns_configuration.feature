@@ -45,7 +45,7 @@ Feature: Bastion Host DNS Configuration
 
   @safety @bastion_dns
   Scenario: DNS Configuration Uses NetworkManager
-    Given the bastion playbook includes DNS tasks
+    Given the bastion playbook includes DNS configuration tasks
     When the DNS tasks are examined
     Then tasks should use nmcli commands
     And tasks should NOT use direct file editing of /etc/resolv.conf
@@ -53,7 +53,7 @@ Feature: Bastion Host DNS Configuration
 
   @integration @bastion_dns @safe
   Scenario: Bastion DNS Works with Static and DHCP Hosts
-    Given the bastion is configured with AdGuard DNS
+    Given the bastion is configured to use AdGuard DNS
     And the network has both static IP hosts and DHCP clients
     When DNS queries are made from bastion
     Then static IP hosts should be resolvable

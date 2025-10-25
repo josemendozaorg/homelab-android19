@@ -102,8 +102,11 @@ def dns_tasks_tagged(bastion_dir, tag):
     playbook_file = bastion_dir / "playbook.yml"
     content = playbook_file.read_text()
 
-    # Check for tags in include statement or task
-    assert f'tags: {tag}' in content or f'tags: ["{tag}"]' in content or f"tags: ['{tag}']" in content, \
+    # Check for tags in include statement or task (supports YAML list format)
+    assert (f'tags: {tag}' in content or
+            f'tags: ["{tag}"]' in content or
+            f"tags: ['{tag}']" in content or
+            f'- {tag}' in content), \
         f"DNS tasks should be tagged with '{tag}'"
 
 
@@ -381,15 +384,15 @@ def tasks_use_nmcli(bastion_dir):
         "DNS tasks should use nmcli (NetworkManager)"
 
 
-@then('tasks should NOT use direct file editing of /etc/resolv.conf')
-def tasks_dont_edit_resolv_conf(bastion_dir):
+@then(parsers.re(r'tasks should NOT use direct file editing of (?P<path>.+)'))
+def tasks_dont_edit_resolv_conf(bastion_dir, path):
     """Verify tasks don't directly edit resolv.conf."""
     dns_tasks_file = bastion_dir / "tasks" / "dns-configure.yml"
     content = dns_tasks_file.read_text()
 
     # Should not use lineinfile, blockinfile, or direct editing of resolv.conf
-    assert '/etc/resolv.conf' not in content or 'resolvectl' in content, \
-        "Tasks should not directly edit /etc/resolv.conf (use NetworkManager)"
+    assert path not in content or 'resolvectl' in content, \
+        f"Tasks should not directly edit {path} (use NetworkManager)"
 
 
 @then('tasks should set ignore-auto-dns to prevent DHCP override')
