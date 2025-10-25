@@ -2,6 +2,9 @@
 - name: Configure Android #16 Bastion Host
   hosts: bastion
 
+  vars_files:
+    - "../android-19-proxmox/infrastructure-catalog.yml"
+
   tasks:
     - name: Test connection
       ping:
@@ -10,3 +13,9 @@
       hostname:
         name: android16-bastion
       become: yes
+
+    - name: Include DNS configuration tasks
+      ansible.builtin.include_tasks:
+        file: tasks/dns-configure.yml
+      tags:
+        - dns

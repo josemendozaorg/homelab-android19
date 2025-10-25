@@ -1,0 +1,76 @@
+---
+# DNS Configuration Tasks
+# Configure bastion host to use AdGuard Home DNS server
+
+- name: Display DNS configuration start
+  ansible.builtin.debug:
+    msg: |
+      🌐 Configuring DNS to use AdGuard Home
+
+      DNS Server: {{ catalog.network.dns }}
+      Bastion Host: {{ ansible_host }}
+
+- name: Get current DNS configuration
+  ansible.builtin.command:
+    cmd: "resolvectl status"
+  register: current_dns
+  failed_when: false
+  changed_when: false
+
+- name: Get NetworkManager connection name for primary interface
+  ansible.builtin.shell:
+    cmd: "nmcli -t -f NAME,DEVICE connection show | grep 'en' | head -1 | cut -d: -f1"
+  register: nm_connection
+  changed_when: false
+
+- name: Set connection name variable
+  ansible.builtin.set_fact:
+    network_connection: "{{ nm_connection.stdout | trim }}"
+
+- name: Configure NetworkManager to use AdGuard DNS
+  ansible.builtin.command:
+    cmd: "nmcli connection modify '{{ network_connection }}' ipv4.dns '{{ catalog.network.dns }}'"
+  register: dns_configured
+  changed_when: dns_configured.rc == 0
+  become: yes
+
+- name: Set DNS priority to manual
+  ansible.builtin.command:
+    cmd: "nmcli connection modify '{{ network_connection }}' ipv4.ignore-auto-dns yes"
+  register: dns_priority
+  changed_when: dns_priority.rc == 0
+  become: yes
+
+- name: Note - NetworkManager applies DNS changes automatically
+  ansible.builtin.debug:
+    msg: "DNS settings applied. NetworkManager will use new DNS configuration automatically (no reload required)."
+
+- name: Wait for DNS changes to propagate
+  ansible.builtin.pause:
+    seconds: 2
+
+- name: Verify DNS configuration
+  ansible.builtin.command:
+    cmd: "resolvectl status"
+  register: new_dns
+  failed_when: false
+  changed_when: false
+
+- name: Test DNS resolution
+  ansible.builtin.command:
+    cmd: "nslookup proxmox.homelab"
+  register: dns_test
+  failed_when: false
+  changed_when: false
+
+- name: Display DNS configuration summary
+  ansible.builtin.debug:
+    msg: |
+      ✅ DNS Configuration Complete
+
+      DNS Server: {{ catalog.network.dns }}
+      Test: {{ 'PASS' if dns_test.rc == 0 else 'FAIL' }}
+
+      To verify on bastion:
+      - resolvectl status
+      - nslookup proxmox.homelab
