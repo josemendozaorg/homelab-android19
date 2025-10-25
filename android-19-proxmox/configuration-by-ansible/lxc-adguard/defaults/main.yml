@@ -132,3 +132,19 @@ adguard_clients_persistent: true
 # Bind addresses
 adguard_web_bind: "0.0.0.0"
 adguard_dns_bind: "0.0.0.0"
+
+# DHCP Server Configuration
+# WARNING: Enable ONLY after disabling router DHCP to avoid network conflicts!
+adguard_dhcp_enabled: true  # ENABLED: Router DHCP has been disabled
+adguard_dhcp_interface: "eth0"
+adguard_dhcp_local_domain: "lan"
+
+# DHCP IPv4 Configuration
+# Range: 192.168.0.200-249 (per ADR-002 network strategy)
+# This range does not conflict with static IPs (.1-.199)
+adguard_dhcp_gateway: "{{ catalog.network.gateway }}"  # Router IP
+adguard_dhcp_subnet_mask: "255.255.255.0"
+adguard_dhcp_range_start: "192.168.0.200"
+adguard_dhcp_range_end: "192.168.0.249"
+adguard_dhcp_lease_duration: 86400  # 24 hours in seconds
+adguard_dhcp_icmp_timeout: 1000  # Milliseconds
