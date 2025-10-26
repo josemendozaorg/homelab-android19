@@ -1,77 +1,114 @@
 ---
-# RAM LED Control Tasks - Kingston HyperX Fury modules
+# RAM LED Control Tasks - Kingston Fury Beast DDR5 modules
 #
-# This task file provides INDEPENDENT control of RAM LED lights separate from
-# Arctic cooling RGB control (led1-led3). Only targets led4 channel (RAM RGB header).
+# This task file provides direct I2C control of Kingston Fury Beast DDR5 RAM RGB LEDs
+# using i2c-tools for static color control.
 #
 # Dependencies:
-# - liquidctl already installed (via RGB control feature)
-# - ASUS Aura LED Controller hardware
+# - i2c-tools package (provides i2cset, i2cdetect, i2cget)
+# - i2c-dev kernel module loaded
+# - AMD FCH SMBus Controller (i2c-1 bus)
 #
 # Variables:
 # - ram_lights_state: "on" or "off"
 # - ram_lights_action: "status" to check current state (optional)
 # - ram_lights_enabled: boolean to enable/disable this feature
+# - ram_lights_color: RGB color (default: "00FFFF" for cyan)
+# - ram_lights_brightness: 0x00-0x63 (default: 0x32 = 50%)
 #
-# Important: This feature does NOT affect Arctic lights (led1, led2, led3)
+# Hardware:
+# - Kingston Fury Beast DDR5 RAM (2 sticks at I2C addresses 0x61, 0x63)
+# - SMBus: i2c-1 (AMD FCH SMBus Controller)
 
 # ============================================================================
 # Dependency Check
 # ============================================================================
 
-- name: Check if liquidctl is installed
-  command: liquidctl --version
-  register: liquidctl_check
+- name: Check if i2c-tools is installed
+  command: which i2cset
+  register: i2ctools_check
   failed_when: false
   changed_when: false
   tags:
     - ram
     - dependency
 
-- name: Fail gracefully if liquidctl is not installed
+- name: Fail gracefully if i2c-tools is not installed
   fail:
     msg: |
-      ❌ ERROR: liquidctl is not installed on this system.
+      ❌ ERROR: i2c-tools is not installed on this system.
 
-      RAM LED control requires liquidctl to communicate with the ASUS Aura LED Controller.
+      RAM LED control requires i2c-tools to communicate with Kingston Fury DDR5 RAM via I2C/SMBus.
 
       📋 To fix this issue:
-      1. Run the RGB control feature first, which installs liquidctl:
-         make proxmox-rgb-lights-off
+      Run: apt install i2c-tools -y
 
-      2. Or manually install liquidctl on the Proxmox host:
-         ssh root@192.168.0.19 'pip3 install liquidctl --break-system-packages'
+      ℹ️  Note: i2c-tools provides direct hardware access to RAM RGB controllers.
+  when: i2ctools_check.rc != 0
+  tags:
+    - ram
+    - dependency
 
-      ℹ️  Note: liquidctl is a lightweight Python package that enables RGB hardware control.
-            RAM LED control depends on the RGB control feature being configured first.
-  when: liquidctl_check.rc != 0
+- name: Ensure i2c-dev kernel module is loaded
+  community.general.modprobe:
+    name: i2c-dev
+    state: present
+  become: true
   tags:
     - ram
     - dependency
 
 # ============================================================================
-# RAM LED Control Operations
+# RAM LED Control Operations (I2C Direct Access)
 # ============================================================================
 
-- name: Turn RAM LEDs off (led4 channel only)
-  command: liquidctl --match 'ASUS' set led4 color off
+- name: Turn RAM LEDs off (both sticks via I2C)
+  shell: |
+    # First RAM stick (0x61)
+    i2cset -y 1 0x61 0x08 0x53 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x09 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x31 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x32 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x33 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x20 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x08 0x44 && \
+    # Second RAM stick (0x63)
+    i2cset -y 1 0x63 0x08 0x53 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x09 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x31 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x32 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x33 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x20 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x08 0x44
   when:
     - ram_lights_state == "off"
     - ram_lights_action is not defined or ram_lights_action != 'status'
-  # liquidctl commands are idempotent - safe to run multiple times
-  # We mark as unchanged since we can't reliably query current state
   changed_when: false
   tags:
     - ram
     - control
 
-- name: Turn RAM LEDs on (led4 channel - rainbow effect)
-  command: liquidctl --match 'ASUS' set led4 color rainbow
+- name: Turn RAM LEDs on (both sticks via I2C - static color)
+  shell: |
+    # First RAM stick (0x61)
+    i2cset -y 1 0x61 0x08 0x53 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x09 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x61 0x31 0x{{ ram_lights_color[0:2] }} && sleep 0.02 && \
+    i2cset -y 1 0x61 0x32 0x{{ ram_lights_color[2:4] }} && sleep 0.02 && \
+    i2cset -y 1 0x61 0x33 0x{{ ram_lights_color[4:6] }} && sleep 0.02 && \
+    i2cset -y 1 0x61 0x20 {{ ram_lights_brightness }} && sleep 0.02 && \
+    i2cset -y 1 0x61 0x08 0x44 && \
+    # Second RAM stick (0x63)
+    i2cset -y 1 0x63 0x08 0x53 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x09 0x00 && sleep 0.02 && \
+    i2cset -y 1 0x63 0x31 0x{{ ram_lights_color[0:2] }} && sleep 0.02 && \
+    i2cset -y 1 0x63 0x32 0x{{ ram_lights_color[2:4] }} && sleep 0.02 && \
+    i2cset -y 1 0x63 0x33 0x{{ ram_lights_color[4:6] }} && sleep 0.02 && \
+    i2cset -y 1 0x63 0x20 {{ ram_lights_brightness }} && sleep 0.02 && \
+    i2cset -y 1 0x63 0x08 0x44
   when:
     - ram_lights_state == "on"
     - ram_lights_action is not defined or ram_lights_action != 'status'
-  # liquidctl commands are idempotent - safe to run multiple times
-  # We mark as unchanged since we can't reliably query current state
   changed_when: false
   tags:
     - ram
@@ -83,11 +120,13 @@
       ✓ RAM LEDs have been set to: {{ ram_lights_state | upper }}
 
       Affected components:
-        - Kingston HyperX Fury RAM (led4 channel only)
+        - Kingston Fury Beast DDR5 RAM (2 sticks at I2C 0x61, 0x63)
 
-      State: {{ 'Rainbow cycling effect' if ram_lights_state == 'on' else 'All RAM LEDs off (black)' }}
+      State: {{ 'Static color #' + ram_lights_color + ' (brightness: ' + ram_lights_brightness + ')' if ram_lights_state == 'on' else 'All RAM LEDs off (black)' }}
 
-      ⚠️  Arctic lights: UNCHANGED (led1, led2, led3 not affected)
+      Method: Direct I2C control via i2c-tools
+
+      ⚠️  Arctic lights: UNCHANGED (controlled separately via liquidctl)
   when:
     - ram_lights_state is defined and ram_lights_state in ['on', 'off']
     - ram_lights_action is not defined or ram_lights_action != 'status'

@@ -63,7 +63,7 @@
     - proxmox
     - rgb
     - hardware
-  when: rgb_lights_enabled | default(false)
+  when: rgb_lights_enabled | default(false) | bool
 
 - name: RAM LED control (independent)
   include_tasks: ram-led-control.yml
@@ -71,4 +71,4 @@
     - proxmox
     - ram
     - hardware
-  when: ram_lights_enabled | default(false)
+  when: ram_lights_enabled | default(false) | bool
