@@ -126,8 +126,10 @@ proxmox_monitoring:
 rgb_lights_enabled: true
 rgb_lights_state: "off"  # Valid values: "on", "off"
 
-# RAM LED Control (Independent)
-# Controls ONLY Kingston HyperX Fury RAM LEDs (led4 channel)
-# This is separate from Arctic lights control (led1-led3)
+# RAM LED Control (Independent via I2C)
+# Controls Kingston Fury Beast DDR5 RAM LEDs via direct I2C access
+# Hardware: 2 sticks at I2C addresses 0x61, 0x63 on bus i2c-1
 ram_lights_enabled: true
 ram_lights_state: "off"  # Valid values: "on", "off"
+ram_lights_color: "00FFFF"  # RGB hex color (6 chars): 00FFFF=cyan, FFFFFF=white, FF0000=red
+ram_lights_brightness: "0x32"  # Brightness: 0x00 (off) to 0x63 (max), 0x32=50%

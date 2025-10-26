@@ -1,10 +1,42 @@
 [Unit]
-Description=RAM LED Control Service using liquidctl
+Description=RAM LED Control Service using I2C (Kingston Fury Beast DDR5)
 After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'liquidctl --match "ASUS" set led4 color {{ "off" if ram_lights_state == "off" else "rainbow" }}'
+{% if ram_lights_state == "off" %}
+ExecStart=/bin/bash -c '\
+i2cset -y 1 0x61 0x08 0x53 && sleep 0.02 && \
+i2cset -y 1 0x61 0x09 0x00 && sleep 0.02 && \
+i2cset -y 1 0x61 0x31 0x00 && sleep 0.02 && \
+i2cset -y 1 0x61 0x32 0x00 && sleep 0.02 && \
+i2cset -y 1 0x61 0x33 0x00 && sleep 0.02 && \
+i2cset -y 1 0x61 0x20 0x00 && sleep 0.02 && \
+i2cset -y 1 0x61 0x08 0x44 && \
+i2cset -y 1 0x63 0x08 0x53 && sleep 0.02 && \
+i2cset -y 1 0x63 0x09 0x00 && sleep 0.02 && \
+i2cset -y 1 0x63 0x31 0x00 && sleep 0.02 && \
+i2cset -y 1 0x63 0x32 0x00 && sleep 0.02 && \
+i2cset -y 1 0x63 0x33 0x00 && sleep 0.02 && \
+i2cset -y 1 0x63 0x20 0x00 && sleep 0.02 && \
+i2cset -y 1 0x63 0x08 0x44'
+{% else %}
+ExecStart=/bin/bash -c '\
+i2cset -y 1 0x61 0x08 0x53 && sleep 0.02 && \
+i2cset -y 1 0x61 0x09 0x00 && sleep 0.02 && \
+i2cset -y 1 0x61 0x31 0x{{ ram_lights_color[0:2] }} && sleep 0.02 && \
+i2cset -y 1 0x61 0x32 0x{{ ram_lights_color[2:4] }} && sleep 0.02 && \
+i2cset -y 1 0x61 0x33 0x{{ ram_lights_color[4:6] }} && sleep 0.02 && \
+i2cset -y 1 0x61 0x20 {{ ram_lights_brightness }} && sleep 0.02 && \
+i2cset -y 1 0x61 0x08 0x44 && \
+i2cset -y 1 0x63 0x08 0x53 && sleep 0.02 && \
+i2cset -y 1 0x63 0x09 0x00 && sleep 0.02 && \
+i2cset -y 1 0x63 0x31 0x{{ ram_lights_color[0:2] }} && sleep 0.02 && \
+i2cset -y 1 0x63 0x32 0x{{ ram_lights_color[2:4] }} && sleep 0.02 && \
+i2cset -y 1 0x63 0x33 0x{{ ram_lights_color[4:6] }} && sleep 0.02 && \
+i2cset -y 1 0x63 0x20 {{ ram_lights_brightness }} && sleep 0.02 && \
+i2cset -y 1 0x63 0x08 0x44'
+{% endif %}
 RemainAfterExit=yes
 
 [Install]
