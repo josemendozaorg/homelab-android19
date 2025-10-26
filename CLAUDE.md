@@ -44,17 +44,25 @@ make setup-ssh
 - `make test-ping` - Test connection to all machines
 - `make test-ping-bastion` - Test bastion host only
 - `make test-ping-proxmox` - Test Proxmox server only
+- `make test-catalog` - Validate infrastructure catalog with pytest
+- `make test-unit` - Run all unit tests
+- `make test-all` - Run all tests (unit + connectivity)
 
 ### Machine-Specific Deployment
 - `make bastion-deploy` - Deploy configuration to Android #16 bastion
 - `make proxmox-host-setup` - Configure Proxmox host infrastructure
 - `make proxmox-host-cloud-templates` - Create Ubuntu cloud image templates (VM 9000) for automated deployments
+- `make proxmox-host-gpu-passthrough` - Configure GPU passthrough for AI/LLM workloads
 - `make proxmox-deploy` - Deploy base configuration to Android #19 Proxmox
 - `make proxmox-services` - Deploy all Proxmox services
 
 ### Service-Level Deployment (Terraform + Ansible)
 - `make deploy-lxc-adguard-dns` - Deploy AdGuard DNS server (LXC container)
 - `make deploy-vm-omarchy-devmachine` - Deploy Omarchy development workstation (VM)
+- `make deploy-vm-ubuntu-desktop-devmachine` - Deploy Ubuntu Desktop VM (ISO + Terraform)
+- `make deploy-vm-llm-aimachine` - Deploy GPU-accelerated AI/LLM VM with vLLM and Ollama
+- `make deploy-vm-llm-aimachine-testing` - Deploy testing instance of AI/LLM VM
+- `make deploy-vm-coolify-containerplatform` - Deploy Coolify container platform
 - `make deploy-proxmox-all` - Deploy all Proxmox VMs and LXCs
 
 ### Proxmox Infrastructure (Terraform)
@@ -129,6 +137,11 @@ Service deployment targets follow a structured naming pattern:
 - `android-19-proxmox/infrastructure-catalog.yml` - Service definitions for Terraform
 - `docs/SSH_SETUP.md` - Comprehensive SSH authentication setup guide
 
+## Feature Planning
+
+- `FEATURE_BACKLOG.md` - Completed features and resolved issues (tracked outside specs/)
+- `specs/*/` - Active feature specifications with detailed design documents
+
 ## SSH Authentication
 SSH key authentication is required for Ansible to communicate with both machines. If you encounter "Permission denied" errors, run `make setup-ssh` or follow the detailed guide in `docs/SSH_SETUP.md`.
 
@@ -196,6 +209,27 @@ systemctl status AdGuardHome
 - **Security**: No need to manage SSH keys per container
 - **Proxmox integration**: Uses native `pct` container management
 - **Simplicity**: Single SSH connection to Proxmox manages all containers
+
+### AdGuard Home DNS Architecture
+
+AdGuard DNS server (LXC 125) provides network-wide DNS with optional DHCP:
+
+**DNS Only Mode** (default):
+- Manual DNS configuration required on each client
+- Set DNS to 192.168.0.25 in client network settings
+
+**DHCP Mode** (optional):
+- AdGuard acts as network DHCP server
+- Automatically advertises itself as DNS to all clients
+- DHCP range: 192.168.0.200-249
+- Enables automatic `.homelab` domain resolution (coolify.homelab, ollama.homelab, etc.)
+
+**Enabling DHCP:**
+1. Set `adguard_dhcp_enabled: true` in role defaults
+2. Disable router's DHCP server
+3. Deploy: `make deploy-lxc-adguard-dns`
+
+**Safety:** Feature flag defaults to `false` to prevent accidental DHCP conflicts.
 
 ## Cloud Image Templates
 
