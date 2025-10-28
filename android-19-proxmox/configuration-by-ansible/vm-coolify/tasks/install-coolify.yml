@@ -16,8 +16,12 @@
   when: coolify_container_check.stdout == ""
   become: yes
 
-- name: Execute Coolify installation script
-  ansible.builtin.shell: /tmp/coolify-install.sh
+- name: Execute Coolify installation script with admin credentials
+  ansible.builtin.shell: |
+    ROOT_USERNAME="{{ coolify_admin_username }}" \
+    ROOT_USER_EMAIL="{{ coolify_admin_email }}" \
+    ROOT_USER_PASSWORD="{{ coolify_admin_password }}" \
+    /tmp/coolify-install.sh
   when: coolify_container_check.stdout == ""
   become: yes
   register: coolify_install_result
@@ -36,3 +40,19 @@
       - "'coolify' in coolify_running.stdout"
     fail_msg: "Coolify container is not running"
     success_msg: "Coolify is running in Docker container"
+
+- name: Display Coolify admin credentials
+  ansible.builtin.debug:
+    msg:
+      - "=========================================="
+      - "Coolify Initial Admin Credentials"
+      - "=========================================="
+      - "Web UI: http://{{ hostvars[inventory_hostname].ansible_host }}:{{ coolify_web_port }}"
+      - "Username: {{ coolify_admin_username }}"
+      - "Email: {{ coolify_admin_email }}"
+      - "Password: {{ coolify_admin_password }}"
+      - "=========================================="
+      - "⚠️  SAVE THESE CREDENTIALS IMMEDIATELY!"
+      - "Password is randomly generated and won't be shown again"
+      - "=========================================="
+  when: coolify_install_result is changed

@@ -10,8 +10,15 @@
 coolify_version: "latest"  # Coolify version to install
 coolify_install_script_url: "https://get.coollabs.io/coolify/install.sh"
 
+# Initial admin account configuration
+# These environment variables are used during installation to create the root user automatically
+# This prevents the registration page from being publicly accessible (security improvement)
+coolify_admin_username: "josephrichard7"  # Admin username for Coolify web UI
+coolify_admin_email: "josephrichard7@gmail.com"  # Admin email for Coolify
+coolify_admin_password: "{{ lookup('password', '/tmp/coolify_admin_password chars=ascii_letters,digits,punctuation length=32') }}"  # Random 32-char password
+
 # Coolify service configuration
-coolify_web_port: 8000  # Coolify web UI port
+coolify_web_port: 3000  # Coolify web UI port (actual port used by Coolify)
 coolify_domain: "coolify.homelab.local"  # Local domain for Coolify
 
 # Docker configuration
