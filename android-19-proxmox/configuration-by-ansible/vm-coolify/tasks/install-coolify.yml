@@ -8,20 +8,12 @@
   changed_when: false
   failed_when: false
 
-- name: Download Coolify installation script
-  ansible.builtin.get_url:
-    url: "{{ coolify_install_script_url }}"
-    dest: /tmp/coolify-install.sh
-    mode: '0755'
-  when: coolify_container_check.stdout == ""
-  become: yes
-
-- name: Execute Coolify installation script with admin credentials
+- name: Install Coolify with admin credentials using curl | bash method
   ansible.builtin.shell: |
-    ROOT_USERNAME="{{ coolify_admin_username }}" \
-    ROOT_USER_EMAIL="{{ coolify_admin_email }}" \
-    ROOT_USER_PASSWORD="{{ coolify_admin_password }}" \
-    /tmp/coolify-install.sh
+    env ROOT_USERNAME="{{ coolify_admin_username }}" \
+        ROOT_USER_EMAIL="{{ coolify_admin_email }}" \
+        ROOT_USER_PASSWORD="{{ coolify_admin_password }}" \
+        bash -c 'curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash'
   when: coolify_container_check.stdout == ""
   become: yes
   register: coolify_install_result

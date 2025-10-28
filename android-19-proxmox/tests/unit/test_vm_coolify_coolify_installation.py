@@ -39,27 +39,27 @@ def test_main_tasks_should_include_coolify_installation_after_docker(vm_coolify_
 
 
 def test_should_use_official_coolify_installation_script(vm_coolify_role_path):
-    """Should use official Coolify installation script from get.coollabs.io."""
+    """Should use official Coolify installation script from cdn.coollabs.io."""
     install_coolify = vm_coolify_role_path / "tasks" / "install-coolify.yml"
 
     with open(install_coolify, 'r') as f:
         content = f.read()
 
     # Should reference official Coolify installation script URL
-    assert 'get.coollabs.io' in content or 'coolify_install_script_url' in content, \
-        "Should use official Coolify installation script from get.coollabs.io"
+    assert 'cdn.coollabs.io/coolify/install.sh' in content, \
+        "Should use official Coolify installation script from cdn.coollabs.io"
 
 
-def test_should_download_installation_script_before_execution(vm_coolify_role_path):
-    """Should download Coolify installation script to temporary location before execution."""
+def test_should_use_curl_pipe_bash_installation_method(vm_coolify_role_path):
+    """Should use curl | bash method for proper environment variable passing."""
     install_coolify = vm_coolify_role_path / "tasks" / "install-coolify.yml"
 
     with open(install_coolify, 'r') as f:
         content = f.read()
 
-    # Should download script (get_url or uri module)
-    assert 'get_url' in content or 'uri' in content, \
-        "Should download installation script before execution for safety"
+    # Should use curl | bash method as documented by Coolify
+    assert 'curl' in content and 'bash' in content, \
+        "Should use curl | bash method for installation (documented method for ROOT_* variables)"
 
 
 def test_should_execute_coolify_installation_script(vm_coolify_role_path):
@@ -115,8 +115,8 @@ def test_should_use_root_privileges_for_installation(vm_coolify_role_path):
         if task.get('become') is True or task.get('become') == 'yes':
             privileged_tasks += 1
 
-    assert privileged_tasks >= 2, \
-        "Should have at least 2 tasks with become: yes (installation requires root)"
+    assert privileged_tasks >= 1, \
+        "Should have at least 1 task with become: yes (installation requires root)"
 
 
 def test_should_check_if_coolify_already_installed_for_idempotency(vm_coolify_role_path):
@@ -180,36 +180,6 @@ def test_coolify_installation_should_be_idempotent(vm_coolify_role_path):
 
     assert has_idempotent_patterns or len(tasks) > 0, \
         "Should use idempotent patterns (when conditions, creates parameter, etc.)"
-
-
-def test_should_download_script_to_temporary_location(vm_coolify_role_path):
-    """Should download installation script to /tmp or similar temporary location."""
-    install_coolify = vm_coolify_role_path / "tasks" / "install-coolify.yml"
-
-    with open(install_coolify, 'r') as f:
-        content = f.read()
-
-    # Should use temporary location for script
-    assert '/tmp' in content or 'temp' in content.lower(), \
-        "Should download installation script to temporary location (/tmp)"
-
-
-def test_installation_script_should_be_executable(vm_coolify_role_path):
-    """Downloaded installation script should be made executable before execution."""
-    install_coolify = vm_coolify_role_path / "tasks" / "install-coolify.yml"
-
-    with open(install_coolify, 'r') as f:
-        content = f.read()
-
-    # Should set script as executable (mode, file module, or shell chmod)
-    has_executable_setup = (
-        'mode:' in content and '0755' in content or
-        '0700' in content or
-        'chmod' in content
-    )
-
-    assert has_executable_setup or 'shell' in content, \
-        "Should ensure installation script is executable (mode: '0755' or chmod +x)"
 
 
 def test_should_pass_admin_credentials_to_installation_script(vm_coolify_role_path):
