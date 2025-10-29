@@ -7,3 +7,5 @@
   - Feature flag: `adguard_dhcp_enabled: false` (disabled by default for safety)
   - Deployment: Set `adguard_dhcp_enabled: true` + disable router DHCP + run `make deploy-lxc-adguard-dns`
   - Once enabled, all DHCP clients automatically resolve `.homelab` domains (coolify.homelab, ollama.homelab, etc.)
+
+[] - IaC for CloudFlare tunnel published application routes configuration.

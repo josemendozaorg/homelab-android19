@@ -240,8 +240,8 @@ def test_defaults_should_have_admin_account_configuration(vm_coolify_role_path):
         "defaults/main.yml should define coolify_admin_password"
 
 
-def test_web_port_should_be_3000(vm_coolify_role_path):
-    """Coolify web UI port should be 3000 (actual port used by Coolify)."""
+def test_web_port_should_be_8000(vm_coolify_role_path):
+    """Coolify web UI port should be 8000 (default Coolify port)."""
     defaults_file = vm_coolify_role_path / "defaults" / "main.yml"
 
     with open(defaults_file, 'r') as f:
@@ -250,8 +250,8 @@ def test_web_port_should_be_3000(vm_coolify_role_path):
     assert 'coolify_web_port' in defaults, \
         "defaults/main.yml should define coolify_web_port"
 
-    assert defaults['coolify_web_port'] == 3000, \
-        "coolify_web_port should be 3000 (actual Coolify port, not 8000)"
+    assert defaults['coolify_web_port'] == 8000, \
+        "coolify_web_port should be 8000 (default Coolify installation port)"
 
 
 def test_should_display_admin_credentials_after_installation(vm_coolify_role_path):
