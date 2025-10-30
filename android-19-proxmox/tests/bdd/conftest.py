@@ -14,6 +14,7 @@ pytest_plugins = [
     "tests.bdd.step_defs.test_coolify_platform_steps",
     "tests.bdd.step_defs.test_adguard_dhcp_server_steps",
     "tests.bdd.step_defs.test_bastion_dns_configuration_steps",
+    "tests.bdd.step_defs.test_scenario_02_github_deployment_steps",
 ]
 
 
