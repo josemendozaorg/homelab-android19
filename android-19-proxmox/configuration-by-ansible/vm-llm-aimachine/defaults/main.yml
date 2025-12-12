@@ -43,6 +43,15 @@ ollama_model_dir: "/opt/ollama/models"
 ollama_service_enabled: true  # Auto-start on boot
 ollama_systemd_service: true  # Install as systemd service
 
+# Ollama Model Configuration for Inference-Time Scaling
+# DeepSeek-R1:14B provides native <think> token support for System 2 reasoning
+# Q4_K_M quantization fits in ~10GB VRAM (16GB card with headroom)
+ollama_models_to_pull:
+  - "deepseek-r1:14b"
+
+ollama_pull_models_on_deploy: true  # Pull models during deployment
+ollama_model_pull_timeout: 3600     # 60 minutes for large model downloads
+
 # GPU Verification
 # Tests to verify GPU passthrough and drivers working correctly
 verify_gpu_passthrough: true
