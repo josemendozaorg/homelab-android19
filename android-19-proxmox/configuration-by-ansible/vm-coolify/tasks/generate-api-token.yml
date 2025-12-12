@@ -1,0 +1,115 @@
+---
+# Coolify API Token Validation
+# Reads API token from .env file or environment variable
+#
+# Token Source Priority:
+#   1. .env file in role directory (recommended)
+#   2. COOLIFY_API_TOKEN environment variable
+#
+# Prerequisites:
+#   Create API token manually in Coolify UI:
+#   - Go to http://192.168.0.160:8000/security/api-tokens
+#   - Click "Create New Token"
+#   - Name: "ansible-automation"
+#   - Uncheck "Read Only" to get full (*) permissions
+#   - Copy the token (shown only once!)
+#
+# Usage Option 1 (.env file - recommended):
+#   cd android-19-proxmox/configuration-by-ansible/vm-coolify
+#   cp .env.example .env
+#   # Edit .env and add your token
+#   ansible-playbook...
+#
+# Usage Option 2 (environment variable):
+#   COOLIFY_API_TOKEN="your-token" ansible-playbook...
+#
+# Output: Sets `coolify_api_token` variable for use by other tasks
+
+- name: Check if .env file exists in role directory
+  ansible.builtin.stat:
+    path: "{{ role_path }}/.env"
+  register: dotenv_file
+  delegate_to: localhost
+  tags: [coolify, api-token]
+
+- name: Read .env file if it exists
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/.env"
+  register: dotenv_content
+  when: dotenv_file.stat.exists
+  delegate_to: localhost
+  tags: [coolify, api-token]
+
+- name: Parse COOLIFY_API_TOKEN from .env file
+  ansible.builtin.set_fact:
+    coolify_api_token_dotenv: "{{ (dotenv_content.content | b64decode | regex_search('COOLIFY_API_TOKEN=(.+)', '\\1'))[0] | trim }}"
+  when:
+    - dotenv_file.stat.exists
+    - dotenv_content.content is defined
+  ignore_errors: yes
+  tags: [coolify, api-token]
+
+- name: Check environment variable
+  ansible.builtin.set_fact:
+    coolify_api_token_env: "{{ lookup('env', 'COOLIFY_API_TOKEN') }}"
+  tags: [coolify, api-token]
+
+- name: "Set final API token (priority: .env > environment)"
+  ansible.builtin.set_fact:
+    coolify_api_token: "{{ coolify_api_token_dotenv if (coolify_api_token_dotenv is defined and coolify_api_token_dotenv != '') else coolify_api_token_env }}"
+  tags: [coolify, api-token]
+
+- name: Display token source
+  ansible.builtin.debug:
+    msg: "{{ 'Using token from .env file' if (coolify_api_token_dotenv is defined and coolify_api_token_dotenv != '') else 'Using token from environment variable' if coolify_api_token_env != '' else 'No token found' }}"
+  tags: [coolify, api-token]
+
+- name: Fail if API token not provided
+  ansible.builtin.fail:
+    msg: |
+      ❌ No COOLIFY_API_TOKEN found.
+
+      Please provide the token using ONE of these methods:
+
+      Option 1: .env file (recommended)
+        1. cd android-19-proxmox/configuration-by-ansible/vm-coolify
+        2. cp .env.example .env
+        3. Edit .env and add your token: COOLIFY_API_TOKEN=your_token_here
+        4. Run playbook
+
+      Option 2: Environment variable
+        COOLIFY_API_TOKEN="your-token" ansible-playbook ...
+
+      To create an API token:
+      1. Access Coolify UI: http://192.168.0.160:8000
+      2. Log in with admin credentials
+      3. Go to Settings → Security → API Tokens
+      4. Click "Create New Token"
+         - Name: ansible-automation
+         - Permissions: Uncheck "Read Only" for full access (*)
+      5. Copy the token (shown only once!)
+  when: coolify_api_token == ""
+  tags: [coolify, api-token]
+
+- name: Validate API token
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/health"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ coolify_api_token }}"
+    status_code: 200
+  register: token_validation
+  ignore_errors: yes
+  tags: [coolify, api-token]
+
+- name: Display token validation result
+  ansible.builtin.debug:
+    msg: "✅ API token is valid and ready to use"
+  when: token_validation is success
+  tags: [coolify, api-token]
+
+- name: Fail if provided token is invalid
+  ansible.builtin.fail:
+    msg: "❌ Provided API token is invalid or expired. Please create a new token via Coolify UI."
+  when: token_validation is failed
+  tags: [coolify, api-token]

@@ -1,0 +1,130 @@
+---
+# GitHub App Manifest Flow - Step 1: Generate Manifest
+# Reduces GitHub App creation from ~15 manual clicks to 1 click + paste
+#
+# This task generates a GitHub App manifest and guides the user through
+# the semi-automated creation process using GitHub's official Manifest Flow.
+#
+# Prerequisites:
+#   - GitHub account with organization/user permissions to create apps
+#   - Coolify running and accessible at configured URL
+#
+# Output:
+#   - Generated manifest JSON
+#   - Instructions for user to create GitHub App
+#   - Prompts for callback code that will be processed by handle-github-app-callback.yml
+
+- name: Check if GitHub App already configured in .env
+  ansible.builtin.set_fact:
+    github_app_already_configured: "{{ (github_app_id is defined and github_app_id != '') }}"
+  tags: [coolify, github-manifest]
+
+- name: Skip manifest flow if GitHub App already configured
+  ansible.builtin.debug:
+    msg: "GitHub App already configured (GITHUB_APP_ID={{ github_app_id }}). Skipping manifest flow."
+  when: github_app_already_configured
+  tags: [coolify, github-manifest]
+
+- name: End play if GitHub App already configured
+  ansible.builtin.meta: end_play
+  when: github_app_already_configured
+  tags: [coolify, github-manifest]
+
+- name: Generate GitHub App manifest from template
+  ansible.builtin.template:
+    src: github-app-manifest.json.j2
+    dest: /tmp/github-app-manifest.json
+  delegate_to: localhost
+  tags: [coolify, github-manifest]
+
+- name: Read generated manifest
+  ansible.builtin.slurp:
+    src: /tmp/github-app-manifest.json
+  register: manifest_content
+  delegate_to: localhost
+  tags: [coolify, github-manifest]
+
+- name: Parse manifest JSON
+  ansible.builtin.set_fact:
+    github_manifest_json: "{{ manifest_content.content | b64decode }}"
+  tags: [coolify, github-manifest]
+
+- name: Display GitHub App Manifest Flow instructions
+  ansible.builtin.debug:
+    msg:
+      - "╔════════════════════════════════════════════════════════════════════╗"
+      - "║  GitHub App Manifest Flow - Semi-Automated App Creation          ║"
+      - "╚════════════════════════════════════════════════════════════════════╝"
+      - ""
+      - "This will create a GitHub App with 1 click instead of ~15 manual steps."
+      - ""
+      - "📋 STEP 1: Copy the manifest JSON below"
+      - "─────────────────────────────────────────────────────────────────────"
+      - "{{ github_manifest_json }}"
+      - "─────────────────────────────────────────────────────────────────────"
+      - ""
+      - "🌐 STEP 2: Open this URL in your browser:"
+      - "   https://github.com/settings/apps/new"
+      - ""
+      - "📝 STEP 3: Paste the manifest JSON into the form"
+      - ""
+      - "✅ STEP 4: Click 'Create GitHub App from manifest'"
+      - ""
+      - "🔐 STEP 5: After creation, GitHub will redirect you with a CODE parameter"
+      - "   Example: https://github.com/settings/apps/your-app?code=ABC123DEF456"
+      - ""
+      - "   Copy the CODE value (the part after 'code=')"
+      - ""
+      - "📌 NEXT: The playbook will now pause. After you complete steps 1-5,"
+      - "         run the callback handler task with your code:"
+      - ""
+      - "   ansible-playbook ... --tags github-callback -e github_app_code=YOUR_CODE"
+      - ""
+      - "════════════════════════════════════════════════════════════════════"
+  tags: [coolify, github-manifest]
+
+- name: Save manifest to role directory for reference
+  ansible.builtin.copy:
+    content: "{{ github_manifest_json }}"
+    dest: "{{ role_path }}/github-app-manifest-generated.json"
+  delegate_to: localhost
+  tags: [coolify, github-manifest]
+
+- name: Create reminder file for next steps
+  ansible.builtin.copy:
+    content: |
+      # GitHub App Manifest Flow - Next Steps
+
+      You generated a manifest. To complete the GitHub App creation:
+
+      1. Open: https://github.com/settings/apps/new
+      2. Paste the manifest from: {{ role_path }}/github-app-manifest-generated.json
+      3. Click "Create GitHub App from manifest"
+      4. Copy the CODE from the redirect URL
+      5. Run the callback handler:
+
+         ansible-playbook --inventory inventory.yml \
+           android-19-proxmox/configuration-by-ansible/vm-coolify-platform.yml \
+           --tags github-callback \
+           -e github_app_code=YOUR_CODE_HERE
+
+      Or using the Makefile (if available):
+
+         GITHUB_APP_CODE=YOUR_CODE_HERE make coolify-github-callback
+    dest: "{{ role_path }}/GITHUB_APP_NEXT_STEPS.md"
+  delegate_to: localhost
+  tags: [coolify, github-manifest]
+
+- name: Final instruction
+  ansible.builtin.debug:
+    msg:
+      - ""
+      - "✅ Manifest generated successfully!"
+      - ""
+      - "📄 Saved to: {{ role_path }}/github-app-manifest-generated.json"
+      - "📄 Instructions: {{ role_path }}/GITHUB_APP_NEXT_STEPS.md"
+      - ""
+      - "⏸️  Playbook execution will continue with other tasks."
+      - "   Complete the GitHub App creation manually, then run the callback handler."
+      - ""
+  tags: [coolify, github-manifest]

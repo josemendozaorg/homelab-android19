@@ -1,0 +1,139 @@
+---
+# Coolify Wildcard Domain Configuration
+# Configures wildcard domain for automatic subdomain generation
+#
+# Prerequisites: coolify_api_token variable must be set (from generate-api-token.yml or env)
+#
+# Usage:
+#   - include: configure-wildcard-domain.yml
+#     vars:
+#       coolify_api_token: "your-token-here"
+
+- name: Ensure API token is available
+  ansible.builtin.assert:
+    that:
+      - coolify_api_token is defined
+      - coolify_api_token != ""
+    fail_msg: |
+      Coolify API token not found. Either:
+      1. Include generate-api-token.yml before this task
+      2. Provide COOLIFY_API_TOKEN environment variable
+    success_msg: "API token available"
+  tags: [coolify, wildcard-domain]
+
+- name: Wait for Coolify API to be ready
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/health"
+    method: GET
+    status_code: 200
+  retries: 30
+  delay: 2
+  until: coolify_api_ready is success
+  register: coolify_api_ready
+  tags: [coolify, wildcard-domain]
+
+- name: Get list of Coolify servers
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/servers"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ coolify_api_token }}"
+      Accept: "application/json"
+    status_code: 200
+    return_content: yes
+  register: coolify_servers
+  tags: [coolify, wildcard-domain]
+
+- name: Extract server UUID
+  ansible.builtin.set_fact:
+    coolify_server_uuid: "{{ (coolify_servers.json | first).uuid }}"
+  when: coolify_servers.json is defined and coolify_servers.json | length > 0
+  tags: [coolify, wildcard-domain]
+
+- name: Display server information
+  ansible.builtin.debug:
+    msg:
+      - "Server UUID: {{ coolify_server_uuid }}"
+      - "Configuring wildcard domain: {{ coolify_wildcard_domain }}"
+  tags: [coolify, wildcard-domain]
+
+- name: Configure wildcard domain via Coolify API
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/servers/{{ coolify_server_uuid }}"
+    method: PATCH
+    headers:
+      Authorization: "Bearer {{ coolify_api_token }}"
+      Content-Type: "application/json"
+      Accept: "application/json"
+    body_format: json
+    body:
+      wildcard_domain: "http://{{ coolify_wildcard_domain }}"
+    status_code: [200, 201, 422]
+    return_content: yes
+  register: wildcard_update
+  ignore_errors: yes
+  tags: [coolify, wildcard-domain]
+
+- name: Display API update result and manual instructions if needed
+  ansible.builtin.debug:
+    msg:
+      - "======================================"
+      - "Wildcard Domain API Update Result"
+      - "======================================"
+      - "{% if wildcard_update.status == 200 or wildcard_update.status == 201 %}✅ Wildcard domain configured successfully via API{% elif wildcard_update.status == 422 %}⚠️  API rejected wildcard_domain update (HTTP 422: Field not allowed){% else %}⚠️  API call failed with status {{ wildcard_update.status }}{% endif %}"
+      - ""
+      - "{% if wildcard_update.status == 422 %}📋 Manual Configuration Required:{% endif %}"
+      - "{% if wildcard_update.status == 422 %}1. Access Coolify UI: http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}{% endif %}"
+      - "{% if wildcard_update.status == 422 %}2. Navigate to: Servers → Select Server → Settings{% endif %}"
+      - "{% if wildcard_update.status == 422 %}3. Set Wildcard Domain: http://{{ coolify_wildcard_domain }}{% endif %}"
+      - "{% if wildcard_update.status == 422 %}4. Click Save{% endif %}"
+      - "{% if wildcard_update.status == 422 %}{% endif %}"
+      - "{% if wildcard_update.status == 422 %}Note: Current Coolify v4 restricts wildcard_domain updates via API{% endif %}"
+      - "======================================"
+  tags: [coolify, wildcard-domain]
+
+- name: Verify wildcard domain configuration
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/servers/{{ coolify_server_uuid }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ coolify_api_token }}"
+      Accept: "application/json"
+    status_code: 200
+    return_content: yes
+  register: server_config
+  tags: [coolify, wildcard-domain]
+
+- name: Extract configured wildcard domain
+  ansible.builtin.set_fact:
+    configured_domain: "{{ server_config.json.wildcard_domain | default(None) }}"
+  when: server_config.json is defined
+  tags: [coolify, wildcard-domain]
+
+- name: Validate wildcard domain was set correctly
+  ansible.builtin.assert:
+    that:
+      - configured_domain is defined
+      - configured_domain != None
+      - configured_domain != ''
+    fail_msg: "⚠️  Wildcard domain not set - please configure manually via UI (see instructions above)"
+    success_msg: "✅ Wildcard domain is configured"
+  ignore_errors: yes
+  tags: [coolify, wildcard-domain]
+
+- name: Display wildcard domain configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "======================================"
+      - "Coolify Wildcard Domain Configuration"
+      - "======================================"
+      - "Server UUID: {{ coolify_server_uuid }}"
+      - "Wildcard Domain: {{ configured_domain }}"
+      - ""
+      - "Applications will be accessible via:"
+      - "  <app-name>.<hash>.<env>.{{ configured_domain }}"
+      - ""
+      - "Example:"
+      - "  coolify-test-app.abc123.prod.{{ configured_domain }}"
+      - "======================================"
+  tags: [coolify, wildcard-domain]

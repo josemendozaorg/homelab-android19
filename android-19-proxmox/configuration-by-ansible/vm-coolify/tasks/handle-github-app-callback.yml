@@ -1,0 +1,183 @@
+---
+# GitHub App Manifest Flow - Step 2: Process Callback Code
+# Exchanges the GitHub-provided code for complete app credentials
+#
+# This task completes the GitHub App Manifest Flow by:
+# 1. Exchanging the callback code for app credentials via GitHub API
+# 2. Extracting all credentials from the response
+# 3. Updating .env file with the new credentials
+# 4. Optionally triggering GitHub source registration in Coolify
+#
+# Prerequisites:
+#   - User has created GitHub App via manifest flow
+#   - User has copied the CODE from GitHub's redirect URL
+#
+# Usage:
+#   ansible-playbook ... --tags github-callback -e github_app_code=ABC123DEF456
+#
+# Output:
+#   - Updated .env file with GitHub App credentials
+#   - Ready to run configure-github-source.yml
+
+- name: Validate github_app_code parameter is provided
+  ansible.builtin.fail:
+    msg: |
+      ❌ Missing required parameter: github_app_code
+
+      Please provide the CODE from GitHub's redirect URL:
+      Example: https://github.com/settings/apps/your-app?code=ABC123DEF456
+
+      Run with:
+        ansible-playbook ... --tags github-callback -e github_app_code=ABC123DEF456
+  when: github_app_code is not defined or github_app_code == ''
+  tags: [coolify, github-callback]
+
+- name: Exchange manifest code for GitHub App credentials
+  ansible.builtin.uri:
+    url: "https://api.github.com/app-manifests/{{ github_app_code }}/conversions"
+    method: POST
+    headers:
+      Accept: "application/vnd.github+json"
+      User-Agent: "Ansible-Coolify-Automation"
+    status_code: [200, 201]
+    return_content: yes
+  register: github_app_response
+  delegate_to: localhost
+  tags: [coolify, github-callback]
+
+- name: Parse GitHub App credentials from response
+  ansible.builtin.set_fact:
+    github_app_id_new: "{{ github_app_response.json.id }}"
+    github_client_id_new: "{{ github_app_response.json.client_id }}"
+    github_client_secret_new: "{{ github_app_response.json.client_secret }}"
+    github_webhook_secret_new: "{{ github_app_response.json.webhook_secret }}"
+    github_private_key_new: "{{ github_app_response.json.pem }}"
+    github_app_name: "{{ github_app_response.json.name }}"
+    github_app_owner: "{{ github_app_response.json.owner.login }}"
+  tags: [coolify, github-callback]
+
+- name: Get GitHub App installations to find installation_id
+  ansible.builtin.uri:
+    url: "https://api.github.com/app/installations"
+    method: GET
+    headers:
+      Accept: "application/vnd.github+json"
+      Authorization: "Bearer {{ github_app_response.json.client_id }}:{{ github_app_response.json.client_secret }}"
+      User-Agent: "Ansible-Coolify-Automation"
+    status_code: 200
+    return_content: yes
+  register: installations_response
+  delegate_to: localhost
+  ignore_errors: yes
+  tags: [coolify, github-callback]
+
+- name: Extract installation_id from installations (if available)
+  ansible.builtin.set_fact:
+    github_installation_id_new: "{{ installations_response.json[0].id if (installations_response is success and installations_response.json | length > 0) else '' }}"
+  when: installations_response is success
+  tags: [coolify, github-callback]
+
+- name: Display installation ID warning if not found
+  ansible.builtin.debug:
+    msg:
+      - "⚠️  Could not automatically retrieve installation_id"
+      - "   This is normal if the app hasn't been installed to a repository yet."
+      - ""
+      - "   To install the GitHub App:"
+      - "   1. Go to: https://github.com/apps/{{ github_app_name | lower | regex_replace(' ', '-') }}"
+      - "   2. Click 'Install' or 'Configure'"
+      - "   3. Select repositories to grant access"
+      - "   4. After installation, find the installation_id in the URL:"
+      - "      https://github.com/settings/installations/12345678"
+      - "   5. Manually add to .env: GITHUB_INSTALLATION_ID=12345678"
+  when: github_installation_id_new is not defined or github_installation_id_new == ''
+  tags: [coolify, github-callback]
+
+- name: Read existing .env file content
+  ansible.builtin.slurp:
+    src: "{{ role_path }}/.env"
+  register: existing_dotenv
+  when: dotenv_file.stat.exists
+  delegate_to: localhost
+  tags: [coolify, github-callback]
+
+- name: Parse existing .env content
+  ansible.builtin.set_fact:
+    dotenv_lines: "{{ (existing_dotenv.content | b64decode).split('\n') if dotenv_file.stat.exists else [] }}"
+  tags: [coolify, github-callback]
+
+- name: Update .env file with GitHub App credentials
+  ansible.builtin.copy:
+    content: |
+      {% for line in dotenv_lines %}
+      {% if not line.startswith('GITHUB_APP_ID=') and not line.startswith('GITHUB_INSTALLATION_ID=') and not line.startswith('GITHUB_CLIENT_ID=') and not line.startswith('GITHUB_CLIENT_SECRET=') and not line.startswith('GITHUB_WEBHOOK_SECRET=') and not line.startswith('GITHUB_PRIVATE_KEY=') %}
+      {{ line }}
+      {% endif %}
+      {% endfor %}
+
+      # GitHub App Configuration (Auto-generated via Manifest Flow)
+      GITHUB_APP_ID={{ github_app_id_new }}
+      {% if github_installation_id_new is defined and github_installation_id_new != '' %}
+      GITHUB_INSTALLATION_ID={{ github_installation_id_new }}
+      {% else %}
+      GITHUB_INSTALLATION_ID=
+      {% endif %}
+      GITHUB_CLIENT_ID={{ github_client_id_new }}
+      GITHUB_CLIENT_SECRET={{ github_client_secret_new }}
+      GITHUB_WEBHOOK_SECRET={{ github_webhook_secret_new }}
+      GITHUB_PRIVATE_KEY={{ github_private_key_new | regex_replace('\n', '\\n') }}
+    dest: "{{ role_path }}/.env"
+  delegate_to: localhost
+  tags: [coolify, github-callback]
+
+- name: Display success message
+  ansible.builtin.debug:
+    msg:
+      - "╔════════════════════════════════════════════════════════════════════╗"
+      - "║  GitHub App Created Successfully!                                 ║"
+      - "╚════════════════════════════════════════════════════════════════════╝"
+      - ""
+      - "✅ GitHub App: {{ github_app_name }}"
+      - "✅ Owner: {{ github_app_owner }}"
+      - "✅ App ID: {{ github_app_id_new }}"
+      - "✅ Client ID: {{ github_client_id_new }}"
+      - "{% if github_installation_id_new is defined and github_installation_id_new != '' %}✅{% else %}⚠️ {% endif %} Installation ID: {{ github_installation_id_new | default('Not installed yet - see instructions above') }}"
+      - ""
+      - "📄 Credentials saved to: {{ role_path }}/.env"
+      - ""
+      - "🔐 Private Key: Saved ({{ github_private_key_new | length }} characters)"
+      - ""
+      - "─────────────────────────────────────────────────────────────────────"
+      - "📋 NEXT STEPS:"
+      - "─────────────────────────────────────────────────────────────────────"
+      - ""
+      - "1. {% if github_installation_id_new is defined and github_installation_id_new != '' %}✅ App installed{% else %}⚠️  Install the app to your repositories (see instructions above){% endif %}"
+      - ""
+      - "2. Register GitHub App source with Coolify:"
+      - "   ansible-playbook --inventory inventory.yml \\"
+      - "     android-19-proxmox/configuration-by-ansible/vm-coolify-platform.yml \\"
+      - "     --tags github-source"
+      - ""
+      - "3. Or run full deployment:"
+      - "   make deploy-vm-coolify-containerplatform"
+      - ""
+      - "════════════════════════════════════════════════════════════════════"
+  tags: [coolify, github-callback]
+
+- name: Save credentials summary to file
+  ansible.builtin.copy:
+    content: |
+      # GitHub App Created via Manifest Flow
+
+      App Name: {{ github_app_name }}
+      Owner: {{ github_app_owner }}
+      App ID: {{ github_app_id_new }}
+      Client ID: {{ github_client_id_new }}
+      Installation ID: {{ github_installation_id_new | default('Not installed - install app to repositories first') }}
+
+      Credentials saved to: {{ role_path }}/.env
+
+      Next: Run `ansible-playbook ... --tags github-source` to register with Coolify
+    dest: "{{ role_path }}/GITHUB_APP_CREATED.md"
+  delegate_to: localhost
+  tags: [coolify, github-callback]

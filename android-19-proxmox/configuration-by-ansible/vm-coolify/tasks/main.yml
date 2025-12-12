@@ -34,7 +34,32 @@
 - name: Include Coolify installation tasks
   ansible.builtin.include_tasks: install-coolify.yml
 
+# Generate or validate Coolify API token
+- name: Include API token generation tasks
+  ansible.builtin.include_tasks: generate-api-token.yml
+  tags: [coolify, api-token]
+
+# Configure wildcard domain for automatic subdomain generation
+- name: Include wildcard domain configuration tasks
+  ansible.builtin.include_tasks: configure-wildcard-domain.yml
+  tags: [coolify, wildcard-domain]
+
+# Configure GitHub App source for repository deployments
+- name: Include GitHub source configuration tasks
+  ansible.builtin.include_tasks: configure-github-source.yml
+  tags: [coolify, github-source]
+
+# GitHub App Manifest Flow - Semi-automated app creation (optional)
+- name: Include GitHub App manifest generator tasks
+  ansible.builtin.include_tasks: create-github-app-manifest.yml
+  tags: [coolify, github-manifest]
+
+# GitHub App Manifest Flow - Process callback code (run separately with --tags github-callback)
+- name: Include GitHub App callback handler tasks
+  ansible.builtin.include_tasks: handle-github-app-callback.yml
+  tags: [coolify, github-callback]
+  when: github_app_code is defined
+
 # TODO: Implement remaining tasks
 # - Traefik reverse proxy setup
 # - Network configuration
-# - Initial admin account setup

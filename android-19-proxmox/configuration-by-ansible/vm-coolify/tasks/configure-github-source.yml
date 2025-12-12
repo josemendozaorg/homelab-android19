@@ -1,0 +1,95 @@
+---
+# Coolify GitHub App Source Configuration
+# Registers GitHub App credentials with Coolify to enable repository deployments
+#
+# Prerequisites:
+#   1. Create GitHub App once (one-time setup):
+#      https://github.com/settings/apps/new
+#   2. Install app to your organization/repositories
+#   3. Store credentials in .env file
+#
+# Output: Registers GitHub source in Coolify, enables repository deployments
+
+- name: Check if GitHub App credentials are provided in .env
+  ansible.builtin.set_fact:
+    github_app_id: "{{ (dotenv_content.content | b64decode | regex_search('GITHUB_APP_ID=(.+)', '\\1'))[0] | trim if dotenv_file.stat.exists else '' }}"
+    github_app_installation_id: "{{ (dotenv_content.content | b64decode | regex_search('GITHUB_INSTALLATION_ID=(.+)', '\\1'))[0] | trim if dotenv_file.stat.exists else '' }}"
+    github_app_client_id: "{{ (dotenv_content.content | b64decode | regex_search('GITHUB_CLIENT_ID=(.+)', '\\1'))[0] | trim if dotenv_file.stat.exists else '' }}"
+    github_app_client_secret: "{{ (dotenv_content.content | b64decode | regex_search('GITHUB_CLIENT_SECRET=(.+)', '\\1'))[0] | trim if dotenv_file.stat.exists else '' }}"
+    github_app_webhook_secret: "{{ (dotenv_content.content | b64decode | regex_search('GITHUB_WEBHOOK_SECRET=(.+)', '\\1'))[0] | trim if dotenv_file.stat.exists else '' }}"
+    github_app_private_key: "{{ (dotenv_content.content | b64decode | regex_search('GITHUB_PRIVATE_KEY=(.+)', '\\1'))[0] | trim if dotenv_file.stat.exists else '' }}"
+  ignore_errors: yes
+  tags: [coolify, github-source]
+
+- name: Display GitHub App configuration status
+  ansible.builtin.debug:
+    msg: "{{ 'GitHub App credentials found in .env' if (github_app_id is defined and github_app_id != '') else 'GitHub App credentials not configured - will skip GitHub source setup' }}"
+  tags: [coolify, github-source]
+
+- name: Skip GitHub source configuration if credentials not provided
+  ansible.builtin.meta: end_play
+  when: github_app_id is not defined or github_app_id == ''
+  tags: [coolify, github-source]
+
+- name: Get existing GitHub sources
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/sources"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ coolify_api_token }}"
+      Accept: "application/json"
+    status_code: 200
+    return_content: yes
+  register: existing_sources
+  tags: [coolify, github-source]
+
+- name: Check if GitHub source already exists
+  ansible.builtin.set_fact:
+    github_source_exists: "{{ existing_sources.json | selectattr('type', 'equalto', 'github') | list | length > 0 }}"
+  tags: [coolify, github-source]
+
+- name: Display existing source status
+  ansible.builtin.debug:
+    msg: "{{ 'GitHub source already configured' if github_source_exists else 'Will create new GitHub source' }}"
+  tags: [coolify, github-source]
+
+- name: Create GitHub App source in Coolify
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/api/v1/sources"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ coolify_api_token }}"
+      Content-Type: "application/json"
+      Accept: "application/json"
+    body_format: json
+    body:
+      type: "github"
+      name: "GitHub ({{ github_app_id }})"
+      api_url: "https://api.github.com"
+      html_url: "https://github.com"
+      app_id: "{{ github_app_id }}"
+      installation_id: "{{ github_app_installation_id }}"
+      client_id: "{{ github_app_client_id }}"
+      client_secret: "{{ github_app_client_secret }}"
+      webhook_secret: "{{ github_app_webhook_secret }}"
+      private_key: "{{ github_app_private_key }}"
+    status_code: [200, 201]
+    return_content: yes
+  register: github_source_result
+  when: not github_source_exists
+  tags: [coolify, github-source]
+
+- name: Display GitHub source creation result
+  ansible.builtin.debug:
+    msg:
+      - "======================================"
+      - "GitHub Source Configuration"
+      - "======================================"
+      - "{{ 'GitHub source created successfully' if github_source_result is changed else 'Using existing GitHub source' }}"
+      - "Source Name: GitHub ({{ github_app_id }})"
+      - "App ID: {{ github_app_id }}"
+      - "Installation ID: {{ github_app_installation_id }}"
+      - ""
+      - "✅ GitHub repositories are now accessible for deployment"
+      - "======================================"
+  tags: [coolify, github-source]

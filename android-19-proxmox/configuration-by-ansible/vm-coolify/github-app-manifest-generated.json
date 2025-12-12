@@ -1,0 +1,25 @@
+{
+  "name": "Coolify Homelab",
+  "url": "http://192.168.0.160:8000",
+  "hook_attributes": {
+    "url": "http://192.168.0.160:8000/webhooks/github",
+    "active": true
+  },
+  "redirect_url": "http://192.168.0.160:8000/auth/github/callback",
+  "callback_urls": [
+    "http://192.168.0.160:8000/auth/github/callback"
+  ],
+  "setup_url": "http://192.168.0.160:8000/settings/sources",
+  "description": "GitHub App for Coolify homelab deployment automation",
+  "public": false,
+  "default_permissions": {
+    "contents": "write",
+    "metadata": "read",
+    "pull_requests": "write",
+    "webhooks": "write"
+  },
+  "default_events": [
+    "push",
+    "pull_request"
+  ]
+}

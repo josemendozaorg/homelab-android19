@@ -1,0 +1,25 @@
+{
+  "name": "Coolify Homelab",
+  "url": "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}",
+  "hook_attributes": {
+    "url": "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/webhooks/github",
+    "active": true
+  },
+  "redirect_url": "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/auth/github/callback",
+  "callback_urls": [
+    "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/auth/github/callback"
+  ],
+  "setup_url": "http://{{ ansible_host | default(inventory_hostname) }}:{{ coolify_web_port }}/settings/sources",
+  "description": "GitHub App for Coolify homelab deployment automation",
+  "public": false,
+  "default_permissions": {
+    "contents": "write",
+    "metadata": "read",
+    "pull_requests": "write",
+    "webhooks": "write"
+  },
+  "default_events": [
+    "push",
+    "pull_request"
+  ]
+}
