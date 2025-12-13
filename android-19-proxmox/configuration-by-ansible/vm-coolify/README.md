@@ -224,7 +224,7 @@ Located in `defaults/main.yml`:
 ```yaml
 # Coolify service configuration
 coolify_web_port: 8000  # Coolify web UI port
-coolify_wildcard_domain: "coolify.homelab"  # Wildcard domain for apps
+coolify_wildcard_domain: "josemendoza.dev"  # Wildcard domain for deployed applications
 
 # Admin account (created during installation)
 coolify_admin_email: "josephrichard7@gmail.com"
@@ -242,8 +242,12 @@ The playbook includes automated wildcard domain configuration via API, but curre
 1. Access Coolify UI: http://192.168.0.160:8000
 2. Navigate to: **Servers** → **Select your server** → **Settings**
 3. Scroll to **Wildcard Domain** field
-4. Enter: `http://coolify.homelab`
+4. Enter: `http://josemendoza.dev`
 5. Click **Save**
+
+### Notes on Automation
+- The `coolify_wildcard_domain` variable in `defaults/main.yml` is used for documentation and attempted API calls.
+- Due to Coolify v4 API limitations, this setting often requires the manual UI step above.
 
 ### Expected Behavior
 

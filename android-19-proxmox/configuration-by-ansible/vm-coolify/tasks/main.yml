@@ -34,6 +34,11 @@
 - name: Include Coolify installation tasks
   ansible.builtin.include_tasks: install-coolify.yml
 
+# Configure Traefik Proxy (Dashboard Access)
+- name: Include Traefik proxy configuration tasks
+  ansible.builtin.include_tasks: configure-proxy.yml
+  tags: [coolify, proxy]
+
 # Generate or validate Coolify API token
 - name: Include API token generation tasks
   ansible.builtin.include_tasks: generate-api-token.yml
@@ -59,6 +64,8 @@
   ansible.builtin.include_tasks: handle-github-app-callback.yml
   tags: [coolify, github-callback]
   when: github_app_code is defined
+
+
 
 # TODO: Implement remaining tasks
 # - Traefik reverse proxy setup
