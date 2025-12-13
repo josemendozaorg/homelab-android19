@@ -1,0 +1,18 @@
+---
+# Configure Traefik Proxy
+# Enables insecure mode for the dashboard and ensures configuration persistence
+
+- name: Enable Traefik Dashboard insecure mode (api.insecure=true)
+  ansible.builtin.replace:
+    path: /data/coolify/proxy/docker-compose.yml
+    regexp: '--api.insecure=false'
+    replace: '--api.insecure=true'
+  register: proxy_config_update
+  become: yes
+  tags: [coolify, proxy]
+
+- name: Restart Coolify Proxy
+  ansible.builtin.shell: docker restart coolify-proxy
+  when: proxy_config_update.changed
+  become: yes
+  tags: [coolify, proxy]

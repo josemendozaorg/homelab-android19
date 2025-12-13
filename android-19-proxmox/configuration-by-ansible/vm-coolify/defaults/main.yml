@@ -34,4 +34,4 @@ letsencrypt_email: "admin@homelab.local"  # Email for Let's Encrypt
 letsencrypt_staging: true  # Use staging environment initially (recommended for testing)
 
 # Wildcard domain configuration
-coolify_wildcard_domain: "coolify.homelab"  # Wildcard domain for deployed applications
+coolify_wildcard_domain: "josemendoza.dev"  # Wildcard domain for deployed applications
