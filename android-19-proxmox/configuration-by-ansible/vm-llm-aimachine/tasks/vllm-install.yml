@@ -118,8 +118,8 @@
 - name: Enable and start vLLM service
   ansible.builtin.systemd:
     name: vllm
-    enabled: true
-    state: started
+    enabled: "{{ vllm_service_enabled }}"
+    state: "{{ 'started' if vllm_service_enabled else 'stopped' }}"
   become: yes
 
 - name: Wait for vLLM API to become available
