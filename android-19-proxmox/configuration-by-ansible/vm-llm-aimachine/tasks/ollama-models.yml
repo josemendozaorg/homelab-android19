@@ -1,0 +1,64 @@
+---
+# Ollama Model Management Tasks
+# Pull and manage LLM models for inference-time scaling
+# Implements DeepSeek-R1:14B with native <think> token support
+
+- name: Wait for Ollama service to be ready
+  ansible.builtin.uri:
+    url: "http://{{ ollama_host | replace('0.0.0.0', 'localhost') }}:{{ ollama_port }}"
+    method: GET
+    status_code: 200
+  register: ollama_ready_check
+  until: ollama_ready_check.status == 200
+  retries: 30
+  delay: 5
+  failed_when: false
+
+- name: Verify Ollama service is accessible
+  ansible.builtin.assert:
+    that:
+      - ollama_ready_check.status == 200
+    fail_msg: "Ollama service not accessible at http://{{ ollama_host }}:{{ ollama_port }}"
+    success_msg: "Ollama service is ready"
+
+- name: Get list of currently installed models
+  ansible.builtin.command: ollama list
+  register: ollama_list_output
+  changed_when: false
+
+- name: Display currently installed models
+  ansible.builtin.debug:
+    msg: "Installed models: {{ ollama_list_output.stdout_lines }}"
+
+- name: Pull configured models
+  ansible.builtin.command: "ollama pull {{ item }}"
+  loop: "{{ ollama_models_to_pull }}"
+  when: item not in ollama_list_output.stdout
+  register: ollama_pull_result
+  async: "{{ ollama_model_pull_timeout }}"
+  poll: 30
+  changed_when: ollama_pull_result.rc == 0
+
+- name: Verify models were pulled successfully
+  ansible.builtin.command: ollama list
+  register: ollama_list_after_pull
+  changed_when: false
+
+- name: Assert all configured models are installed
+  ansible.builtin.assert:
+    that:
+      - "item.split(':')[0] in ollama_list_after_pull.stdout"
+    fail_msg: "Model {{ item }} was not installed successfully"
+    success_msg: "Model {{ item }} is installed"
+  loop: "{{ ollama_models_to_pull }}"
+
+- name: Display final model status
+  ansible.builtin.debug:
+    msg: |
+      ✅ Ollama Model Management Complete
+      Configured models: {{ ollama_models_to_pull | join(', ') }}
+      Installed models:
+      {{ ollama_list_after_pull.stdout }}
+
+      API Endpoint: http://{{ vm_config.ip | default('192.168.0.140') }}:{{ ollama_port }}
+      Ready for inference-time scaling with DeepSeek-R1!

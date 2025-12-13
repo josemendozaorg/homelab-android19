@@ -38,6 +38,11 @@
   include_tasks: ollama-install.yml
   tags: [ollama, ai, llm]
 
+- name: Include Ollama model management tasks
+  include_tasks: ollama-models.yml
+  tags: [ollama, models, ai, llm]
+  when: ollama_pull_models_on_deploy | default(false)
+
 - name: Display deployment summary
   ansible.builtin.debug:
     msg: |
