@@ -31,7 +31,7 @@ vllm_venv_path: "/opt/vllm-env"  # Python virtual environment path (Ubuntu 24.04
 vllm_model_name: "Qwen/Qwen2.5-7B-Instruct-AWQ"  # AWQ quantized for 16GB GPU (10-11GB VRAM)
 vllm_gpu_memory_utilization: 0.85  # Reserve 15% for system overhead
 vllm_service_user: "vllm"
-vllm_service_enabled: true  # Auto-start on boot
+vllm_service_enabled: false  # Auto-start on boot
 vllm_systemd_service: true  # Install as systemd service
 
 # Ollama Configuration

@@ -59,8 +59,8 @@
 - name: Enable and start Ollama service
   ansible.builtin.systemd:
     name: ollama
-    enabled: true
-    state: started
+    enabled: "{{ ollama_service_enabled }}"
+    state: "{{ 'started' if ollama_service_enabled else 'stopped' }}"
   become: yes
 
 - name: Wait for Ollama API to become available
