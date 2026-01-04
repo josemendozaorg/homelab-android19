@@ -85,3 +85,10 @@ def test_ollama_handles_gpu_configuration(ollama_tasks_file):
     # Ollama automatically detects CUDA, but should set environment variables
     assert 'CUDA' in content or 'nvidia' in content.lower() or 'gpu' in content.lower(), \
            "Should configure GPU-related settings for Ollama"
+
+
+def test_ollama_has_api_key_configuration(ollama_tasks_file):
+    """Should configure OLLAMA_API_KEY environment variable."""
+    content = ollama_tasks_file.read_text()
+    assert 'OLLAMA_API_KEY' in content, \
+           "Should configure OLLAMA_API_KEY environment variable"

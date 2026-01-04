@@ -44,6 +44,7 @@
       [Service]
       Environment="OLLAMA_HOST={{ ollama_host }}:{{ ollama_port }}"
       Environment="OLLAMA_MODELS={{ ollama_model_dir }}"
+      Environment="OLLAMA_API_KEY={{ ollama_api_key }}"
       Environment="CUDA_VISIBLE_DEVICES=0"
     owner: root
     group: root

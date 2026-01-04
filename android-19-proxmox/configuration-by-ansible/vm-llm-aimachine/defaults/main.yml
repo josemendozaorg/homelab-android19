@@ -39,6 +39,7 @@ vllm_systemd_service: true  # Install as systemd service
 ollama_version: "latest"  # Can pin to specific version
 ollama_port: 11434
 ollama_host: "0.0.0.0"  # Listen on all interfaces
+ollama_api_key: "d247a263544244518e19143d0b0d9260.3JAzVtfBIar7-3rVMyu9UFhu"
 ollama_model_dir: "/opt/ollama/models"
 ollama_service_enabled: true  # Auto-start on boot
 ollama_systemd_service: true  # Install as systemd service
