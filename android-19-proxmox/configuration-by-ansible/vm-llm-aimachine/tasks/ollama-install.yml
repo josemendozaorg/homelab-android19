@@ -44,7 +44,6 @@
       [Service]
       Environment="OLLAMA_HOST={{ ollama_host }}:{{ ollama_port }}"
       Environment="OLLAMA_MODELS={{ ollama_model_dir }}"
-      Environment="OLLAMA_API_KEY={{ ollama_api_key }}"
       Environment="CUDA_VISIBLE_DEVICES=0"
     owner: root
     group: root
@@ -103,19 +102,16 @@
 - name: Display Ollama cloud authentication instructions
   ansible.builtin.debug:
     msg: |
-      ⚠️ Ollama Cloud Models May Require Manual Authentication
+      ⚠️ Ollama Cloud Models Require Manual Authentication
       
-      Cloud models (like glm-4.7:cloud) may need web-based authentication:
+      Cloud models (like glm-4.7:cloud) require machine-level authorization:
       
       1. SSH into this VM: ssh ubuntu@{{ vm_config.ip | default('192.168.0.140') }}
       2. Run: ollama signin
-      3. Complete browser-based OAuth flow at ollama.com
-      4. Return to terminal after auth completes
+      3. Complete the web-based OAuth flow in your browser
+      4. Once complete, you can run cloud models via the CLI
       
-      Note: The OLLAMA_API_KEY environment variable is for direct Ollama Cloud API access (via HTTPS/SDK).
-      It does NOT replace 'ollama signin' for offloading cloud models via the local server CLI.
-      
-      Local models (like deepseek-r1:14b) work without authentication and are recommended for production use.
+      Local models (like deepseek-r1:14b) work without authentication and are recommended for production.
       
       Cloud models: glm-4.7:cloud
       Local models: deepseek-r1:14b, mistral:latest, llava:13b

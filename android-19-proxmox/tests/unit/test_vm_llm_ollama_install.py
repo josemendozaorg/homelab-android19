@@ -87,13 +87,6 @@ def test_ollama_handles_gpu_configuration(ollama_tasks_file):
            "Should configure GPU-related settings for Ollama"
 
 
-def test_ollama_has_api_key_configuration(ollama_tasks_file):
-    """Should configure OLLAMA_API_KEY environment variable."""
-    content = ollama_tasks_file.read_text()
-    assert 'OLLAMA_API_KEY' in content, \
-           "Should configure OLLAMA_API_KEY environment variable"
-
-
 def test_ollama_has_cloud_auth_instructions(ollama_tasks_file):
     """Should provide cloud authentication instructions."""
     content = ollama_tasks_file.read_text()
