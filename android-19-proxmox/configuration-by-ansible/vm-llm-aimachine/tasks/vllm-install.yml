@@ -121,6 +121,7 @@
     enabled: "{{ vllm_service_enabled }}"
     state: "{{ 'started' if vllm_service_enabled else 'stopped' }}"
   become: yes
+  when: vllm_service_enabled | bool
 
 - name: Wait for vLLM API to become available
   ansible.builtin.uri:
@@ -132,6 +133,7 @@
   retries: 12
   delay: 5
   failed_when: false
+  when: vllm_service_enabled | bool
 
 - name: Verify vLLM service is running
   ansible.builtin.systemd:
@@ -139,13 +141,30 @@
     state: started
   check_mode: yes
   register: vllm_service_status
+  when: vllm_service_enabled | bool
 
 - name: Display vLLM service status
   ansible.builtin.debug:
     msg: |
       ✅ vLLM Installation Complete
-      Service: {{ 'running' if vllm_service_status.status is defined else 'installed' }}
+      Service: {{ 'enabled' if vllm_service_enabled | bool else 'disabled' }}
       API Endpoint: http://{{ vllm_host }}:{{ vllm_port }}
       Health Endpoint: http://{{ vllm_host }}:{{ vllm_port }}/health
       Model Directory: {{ vllm_model_dir }}
-      Auto-start: Enabled
+      Auto-start: {{ 'Enabled' if vllm_service_enabled | bool else 'Disabled' }}
+  when: vllm_service_enabled | bool
+
+- name: Display vLLM disabled status
+  ansible.builtin.debug:
+    msg: |
+      ✅ vLLM Installation Complete (Disabled by Default)
+      
+      vLLM is installed and configured but disabled.
+      To enable vLLM:
+      - Set vllm_service_enabled: true in defaults/main.yml
+      - Run this playbook again
+      
+      API Endpoint: http://{{ vllm_host }}:{{ vllm_port }}
+      Model Directory: {{ vllm_model_dir }}
+      Auto-start: Disabled
+  when: not vllm_service_enabled | bool

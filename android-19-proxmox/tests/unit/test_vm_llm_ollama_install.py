@@ -85,3 +85,10 @@ def test_ollama_handles_gpu_configuration(ollama_tasks_file):
     # Ollama automatically detects CUDA, but should set environment variables
     assert 'CUDA' in content or 'nvidia' in content.lower() or 'gpu' in content.lower(), \
            "Should configure GPU-related settings for Ollama"
+
+
+def test_ollama_has_cloud_auth_instructions(ollama_tasks_file):
+    """Should provide cloud authentication instructions."""
+    content = ollama_tasks_file.read_text()
+    assert 'ollama signin' in content.lower() and 'cloud' in content.lower(), \
+           "Should provide instructions for cloud model authentication"
