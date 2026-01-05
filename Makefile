@@ -12,7 +12,8 @@ INVENTORY := inventory.yml
 
 # Declare phony targets
 .PHONY: help env-all env-setup env-shell env-clean env-check \
-        test-ping test-ping-bastion test-ping-proxmox test-catalog test-unit test-all \
+        test-ping test-ping-bastion test-ping-proxmox test-catalog test-unit test-all test-single \
+        lint format services-list \
         setup-ssh \
         bastion-setup-sudo bastion-deploy \
         proxmox-host-setup proxmox-host-check proxmox-host-gpu-passthrough proxmox-host-pcie-aspm \
@@ -100,6 +101,21 @@ test-unit: ## Run all unit tests
 	$(ANSIBLE_EXEC) pytest android-19-proxmox/tests/unit/ -v
 
 test-all: test-unit test-ping ## Run all tests (unit + connectivity)
+
+test-single: ## Run a single test file (usage: make test-single FILE=path/to/test.py)
+	$(ANSIBLE_EXEC) pytest $(FILE) -v
+
+lint: ## Run all linters (black, ansible-lint, terraform fmt)
+	$(ANSIBLE_EXEC) black --check .
+	$(ANSIBLE_EXEC) ansible-lint
+	$(ANSIBLE_EXEC) sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform fmt -check -recursive"
+
+format: ## Run all formatters (black, terraform fmt)
+	$(ANSIBLE_EXEC) black .
+	$(ANSIBLE_EXEC) sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform fmt -recursive"
+
+services-list: ## List all services defined in the infrastructure catalog
+	@$(ANSIBLE_EXEC) python3 -c "import yaml; cat=yaml.safe_load(open('android-19-proxmox/infrastructure-catalog.yml')); print('\n'.join([f'{k}: {v[\"name\"]} ({v[\"ip\"]}) - {v[\"description\"]}' for k,v in cat['services'].items()]))"
 
 # Android #16 Bastion
 bastion-setup-sudo: ## Configure passwordless sudo on bastion (run once)
