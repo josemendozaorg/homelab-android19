@@ -1,0 +1,33 @@
+---
+# DNS Verification Tasks
+# Verify DNS resolution from both host and container levels
+
+- name: Verify Host DNS resolution (internal)
+  ansible.builtin.command: nslookup proxmox.homelab
+  register: host_dns_test
+  failed_when: host_dns_test.rc != 0
+  changed_when: false
+
+- name: Verify Host DNS resolution (external service)
+  ansible.builtin.command: nslookup ollama.homelab
+  register: host_ollama_test
+  failed_when: host_ollama_test.rc != 0
+  changed_when: false
+
+- name: Verify Container DNS resolution (via Docker)
+  ansible.builtin.command: docker run --rm busybox nslookup ollama.homelab
+  register: container_dns_test
+  failed_when: container_dns_test.rc != 0
+  changed_when: false
+
+- name: Display DNS Verification Results
+  ansible.builtin.debug:
+    msg: |
+      ✅ DNS Verification Successful
+
+      🏠 Host Level:
+      - proxmox.homelab: {{ host_dns_test.stdout_lines[4] if host_dns_test.stdout_lines|length > 4 else 'RESOLVED' }}
+      - ollama.homelab: {{ host_ollama_test.stdout_lines[4] if host_ollama_test.stdout_lines|length > 4 else 'RESOLVED' }}
+
+      🐳 Container Level (Docker):
+      - ollama.homelab: RESOLVED (verified via busybox)

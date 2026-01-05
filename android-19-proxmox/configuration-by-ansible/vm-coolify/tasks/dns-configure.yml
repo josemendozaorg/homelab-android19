@@ -1,0 +1,52 @@
+---
+# DNS Configuration Tasks
+# Configure Coolify VM to use AdGuard Home DNS server
+
+- name: Display DNS configuration start
+  ansible.builtin.debug:
+    msg: |
+      🌐 Configuring DNS to use AdGuard Home
+
+      DNS Server: {{ catalog.network.dns }}
+      VM Host: {{ ansible_host }}
+
+- name: Install dnsutils for nslookup
+  ansible.builtin.apt:
+    name: dnsutils
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Create resolved.conf.d directory if it doesn't exist
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Configure DNS using systemd-resolved
+  ansible.builtin.copy:
+    content: |
+      [Resolve]
+      DNS={{ catalog.network.dns }}
+      Domains=homelab ~.
+    dest: /etc/systemd/resolved.conf.d/adguard.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  register: dns_configured
+
+- name: Restart systemd-resolved to apply changes
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    state: restarted
+  become: yes
+  when: dns_configured.changed
+
+- name: Wait for DNS changes to propagate
+  ansible.builtin.pause:
+    seconds: 2
+  when: dns_configured.changed

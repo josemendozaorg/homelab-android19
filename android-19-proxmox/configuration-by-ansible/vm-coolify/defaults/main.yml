@@ -19,7 +19,7 @@ coolify_admin_password: "{{ lookup('password', '/tmp/coolify_admin_password char
 
 # Coolify service configuration
 coolify_web_port: 8000  # Coolify web UI port (default port, mapped to container's 8080)
-coolify_domain: "coolify.homelab.local"  # Local domain for Coolify
+coolify_domain: "coolify.homelab"  # Local domain for Coolify
 
 # Docker configuration
 docker_compose_version: "latest"  # Docker Compose version

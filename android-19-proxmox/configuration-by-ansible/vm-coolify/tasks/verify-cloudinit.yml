@@ -2,7 +2,7 @@
 # Cloud-init verification tasks
 # Verify cloud-init completed successfully before proceeding with Coolify installation
 
-- name: Wait for cloud-init to complete
+- name: Wait for cloud-init status to be done
   ansible.builtin.command: cloud-init status --long
   register: cloudinit_status
   changed_when: false

@@ -26,9 +26,24 @@
 - name: Include cloud-init verification tasks
   ansible.builtin.include_tasks: verify-cloudinit.yml
 
+# Configure Host DNS to use AdGuard Home
+- name: Include DNS configuration tasks
+  ansible.builtin.include_tasks: dns-configure.yml
+  tags: [coolify, dns, network]
+
 # Install Docker and Docker Compose
 - name: Include Docker installation tasks
   ansible.builtin.include_tasks: install-docker.yml
+
+# Configure Docker to use AdGuard Home DNS for containers
+- name: Include Docker DNS configuration tasks
+  ansible.builtin.include_tasks: configure-docker-dns.yml
+  tags: [coolify, docker, dns]
+
+# Verify DNS resolution before proceeding with Coolify
+- name: Include DNS verification tasks
+  ansible.builtin.include_tasks: dns-verify.yml
+  tags: [coolify, dns, verify]
 
 # Install Coolify platform
 - name: Include Coolify installation tasks
@@ -65,8 +80,21 @@
   tags: [coolify, github-callback]
   when: github_app_code is defined
 
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg: |
+      🎉 Coolify Platform Configuration Complete!
 
+      ✅ VM Details:
+      - VM ID: 160
+      - Name: {{ vm_config.name }}
+      - IP Address: {{ vm_config.ip }}
+      - DNS Name: http://{{ coolify_domain }}:8000
 
-# TODO: Implement remaining tasks
-# - Traefik reverse proxy setup
-# - Network configuration
+      ✅ DNS Configuration:
+      - Host DNS: Configured to {{ catalog.network.dns }}
+      - Docker DNS: Configured to {{ catalog.network.dns }}
+      - Deployed apps will automatically resolve .homelab domains
+
+      🚀 Services are configured for auto-start on boot
+      🌐 Ready for application deployments!

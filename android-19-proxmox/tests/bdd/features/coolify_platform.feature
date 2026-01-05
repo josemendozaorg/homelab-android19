@@ -16,7 +16,7 @@ Feature: Coolify Platform Deployment on Proxmox
     And the VM has 8 CPU cores, 16GB RAM, and 200GB disk
     And cloud-init configures SSH keys and network settings
     And Ansible installs Coolify and all dependencies
-    And the Coolify web UI is accessible at "https://coolify.homelab.local:8000"
+    And the Coolify web UI is accessible at "https://coolify.homelab:8000"
     And an initial admin account is created
 
   @application @github @slow

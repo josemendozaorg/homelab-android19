@@ -1,0 +1,30 @@
+---
+# Docker DNS Configuration Tasks
+# Ensure containers deployed by Coolify can resolve Homelab DNS
+
+- name: Create Docker daemon configuration directory
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: Configure Docker daemon to use AdGuard DNS
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "dns": ["{{ catalog.network.dns }}", "1.1.1.1"]
+      }
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  register: docker_dns_config
+
+- name: Restart Docker service to apply DNS changes
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+  become: yes
+  when: docker_dns_config.changed
