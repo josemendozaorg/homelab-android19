@@ -346,7 +346,7 @@ def access_dashboard(test_context):
     raise NotImplementedError(
         "Step not yet implemented: Access Coolify dashboard\n"
         "Implementation needed:\n"
-        "1. HTTP GET to https://coolify.homelab.local:8000\n"
+        "1. HTTP GET to https://coolify.homelab:8000\n"
         "2. Authenticate if needed\n"
         "3. Store response in test_context"
     )

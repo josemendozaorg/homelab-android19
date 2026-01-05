@@ -21,7 +21,7 @@
 - **Then:** Terraform creates VM 160 with Ubuntu 24.04 Server
 - **And:** cloud-init configures SSH keys and network settings
 - **And:** Ansible installs Coolify and all dependencies
-- **And:** Coolify web UI is accessible at https://coolify.homelab.local:8000
+- **And:** Coolify web UI is accessible at https://coolify.homelab:8000
 - **And:** initial admin account is created
 
 **Acceptance Test:** `tests/bdd/features/coolify_platform.feature:73`

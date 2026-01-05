@@ -48,14 +48,14 @@ Deploy a self-hosted Platform-as-a-Service (PaaS) solution on Proxmox to enable 
 
 - **Network Configuration**: Set up proper network access
   - Static IP address assignment (192.168.0.160)
-  - DNS configuration for Coolify web UI (coolify.homelab.local)
+  - DNS configuration for Coolify web UI (coolify.homelab)
   - Firewall rules (ports 80, 443, 8000 for Coolify)
   - Traefik/Caddy reverse proxy for application routing
 
 ### User Interactions
 **Homelab Administrator:**
 1. Deploys Coolify platform using Makefile command: `make deploy-vm-coolify-platform`
-2. Accesses Coolify web UI at https://coolify.homelab.local:8000
+2. Accesses Coolify web UI at https://coolify.homelab:8000
 3. Configures GitHub integration through Coolify settings
 4. Creates new applications/services through Coolify dashboard
 5. Monitors application health and resource usage through web UI
@@ -76,7 +76,7 @@ Deploy a self-hosted Platform-as-a-Service (PaaS) solution on Proxmox to enable 
 **Then** Terraform creates VM 160 with Ubuntu 24.04 Server
 **And** cloud-init configures SSH keys and network settings
 **And** Ansible installs Coolify and all dependencies
-**And** Coolify web UI is accessible at https://coolify.homelab.local:8000
+**And** Coolify web UI is accessible at https://coolify.homelab:8000
 **And** initial admin account is created
 
 ### Scenario 2: GitHub Repository Deployment
@@ -157,7 +157,7 @@ Deploy a self-hosted Platform-as-a-Service (PaaS) solution on Proxmox to enable 
 - [ ] Docker and Docker Compose are installed and running
 - [ ] Coolify v4 is installed with PostgreSQL database
 - [ ] Reverse proxy (Traefik or Caddy) is configured and running
-- [ ] Coolify web UI is accessible at https://coolify.homelab.local:8000
+- [ ] Coolify web UI is accessible at https://coolify.homelab:8000
 - [ ] Initial admin account can log in successfully
 - [ ] GitHub OAuth integration is configured and functional
 - [ ] Test application can be deployed from GitHub repository
@@ -215,7 +215,7 @@ Deploy a self-hosted Platform-as-a-Service (PaaS) solution on Proxmox to enable 
 ### Technical Constraints
 - **Proxmox version**: Requires Proxmox VE 8.0+ for cloud-init support
 - **Network**: Requires DHCP or static IP on 192.168.0.x network
-- **DNS**: Requires local DNS server (AdGuard) for coolify.homelab.local resolution
+- **DNS**: Requires local DNS server (AdGuard) for coolify.homelab resolution
 - **Internet access**: VM requires internet for downloading Coolify, Docker images, and Let's Encrypt validation
 - **ZFS pool**: Requires existing ZFS pool on Proxmox for backup storage
 - **Cloud image template**: Depends on VM 9000 (Ubuntu 24.04 cloud image) existing
