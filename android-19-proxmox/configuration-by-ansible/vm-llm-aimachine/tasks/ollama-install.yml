@@ -112,7 +112,10 @@
       3. Complete browser-based OAuth flow at ollama.com
       4. Return to terminal after auth completes
       
-      Note: Local models (like deepseek-r1:14b) work without authentication and are recommended for production use.
+      Note: The OLLAMA_API_KEY environment variable is for direct Ollama Cloud API access (via HTTPS/SDK).
+      It does NOT replace 'ollama signin' for offloading cloud models via the local server CLI.
+      
+      Local models (like deepseek-r1:14b) work without authentication and are recommended for production use.
       
       Cloud models: glm-4.7:cloud
       Local models: deepseek-r1:14b, mistral:latest, llava:13b
