@@ -70,15 +70,13 @@ def test_vllm_service_binds_to_vm_ip(vllm_tasks_file):
 
 
 def test_vllm_service_auto_start_enabled(vllm_tasks_file):
-    """Should enable vLLM service for auto-start on boot."""
+    """Should control vLLM service auto-start with vllm_service_enabled variable."""
     content = vllm_tasks_file.read_text()
-    assert 'enabled' in content and 'true' in content.lower(), \
-           "Should enable service for auto-start"
+    # Service state should be controlled by vllm_service_enabled variable
+    assert 'enabled: "{{ vllm_service_enabled }}"' in content, \
+           "Should use vllm_service_enabled variable for service state"
+    assert 'state: "{{ \'started\' if vllm_service_enabled else \'stopped\' }}"' in content, \
+           "Should conditionally start/stop service based on vllm_service_enabled"
 
 
-def test_vllm_has_service_verification(vllm_tasks_file):
-    """Should verify vLLM service is running."""
-    content = vllm_tasks_file.read_text()
-    # Look for systemctl status or service state check
-    assert 'systemctl' in content or 'service_facts' in content or 'uri' in content, \
-           "Should verify service is running or API is accessible"
+

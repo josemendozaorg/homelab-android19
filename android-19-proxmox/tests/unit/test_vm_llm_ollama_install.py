@@ -92,3 +92,10 @@ def test_ollama_has_api_key_configuration(ollama_tasks_file):
     content = ollama_tasks_file.read_text()
     assert 'OLLAMA_API_KEY' in content, \
            "Should configure OLLAMA_API_KEY environment variable"
+
+
+def test_ollama_has_cloud_auth_instructions(ollama_tasks_file):
+    """Should provide cloud authentication instructions."""
+    content = ollama_tasks_file.read_text()
+    assert 'ollama signin' in content.lower() and 'cloud' in content.lower(), \
+           "Should provide instructions for cloud model authentication"

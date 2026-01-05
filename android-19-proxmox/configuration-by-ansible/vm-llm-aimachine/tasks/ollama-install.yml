@@ -99,3 +99,20 @@
 - name: Display available Ollama models
   ansible.builtin.debug:
     msg: "Available models: {{ ollama_list_output.stdout_lines if ollama_list_output.stdout_lines else 'No models downloaded yet' }}"
+
+- name: Display Ollama cloud authentication instructions
+  ansible.builtin.debug:
+    msg: |
+      ⚠️ Ollama Cloud Models May Require Manual Authentication
+      
+      Cloud models (like glm-4.7:cloud) may need web-based authentication:
+      
+      1. SSH into this VM: ssh ubuntu@{{ vm_config.ip | default('192.168.0.140') }}
+      2. Run: ollama signin
+      3. Complete browser-based OAuth flow at ollama.com
+      4. Return to terminal after auth completes
+      
+      Note: Local models (like deepseek-r1:14b) work without authentication and are recommended for production use.
+      
+      Cloud models: glm-4.7:cloud
+      Local models: deepseek-r1:14b, mistral:latest, llava:13b
