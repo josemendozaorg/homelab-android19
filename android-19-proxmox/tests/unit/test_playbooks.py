@@ -228,3 +228,20 @@ def test_vm_llm_aimachine_inventory_entry(project_root):
         "VM should use ubuntu user (cloud-init default)"
     assert vm_config['vm_id'] == 140, \
         "VM ID should be 140"
+
+
+def test_vm_llm_aimachine_role_dns_tasks(project_root):
+    """VM LLM role includes DNS configuration tasks."""
+    role_dir = project_root / "configuration-by-ansible" / "vm-llm-aimachine"
+    
+    # Check that dns-configure.yml exists
+    dns_tasks = role_dir / "tasks" / "dns-configure.yml"
+    assert dns_tasks.exists(), "Role missing tasks/dns-configure.yml"
+    
+    # Check that main.yml includes dns-configure.yml
+    main_tasks = role_dir / "tasks" / "main.yml"
+    content = main_tasks.read_text()
+    assert "include_tasks: dns-configure.yml" in content, \
+        "main.yml should include dns-configure.yml"
+    assert "tags: [dns, network]" in content, \
+        "DNS tasks should be tagged with dns and network"

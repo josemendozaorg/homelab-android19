@@ -35,8 +35,10 @@
 
           ✅ Installed Services:
           - NVIDIA Drivers: Installed with CUDA {{ cuda_version_min }}+
-          - vLLM API Server: http://{{ vm_config.ip }}:{{ vllm_port }}
-          - Ollama: http://{{ vm_config.ip }}:{{ ollama_port }}
+          - vLLM API Server: http://vllm.homelab:{{ vllm_port }}
+          - Ollama: http://ollama.homelab:{{ ollama_port }}
+          - DNS Name (Machine): http://ai.homelab
+          - DNS Name (Full): http://vm-llm-aimachine.homelab
 
           🚀 Services are configured for auto-start on boot
           📁 Model Storage:

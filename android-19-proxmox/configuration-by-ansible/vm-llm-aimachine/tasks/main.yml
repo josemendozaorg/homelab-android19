@@ -26,6 +26,10 @@
     gpu_device_id: "{{ vm_config.gpu_passthrough.device_id }}"
     gpu_passthrough_enabled: true  # Always configure GPU passthrough (catalog.enabled is for Terraform only)
 
+- name: Include DNS configuration tasks
+  include_tasks: dns-configure.yml
+  tags: [dns, network]
+
 - name: Include NVIDIA driver installation tasks
   include_tasks: nvidia-drivers.yml
   tags: [nvidia, drivers, gpu]
@@ -50,8 +54,8 @@
 
       🔧 Installed Components:
       - NVIDIA Drivers: {{ nvidia_driver_preference }}-kernel modules
-      - vLLM API Server: http://{{ vllm_host }}:{{ vllm_port }}
-      - Ollama: http://{{ vm_config.ip }}:{{ ollama_port }}
+      - vLLM API Server: http://vllm.homelab:{{ vllm_port }}
+      - Ollama: http://ollama.homelab:{{ ollama_port }}
 
       📁 Model Storage:
       - vLLM models: {{ vllm_model_dir }}

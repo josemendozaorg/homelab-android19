@@ -110,6 +110,10 @@ adguard_dns_rewrites:
     ip: "{{ catalog.services[140].ip }}"
   - domain: "vllm.homelab"
     ip: "{{ catalog.services[140].ip }}"
+  - domain: "ai.homelab"
+    ip: "{{ catalog.services[140].ip }}"
+  - domain: "vm-llm-aimachine.homelab"
+    ip: "{{ catalog.services[140].ip }}"
 
 # Custom filtering rules for homelab
 adguard_custom_filtering_rules:

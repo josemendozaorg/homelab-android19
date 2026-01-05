@@ -139,8 +139,10 @@
       - "✅ DNS Test: {{ 'PASS' if dns_test.rc == 0 else 'FAIL' }}"
       - ""
       - "🌐 Homelab DNS Domains:"
-      - "{% for rewrite in adguard_dns_rewrites %}  • {{ rewrite.domain }} → {{ rewrite.ip }}
-{% endfor %}"
+      - >-
+        {% for rewrite in adguard_dns_rewrites %}
+        • {{ rewrite.domain }} → {{ rewrite.ip }}
+        {% endfor %}
       - ""
       - "📋 Next steps:"
       - "1. Update router/DHCP to use {{ adguard_static_ip }} as primary DNS"
