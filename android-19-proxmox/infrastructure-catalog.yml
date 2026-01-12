@@ -92,7 +92,7 @@ services:
       hostpci: "hostpci0"      # Proxmox hostpci identifier
     resources:
       cores: 32
-      memory: 51200  # 50GB in MB
+      memory: 32768  # 32GB in MB
       disk: 500
     storage: "vm-storage"
 
