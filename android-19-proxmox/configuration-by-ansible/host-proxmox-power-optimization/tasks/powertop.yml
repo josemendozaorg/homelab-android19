@@ -8,9 +8,12 @@
     dest: /etc/systemd/system/powertop-autotune.service
     mode: '0644'
   notify: reload_systemd
+  tags: [power, powertop]
 
 - name: Enable and start PowerTop auto-tune service
   systemd:
     name: powertop-autotune.service
     enabled: yes
     state: started
+  tags: [power, powertop]
+

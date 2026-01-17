@@ -8,3 +8,5 @@
       - powertop
     state: present
     update_cache: yes
+  tags: [power, packages]
+

@@ -8,9 +8,12 @@
     dest: /etc/systemd/system/pcie-aspm-safety.service
     mode: '0644'
   notify: reload_systemd
+  tags: [power, safety]
 
 - name: Enable and start ASPM safety service
   systemd:
     name: pcie-aspm-safety.service
     enabled: yes
     state: started
+  tags: [power, safety]
+
