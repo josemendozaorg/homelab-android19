@@ -134,6 +134,18 @@ services:
       disk: 200
     storage: "vm-storage"
 
+  126:
+    name: "monitoring"
+    type: "container"
+    ip: "192.168.0.26"
+    description: "Observability stack (Prometheus, Grafana, Node Exporter) for hardware monitoring"
+    template: "debian-12-standard_12.12-1_amd64.tar.zst"
+    resources:
+      cores: 2
+      memory: 4096
+      disk: 20
+    storage: "vm-storage"
+
 
 
 # Proxmox Host Configuration

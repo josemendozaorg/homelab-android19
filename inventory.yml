@@ -46,5 +46,12 @@ all:
           vm_id: 160
           vm_type: platform
           description: "Coolify - Self-hosted PaaS platform for application deployment"
+        monitoring:
+          ansible_host: 192.168.0.26
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
+          vm_id: 126
+          vm_type: lxc
+          description: "Observability stack (Prometheus, Grafana, Node Exporter)"
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
