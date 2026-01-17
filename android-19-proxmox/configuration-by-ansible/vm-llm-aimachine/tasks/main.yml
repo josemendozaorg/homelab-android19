@@ -34,6 +34,10 @@
   include_tasks: nvidia-drivers.yml
   tags: [nvidia, drivers, gpu]
 
+- name: Include GPU Power Management tasks
+  include_tasks: power-management.yml
+  tags: [power, nvidia, ollama]
+
 - name: Include vLLM installation tasks
   include_tasks: vllm-install.yml
   tags: [vllm, ai, llm]

@@ -23,3 +23,10 @@
     state: restarted
     daemon_reload: yes
   become: yes
+
+- name: Restart NVIDIA Power Limit
+  ansible.builtin.systemd:
+    name: nvidia-power-limit
+    state: restarted
+    daemon_reload: yes
+  become: yes
