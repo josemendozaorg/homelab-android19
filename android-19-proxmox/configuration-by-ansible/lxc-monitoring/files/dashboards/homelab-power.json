@@ -63,8 +63,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_hwmon_power_watt{job=\"proxmox-host\", sensor=\"power1\"}",
+          "expr": "node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power1\"}",
           "legendFormat": "__auto",
+
           "range": true,
           "refId": "A"
         }
@@ -151,8 +152,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "apcupsd_loadpct{job=\"proxmox-host\"}",
+          "expr": "apcupsd_loadpct{job=\"node\", node=\"proxmox\"}",
           "legendFormat": "__auto",
+
           "range": true,
           "refId": "A"
         }
@@ -195,8 +197,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "apcupsd_bcharge{job=\"proxmox-host\"}",
+          "expr": "apcupsd_bcharge{job=\"node\", node=\"proxmox\"}",
           "legendFormat": "__auto",
+
           "range": true,
           "refId": "A"
         }
@@ -290,8 +293,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_hwmon_power_watt{job=\"proxmox-host\", sensor=\"power1\"}",
+          "expr": "node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power1\"}",
           "legendFormat": "Wall Power (Total)",
+
           "range": true,
           "refId": "A"
         },
@@ -301,8 +305,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_hwmon_power_watt{job=\"proxmox-host\", sensor=\"power2\"}",
+          "expr": "node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power2\"}",
           "legendFormat": "12V Rail (CPU/GPU)",
+
           "range": true,
           "refId": "B"
         },
