@@ -56,6 +56,10 @@
     daemon_reload: yes
   tags: [monitoring, host]
 
+- name: Install and configure apcupsd_exporter
+  include_tasks: apcupsd-exporter.yml
+  tags: [monitoring, host, ups]
+
 - name: Verify Node Exporter is running
   uri:
     url: "http://localhost:9100/metrics"

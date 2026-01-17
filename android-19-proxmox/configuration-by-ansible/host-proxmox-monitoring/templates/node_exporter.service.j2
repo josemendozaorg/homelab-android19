@@ -7,8 +7,6 @@ User=prometheus
 Group=prometheus
 Type=simple
 ExecStart=/usr/local/bin/node_exporter \
-    --collector.apcupsd \
-    --collector.apcupsd.addr=:3551 \
     --collector.systemd \
     --collector.processes
 

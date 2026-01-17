@@ -4,3 +4,9 @@
     name: node_exporter
     state: restarted
     daemon_reload: yes
+
+- name: restart_apcupsd_exporter
+  systemd:
+    name: apcupsd_exporter
+    state: restarted
+    daemon_reload: yes
