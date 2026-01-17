@@ -1,26 +1,59 @@
 ---
 # Main entry point for Proxmox Host Monitoring
+# Installs official Node Exporter binary to support apcupsd collector
 
-- name: Install Prometheus Node Exporter
+- name: Remove apt-installed Node Exporter (if present)
   apt:
     name: prometheus-node-exporter
-    state: present
-    update_cache: no
+    state: absent
   tags: [monitoring, host]
 
-- name: Configure Node Exporter (Enable apcupsd)
-  template:
-    src: node-exporter-config.j2
-    dest: /etc/default/prometheus-node-exporter
+- name: Create prometheus user
+  user:
+    name: prometheus
+    shell: /bin/false
+    system: yes
+  tags: [monitoring, host]
+
+- name: Download official Node Exporter binary
+  get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+    dest: "/tmp/node_exporter.tar.gz"
     mode: '0644'
-  notify: restart_node_exporter
   tags: [monitoring, host]
 
-- name: Enable and start Node Exporter
+- name: Extract Node Exporter binary
+  unarchive:
+    src: "/tmp/node_exporter.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+  tags: [monitoring, host]
+
+- name: Install Node Exporter binary
+  copy:
+    src: "/tmp/node_exporter-1.8.2.linux-amd64/node_exporter"
+    dest: "/usr/local/bin/node_exporter"
+    mode: '0755'
+    owner: prometheus
+    group: prometheus
+    remote_src: yes
+  notify: restart_node_exporter_service
+  tags: [monitoring, host]
+
+- name: Create Node Exporter systemd service
+  template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    mode: '0644'
+  notify: restart_node_exporter_service
+  tags: [monitoring, host]
+
+- name: Enable and start Node Exporter service
   systemd:
-    name: prometheus-node-exporter
+    name: node_exporter
     enabled: yes
     state: started
+    daemon_reload: yes
   tags: [monitoring, host]
 
 - name: Verify Node Exporter is running
