@@ -75,6 +75,18 @@
     - { name: 'node-exporter-full', id: '1860' }
     - { name: 'nvidia-dcgm-exporter', id: '12239' }
 
+- name: Patch Node Exporter Dashboard for Corsair PSU
+  replace:
+    path: /opt/monitoring/dashboards/node-exporter-full.json
+    regexp: 'node_hwmon_power_average_watt'
+    replace: 'node_hwmon_power_watt'
+
+- name: Deploy Custom Homelab Power Dashboard
+  copy:
+    src: dashboards/homelab-power.json
+    dest: /opt/monitoring/dashboards/homelab-power.json
+    mode: '0644'
+
 - name: Create Docker Compose file
   template:
     src: docker-compose.yml.j2

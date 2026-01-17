@@ -5,7 +5,15 @@
   apt:
     name: prometheus-node-exporter
     state: present
-    update_cache: yes
+    update_cache: no
+  tags: [monitoring, host]
+
+- name: Configure Node Exporter (Enable apcupsd)
+  template:
+    src: node-exporter-config.j2
+    dest: /etc/default/prometheus-node-exporter
+    mode: '0644'
+  notify: restart_node_exporter
   tags: [monitoring, host]
 
 - name: Enable and start Node Exporter
