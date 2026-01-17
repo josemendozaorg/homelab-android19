@@ -7,6 +7,6 @@
       - linux-cpupower
       - powertop
     state: present
-    update_cache: yes
+    update_cache: no
   tags: [power, packages]
 
