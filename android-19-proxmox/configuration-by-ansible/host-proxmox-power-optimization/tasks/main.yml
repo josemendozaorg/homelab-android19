@@ -20,3 +20,7 @@
 - name: Configure PowerTop auto-tune
   include_tasks: powertop.yml
   tags: [power, powertop]
+
+- name: Configure UPS monitoring
+  include_tasks: ups-monitor.yml
+  tags: [power, ups]

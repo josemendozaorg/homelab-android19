@@ -1,0 +1,21 @@
+---
+# Configure apcupsd for USB UPS monitoring
+
+- name: Configure apcupsd for USB
+  ansible.builtin.lineinfile:
+    path: /etc/apcupsd/apcupsd.conf
+    regexp: '^{{ item.key }} .*'
+    line: '{{ item.key }} {{ item.value }}'
+  with_items:
+    - { key: 'UPSCABLE', value: 'usb' }
+    - { key: 'UPSTYPE', value: 'usb' }
+    - { key: 'DEVICE', value: '' }
+  notify: restart_apcupsd
+  tags: [power, ups]
+
+- name: Ensure apcupsd is started/enabled
+  ansible.builtin.systemd:
+    name: apcupsd
+    enabled: yes
+    state: started
+  tags: [power, ups]
