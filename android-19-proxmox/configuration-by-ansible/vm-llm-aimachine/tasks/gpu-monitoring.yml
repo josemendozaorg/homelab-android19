@@ -1,13 +1,5 @@
 ---
 # Install NVIDIA DCGM Exporter for GPU Monitoring
-# Requires Docker to be installed
-
-- name: Ensure Docker is installed (prerequisite for DCGM exporter)
-  include_tasks: ../lxc-monitoring/tasks/main.yml
-  vars:
-    # Only install docker packages, skip the rest of lxc-monitoring tasks
-    monitoring_stack_enabled: false 
-  when: false # Placeholder - we assume Docker is managed by the role itself or installed here
 
 - name: Run NVIDIA DCGM Exporter container
   docker_container:

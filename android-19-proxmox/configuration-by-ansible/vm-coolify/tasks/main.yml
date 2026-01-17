@@ -38,7 +38,7 @@
 
 # Install Docker and Docker Compose
 - name: Include Docker installation tasks
-  ansible.builtin.include_tasks: install-docker.yml
+  ansible.builtin.include_tasks: ../../common/tasks/install-docker.yml
 
 # Configure Docker to use AdGuard Home DNS for containers
 - name: Include Docker DNS configuration tasks

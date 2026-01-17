@@ -42,6 +42,14 @@
   include_tasks: ../../common/tasks/install-node-exporter.yml
   tags: [monitoring, node_exporter]
 
+- name: Include Docker Installation
+  include_tasks: ../../common/tasks/install-docker.yml
+  tags: [monitoring, docker]
+
+- name: Include NVIDIA Docker Support
+  include_tasks: ../../common/tasks/install-nvidia-docker.yml
+  tags: [monitoring, docker, nvidia]
+
 - name: Include GPU Monitoring (DCGM)
   include_tasks: gpu-monitoring.yml
   tags: [monitoring, gpu]
