@@ -151,7 +151,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "apcupsd_ups_load_percent{job=\"ups\"}",
+          "expr": "apcupsd_loadpct{job=\"proxmox-host\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -195,7 +195,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "apcupsd_battery_charge_percent{job=\"ups\"}",
+          "expr": "apcupsd_bcharge{job=\"proxmox-host\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
