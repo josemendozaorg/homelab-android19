@@ -1,0 +1,10 @@
+---
+# Packages installation
+
+- name: Install power management packages
+  apt:
+    name:
+      - linux-cpupower
+      - powertop
+    state: present
+    update_cache: yes

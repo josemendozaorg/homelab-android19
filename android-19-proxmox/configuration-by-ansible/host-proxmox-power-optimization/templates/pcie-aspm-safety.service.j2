@@ -1,0 +1,15 @@
+[Unit]
+Description=PCIe ASPM Safety Overrides (Disable L1 for Network Cards)
+After=sysinit.target
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+# Intel I226-V (0b:00.0) - Disable L1 ASPM to prevent drops
+ExecStart=/bin/sh -c 'echo 0 > /sys/bus/pci/devices/0000:0b:00.0/link/l1_aspm || true'
+# Aquantia 10G (0c:00.0) - Disable L1 ASPM (optional, safe default)
+ExecStart=/bin/sh -c 'echo 0 > /sys/bus/pci/devices/0000:0c:00.0/link/l1_aspm || true'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

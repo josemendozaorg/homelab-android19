@@ -1,0 +1,16 @@
+---
+# PowerTop Auto-Tune
+# Enables runtime PM for all capable devices
+
+- name: Create systemd service for PowerTop auto-tune
+  template:
+    src: powertop-autotune.service.j2
+    dest: /etc/systemd/system/powertop-autotune.service
+    mode: '0644'
+  notify: reload_systemd
+
+- name: Enable and start PowerTop auto-tune service
+  systemd:
+    name: powertop-autotune.service
+    enabled: yes
+    state: started

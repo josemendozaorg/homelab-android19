@@ -1,0 +1,16 @@
+---
+# Device-specific ASPM Overrides
+# Disables deep sleep (L1) for network cards to prevent drops
+
+- name: Create systemd service for ASPM safety overrides
+  template:
+    src: pcie-aspm-safety.service.j2
+    dest: /etc/systemd/system/pcie-aspm-safety.service
+    mode: '0644'
+  notify: reload_systemd
+
+- name: Enable and start ASPM safety service
+  systemd:
+    name: pcie-aspm-safety.service
+    enabled: yes
+    state: started

@@ -1,0 +1,9 @@
+---
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Reboot host
+  reboot:
+    msg: "Rebooting to apply power optimization kernel parameters"
+    pre_reboot_delay: 5

@@ -1,0 +1,11 @@
+[Unit]
+Description=PowerTop Auto-Tune (Runtime Power Management)
+After=syslog.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/powertop --auto-tune
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
