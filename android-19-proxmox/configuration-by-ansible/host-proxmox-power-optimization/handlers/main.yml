@@ -7,3 +7,8 @@
   reboot:
     msg: "Rebooting to apply power optimization kernel parameters"
     pre_reboot_delay: 5
+
+- name: restart_apcupsd
+  systemd:
+    name: apcupsd
+    state: restarted
