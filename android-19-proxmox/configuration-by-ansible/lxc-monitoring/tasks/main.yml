@@ -44,6 +44,37 @@
     dest: /opt/monitoring/prometheus.yml
     mode: '0644'
 
+- name: Create provisioning directories
+  file:
+    path: "/opt/monitoring/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - provisioning/datasources
+    - provisioning/dashboards
+    - dashboards
+
+- name: Configure Grafana Datasources
+  template:
+    src: provisioning/datasources/prometheus.yml.j2
+    dest: /opt/monitoring/provisioning/datasources/prometheus.yml
+    mode: '0644'
+
+- name: Configure Grafana Dashboard Providers
+  template:
+    src: provisioning/dashboards/default.yml.j2
+    dest: /opt/monitoring/provisioning/dashboards/default.yml
+    mode: '0644'
+
+- name: Download Grafana Dashboards
+  get_url:
+    url: "https://grafana.com/api/dashboards/{{ item.id }}/revisions/latest/download"
+    dest: "/opt/monitoring/dashboards/{{ item.name }}.json"
+    mode: '0644'
+  loop:
+    - { name: 'node-exporter-full', id: '1860' }
+    - { name: 'nvidia-dcgm-exporter', id: '12239' }
+
 - name: Create Docker Compose file
   template:
     src: docker-compose.yml.j2

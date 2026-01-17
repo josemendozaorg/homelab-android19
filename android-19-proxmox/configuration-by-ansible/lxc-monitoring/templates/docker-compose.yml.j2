@@ -23,6 +23,9 @@ services:
     restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./dashboards:/etc/grafana/provisioning/dashboards/json
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=homelab
