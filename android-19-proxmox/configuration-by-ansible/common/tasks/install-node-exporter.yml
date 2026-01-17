@@ -1,0 +1,17 @@
+---
+# Install Prometheus Node Exporter
+# This task file can be included by any VM role
+
+- name: Install Prometheus Node Exporter
+  apt:
+    name: prometheus-node-exporter
+    state: present
+    update_cache: yes
+  tags: [monitoring, node_exporter]
+
+- name: Enable and start Node Exporter
+  systemd:
+    name: prometheus-node-exporter
+    enabled: yes
+    state: started
+  tags: [monitoring, node_exporter]

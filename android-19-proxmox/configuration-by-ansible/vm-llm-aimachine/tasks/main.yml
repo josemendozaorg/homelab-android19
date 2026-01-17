@@ -38,6 +38,14 @@
   include_tasks: power-management.yml
   tags: [power, nvidia, ollama]
 
+- name: Include Node Exporter
+  include_tasks: ../../common/tasks/install-node-exporter.yml
+  tags: [monitoring, node_exporter]
+
+- name: Include GPU Monitoring (DCGM)
+  include_tasks: gpu-monitoring.yml
+  tags: [monitoring, gpu]
+
 - name: Include vLLM installation tasks
   include_tasks: vllm-install.yml
   tags: [vllm, ai, llm]

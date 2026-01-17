@@ -31,6 +31,11 @@
   ansible.builtin.include_tasks: dns-configure.yml
   tags: [coolify, dns, network]
 
+# Include Node Exporter for Monitoring
+- name: Include Node Exporter
+  include_tasks: ../../common/tasks/install-node-exporter.yml
+  tags: [monitoring, node_exporter]
+
 # Install Docker and Docker Compose
 - name: Include Docker installation tasks
   ansible.builtin.include_tasks: install-docker.yml

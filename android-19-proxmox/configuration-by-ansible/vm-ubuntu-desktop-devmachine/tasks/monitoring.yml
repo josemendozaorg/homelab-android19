@@ -1,0 +1,4 @@
+---
+- name: Include Node Exporter
+  include_tasks: ../../common/tasks/install-node-exporter.yml
+  tags: [monitoring, node_exporter]
