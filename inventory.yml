@@ -21,6 +21,14 @@ all:
           vm_id: 103
           vm_type: omakub
           description: "Omakub (Ubuntu 24.04 + GNOME) development workstation"
+        ubuntu-desktop-dev:
+          ansible_host: 192.168.0.200
+          ansible_user: dev
+          ansible_become_password: dev
+          ansible_python_interpreter: /usr/bin/python3
+          vm_id: 105
+          vm_type: desktop
+          description: "Ubuntu Desktop development workstation"
     ai_vms:
       hosts:
         vm_llm_aimachine:

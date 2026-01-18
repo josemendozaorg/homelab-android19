@@ -75,17 +75,39 @@
     - { name: 'node-exporter-full', id: '1860' }
     - { name: 'nvidia-dcgm-exporter', id: '12239' }
 
-- name: Patch Node Exporter Dashboard for Corsair PSU
-  replace:
-    path: /opt/monitoring/dashboards/node-exporter-full.json
-    regexp: 'node_hwmon_power_average_watt'
-    replace: 'node_hwmon_power_watt'
-
 - name: Deploy Custom Homelab Power Dashboard
   copy:
     src: dashboards/homelab-power.json
     dest: /opt/monitoring/dashboards/homelab-power.json
     mode: '0644'
+
+- name: Patch Dashboards for Corsair PSU
+  replace:
+    path: "/opt/monitoring/dashboards/{{ item }}.json"
+    regexp: 'node_hwmon_power_average_watt'
+    replace: 'node_hwmon_power_watt'
+  loop:
+    - node-exporter-full
+    - nvidia-dcgm-exporter
+
+- name: Patch Dashboards for Datasource UID
+  replace:
+    path: "/opt/monitoring/dashboards/{{ item }}.json"
+    regexp: '"(uid|datasource)": "\${[Dd][Ss]_?[Pp][Rr][Oo][Mm][Ee][Tt][Hh][Ee][Uu][Ss]}"'
+    replace: '"\1": "prometheus"'
+  loop:
+    - node-exporter-full
+    - nvidia-dcgm-exporter
+
+- name: Ensure correct permissions for Grafana files
+  file:
+    path: "{{ item }}"
+    owner: "472"
+    group: "472"
+    recurse: yes
+  loop:
+    - /opt/monitoring/provisioning
+    - /opt/monitoring/dashboards
 
 - name: Create Docker Compose file
   template:

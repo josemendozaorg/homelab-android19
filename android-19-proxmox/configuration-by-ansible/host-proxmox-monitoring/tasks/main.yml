@@ -1,63 +1,86 @@
 ---
 # Main entry point for Proxmox Host Monitoring
-# Installs official Node Exporter binary to support apcupsd collector
+# Uses standard apt packages for maximum stability
 
-- name: Remove apt-installed Node Exporter (if present)
-  apt:
-    name: prometheus-node-exporter
+- name: Check if manual Node Exporter service exists
+  ansible.builtin.stat:
+    path: /etc/systemd/system/node_exporter.service
+  register: manual_service_file
+  tags: [monitoring, host]
+
+- name: Stop and disable manual Node Exporter service
+  systemd:
+    name: node_exporter
+    state: stopped
+    enabled: no
+  when: manual_service_file.stat.exists
+  tags: [monitoring, host]
+
+- name: Remove manual Node Exporter binary
+  file:
+    path: /usr/local/bin/node_exporter
     state: absent
   tags: [monitoring, host]
 
-- name: Create prometheus user
-  user:
-    name: prometheus
-    shell: /bin/false
-    system: yes
+- name: Remove manual Node Exporter systemd unit
+  file:
+    path: /etc/systemd/system/node_exporter.service
+    state: absent
   tags: [monitoring, host]
 
-- name: Download official Node Exporter binary
-  get_url:
-    url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
-    dest: "/tmp/node_exporter.tar.gz"
-    mode: '0644'
+- name: Install standard Prometheus Node Exporter
+  apt:
+    name: prometheus-node-exporter
+    state: present
+    update_cache: no
   tags: [monitoring, host]
 
-- name: Extract Node Exporter binary
-  unarchive:
-    src: "/tmp/node_exporter.tar.gz"
-    dest: "/tmp"
-    remote_src: yes
-  tags: [monitoring, host]
-
-- name: Install Node Exporter binary
+- name: Reset Node Exporter configuration (enable textfile collector)
   copy:
-    src: "/tmp/node_exporter-1.8.2.linux-amd64/node_exporter"
-    dest: "/usr/local/bin/node_exporter"
-    mode: '0755'
-    owner: prometheus
-    group: prometheus
-    remote_src: yes
-  notify: restart_node_exporter_service
-  tags: [monitoring, host]
-
-- name: Create Node Exporter systemd service
-  template:
-    src: node_exporter.service.j2
-    dest: /etc/systemd/system/node_exporter.service
+    dest: /etc/default/prometheus-node-exporter
+    content: 'ARGS="--collector.textfile.directory=/var/lib/prometheus/node-exporter"'
     mode: '0644'
-  notify: restart_node_exporter_service
+  notify: restart_prometheus_node_exporter
   tags: [monitoring, host]
 
-- name: Enable and start Node Exporter service
+- name: Create textfile collector directory
+  file:
+    path: /var/lib/prometheus/node-exporter
+    state: directory
+    mode: '0755'
+  tags: [monitoring, host]
+
+- name: Deploy apcupsd to Prometheus script
+  template:
+    src: apcupsd-to-prom.sh.j2
+    dest: /usr/local/bin/apcupsd-to-prom.sh
+    mode: '0755'
+  tags: [monitoring, host, ups]
+
+- name: Create cron job for UPS metrics
+  cron:
+    name: "Collect APCUPSD metrics"
+    job: "/usr/local/bin/apcupsd-to-prom.sh"
+    minute: "*"
+  tags: [monitoring, host, ups]
+
+- name: Run UPS collection script once
+  command: /usr/local/bin/apcupsd-to-prom.sh
+  tags: [monitoring, host, ups]
+
+- name: Enable and start Node Exporter
   systemd:
-    name: node_exporter
+    name: prometheus-node-exporter
     enabled: yes
     state: started
-    daemon_reload: yes
   tags: [monitoring, host]
 
-- name: Install and configure apcupsd_exporter
-  include_tasks: apcupsd-exporter.yml
+- name: Configure apcupsd to allow network connections (NIS)
+  lineinfile:
+    path: /etc/apcupsd/apcupsd.conf
+    regexp: '^NISIP .*'
+    line: 'NISIP 0.0.0.0'
+  notify: restart_apcupsd
   tags: [monitoring, host, ups]
 
 - name: Verify Node Exporter is running

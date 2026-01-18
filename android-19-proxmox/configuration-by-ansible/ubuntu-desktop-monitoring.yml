@@ -1,0 +1,10 @@
+---
+- name: Monitoring for Ubuntu Desktop
+  hosts: ubuntu-desktop-dev
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Include Node Exporter
+      include_tasks: common/tasks/install-node-exporter.yml
+      tags: [monitoring, node_exporter]

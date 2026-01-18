@@ -25,7 +25,7 @@
   become: yes
 
 - name: Configure Docker to use NVIDIA runtime
-  ansible.builtin.command: nvidia-container-toolkit runtime configure --runtime=docker
+  ansible.builtin.command: nvidia-ctk runtime configure --runtime=docker
   become: yes
   register: nvidia_runtime_config
   changed_when: true
