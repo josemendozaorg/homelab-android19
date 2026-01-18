@@ -1,0 +1,16 @@
+---
+- name: Monitoring Stack Setup
+  hosts: monitoring
+  gather_facts: yes
+  become: yes
+
+  roles:
+    - role: lxc-monitoring
+
+- name: Proxmox Host Monitoring
+  hosts: proxmox
+  gather_facts: yes
+  become: yes
+
+  roles:
+    - role: host-proxmox-monitoring

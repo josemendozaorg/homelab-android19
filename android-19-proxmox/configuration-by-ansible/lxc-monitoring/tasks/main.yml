@@ -1,0 +1,123 @@
+---
+# Main entry point for LXC Monitoring Stack (Docker + Prometheus + Grafana)
+
+- name: Install dependencies
+  apt:
+    name:
+      - curl
+      - git
+      - gnupg
+      - ca-certificates
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Add Docker's official GPG key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Install Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+    update_cache: yes
+
+- name: Ensure Docker directory exists
+  file:
+    path: /opt/monitoring
+    state: directory
+    mode: '0755'
+
+- name: Create Prometheus configuration
+  template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/prometheus.yml
+    mode: '0644'
+
+- name: Create provisioning directories
+  file:
+    path: "/opt/monitoring/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - provisioning/datasources
+    - provisioning/dashboards
+    - dashboards
+
+- name: Configure Grafana Datasources
+  template:
+    src: provisioning/datasources/prometheus.yml.j2
+    dest: /opt/monitoring/provisioning/datasources/prometheus.yml
+    mode: '0644'
+
+- name: Configure Grafana Dashboard Providers
+  template:
+    src: provisioning/dashboards/default.yml.j2
+    dest: /opt/monitoring/provisioning/dashboards/default.yml
+    mode: '0644'
+
+- name: Download Grafana Dashboards
+  get_url:
+    url: "https://grafana.com/api/dashboards/{{ item.id }}/revisions/latest/download"
+    dest: "/opt/monitoring/dashboards/{{ item.name }}.json"
+    mode: '0644'
+  loop:
+    - { name: 'node-exporter-full', id: '1860' }
+    - { name: 'nvidia-dcgm-exporter', id: '12239' }
+
+- name: Deploy Custom Homelab Power Dashboard
+  copy:
+    src: dashboards/homelab-power.json
+    dest: /opt/monitoring/dashboards/homelab-power.json
+    mode: '0644'
+
+- name: Patch Dashboards for Corsair PSU
+  replace:
+    path: "/opt/monitoring/dashboards/{{ item }}.json"
+    regexp: 'node_hwmon_power_average_watt'
+    replace: 'node_hwmon_power_watt'
+  loop:
+    - node-exporter-full
+    - nvidia-dcgm-exporter
+
+- name: Patch Dashboards for Datasource UID
+  replace:
+    path: "/opt/monitoring/dashboards/{{ item }}.json"
+    regexp: '"(uid|datasource)": "\${[Dd][Ss]_?[Pp][Rr][Oo][Mm][Ee][Tt][Hh][Ee][Uu][Ss]}"'
+    replace: '"\1": "prometheus"'
+  loop:
+    - node-exporter-full
+    - nvidia-dcgm-exporter
+
+- name: Ensure correct permissions for Grafana files
+  file:
+    path: "{{ item }}"
+    owner: "472"
+    group: "472"
+    recurse: yes
+  loop:
+    - /opt/monitoring/provisioning
+    - /opt/monitoring/dashboards
+
+- name: Create Docker Compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/monitoring/docker-compose.yml
+    mode: '0644'
+
+- name: Start Monitoring Stack
+  shell: docker compose up -d
+  args:
+    chdir: /opt/monitoring
+  register: docker_compose_output
+  changed_when: "'Created' in docker_compose_output.stdout or 'Started' in docker_compose_output.stdout"

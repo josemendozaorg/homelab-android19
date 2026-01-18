@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['proxmox.homelab:9100']
+        labels:
+          node: 'proxmox'
+      - targets: ['ai.homelab:9100']
+        labels:
+          node: 'ai'
+      - targets: ['coolify.homelab:9100']
+        labels:
+          node: 'coolify'
+      - targets: ['desktop.homelab:9100']
+        labels:
+          node: 'desktop'
+
+  - job_name: 'gpu'
+    static_configs:
+      - targets: ['ai.homelab:9400']
+        labels:
+          node: 'ai'

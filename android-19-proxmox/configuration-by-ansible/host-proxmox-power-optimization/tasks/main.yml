@@ -1,0 +1,26 @@
+---
+# Main entry point for Power Optimization role
+
+- name: Install power management tools
+  include_tasks: packages.yml
+  tags: [power, packages]
+
+- name: Configure CPU governor to powersave
+  include_tasks: cpu-governor.yml
+  tags: [power, cpu]
+
+- name: Configure global PCIe ASPM policy
+  include_tasks: grub-aspm.yml
+  tags: [power, grub]
+
+- name: Configure device-specific ASPM safety overrides
+  include_tasks: device-aspm-overrides.yml
+  tags: [power, safety]
+
+- name: Configure PowerTop auto-tune
+  include_tasks: powertop.yml
+  tags: [power, powertop]
+
+- name: Configure UPS monitoring
+  include_tasks: ups-monitor.yml
+  tags: [power, ups]

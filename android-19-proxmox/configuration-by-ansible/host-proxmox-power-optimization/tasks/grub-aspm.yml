@@ -1,0 +1,26 @@
+---
+# PCIe ASPM GRUB Configuration
+# Sets global policy to 'powersave' for maximum efficiency
+
+- name: Configure GRUB to use ASPM powersave policy
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=".*)(?:pcie_aspm\.policy=[^ ]+|pcie_aspm=off)(.*)"$'
+    replace: '\1pcie_aspm.policy=powersave\2"'
+  register: grub_replace_existing
+  tags: [power, grub]
+
+- name: Add ASPM powersave policy if no ASPM setting exists
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=".*)(?<!pcie_aspm\.policy=powersave)"$'
+    replace: '\1 pcie_aspm.policy=powersave"'
+  when: not grub_replace_existing.changed
+  tags: [power, grub]
+
+- name: Update GRUB
+  command: update-grub
+  when: grub_replace_existing.changed
+  notify: reboot_host
+  tags: [power, grub]
+

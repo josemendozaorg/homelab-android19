@@ -1,0 +1,22 @@
+#!/bin/bash
+# Simple apcupsd to prometheus textfile script
+# Output directory for node_exporter textfile collector
+PROM_DIR="/var/lib/prometheus/node-exporter"
+mkdir -p "$PROM_DIR"
+
+/sbin/apcaccess status | awk -F': ' '
+/^(LINEV|LOADPCT|BCHARGE|TIMELEFT|BATTV|ITEMP|LINEFREQ|NOMPOWER|TONBATT|CUMONBATT|SELFTEST)/ { 
+    name = tolower($1);
+    val = $2;
+    gsub(/[^0-9.]/, "", val); 
+    if (val == "") val = 0;
+    print "apcupsd_" name " " val 
+}
+/^(STATUS)/ {
+    status = $2;
+    val = (status == "ONLINE") ? 1 : 0;
+    print "apcupsd_online " val
+}
+' > "$PROM_DIR/apcupsd.prom.$$"
+
+mv "$PROM_DIR/apcupsd.prom.$$" "$PROM_DIR/apcupsd.prom"

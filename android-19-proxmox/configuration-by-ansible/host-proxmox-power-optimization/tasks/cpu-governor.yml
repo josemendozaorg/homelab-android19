@@ -1,0 +1,23 @@
+---
+# CPU Frequency Governor Configuration
+# Sets the governor to 'powersave' which allows aggressive idle clocking with amd-pstate
+
+- name: Check current CPU governor
+  command: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+  register: current_governor
+  changed_when: false
+  tags: [power, cpu]
+
+
+- name: Set CPU governor to powersave
+  command: cpupower frequency-set -g powersave
+  when: current_governor.stdout != 'powersave'
+  tags: [power, cpu]
+
+- name: Ensure governor is set on boot (via crontab @reboot as simple persistence)
+  cron:
+    name: "Set CPU governor to powersave on boot"
+    special_time: reboot
+    job: "cpupower frequency-set -g powersave"
+    user: root
+  tags: [power, cpu]

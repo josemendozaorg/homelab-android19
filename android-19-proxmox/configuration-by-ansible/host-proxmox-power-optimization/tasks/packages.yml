@@ -1,0 +1,13 @@
+---
+# Packages installation
+
+- name: Install power management packages
+  apt:
+    name:
+      - linux-cpupower
+      - powertop
+      - apcupsd
+    state: present
+    update_cache: no
+  tags: [power, packages]
+

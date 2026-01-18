@@ -34,13 +34,18 @@ resource "proxmox_virtual_environment_container" "containers" {
     hostname = each.value.name
 
     ip_config {
-      ipv4 {
-        address = "${each.value.ip}/24"
-        gateway = local.catalog.network.gateway
-      }
-    }
+          ipv4 {
+            address = "192.168.0.26/24"
+            gateway = local.catalog.network.gateway
+          }
+        }
 
-    # Use cloud-init for initial container setup
+        dns {
+          servers = [local.catalog.network.dns]
+        }
+
+        # Use cloud-init for initial container setup
+
     user_account {
       keys     = [file("/tmp/.ssh/id_ed25519.pub")]
       password = "changeme"

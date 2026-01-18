@@ -28,6 +28,10 @@
       include_tasks: vm-ubuntu-desktop-devmachine/tasks/dns-configure.yml
       tags: [dns, configure]
 
+    - name: Include Monitoring tasks
+      include_tasks: vm-ubuntu-desktop-devmachine/tasks/monitoring.yml
+      tags: [monitoring]
+
     - name: Display next steps
       ansible.builtin.debug:
         msg: |

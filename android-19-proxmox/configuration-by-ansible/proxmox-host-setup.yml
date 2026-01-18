@@ -6,6 +6,8 @@
 
   roles:
     - role: host-proxmox
+    - role: host-proxmox-power-optimization
+
 
   pre_tasks:
     - name: Check SSH connectivity first

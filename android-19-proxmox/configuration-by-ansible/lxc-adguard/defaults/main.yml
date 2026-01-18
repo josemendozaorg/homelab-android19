@@ -115,6 +115,18 @@ adguard_dns_rewrites:
   - domain: "vm-llm-aimachine.homelab"
     ip: "{{ catalog.services[140].ip }}"
 
+  # Monitoring Stack
+  - domain: "monitoring.homelab"
+    ip: "{{ catalog.services[126].ip }}"
+  - domain: "grafana.homelab"
+    ip: "{{ catalog.services[126].ip }}"
+  - domain: "prometheus.homelab"
+    ip: "{{ catalog.services[126].ip }}"
+
+  # Desktop
+  - domain: "desktop.homelab"
+    ip: "192.168.0.200"
+
 # Custom filtering rules for homelab
 adguard_custom_filtering_rules:
   # Allow local network ranges

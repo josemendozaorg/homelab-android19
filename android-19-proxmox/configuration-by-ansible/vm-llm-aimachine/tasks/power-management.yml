@@ -1,0 +1,56 @@
+---
+# NVIDIA GPU Power Management Configuration
+
+- name: Ensure nvidia-persistenced is enabled and running
+  ansible.builtin.systemd:
+    name: nvidia-persistenced
+    enabled: yes
+    state: started
+  tags: [power, nvidia]
+
+- name: Create systemd service for NVIDIA Power Limit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nvidia-power-limit.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Set NVIDIA Power Limit (150W)
+      After=syslog.target systemd-modules-load.service
+      ConditionPathExists=/usr/bin/nvidia-smi
+
+      [Service]
+      Type=oneshot
+      # Set power limit to 150W (RTX 5060 Ti default is ~160-180W)
+      ExecStart=/usr/bin/nvidia-smi -pl 150
+      RemainAfterExit=yes
+      
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart NVIDIA Power Limit
+  tags: [power, nvidia]
+
+- name: Enable NVIDIA Power Limit service
+  ansible.builtin.systemd:
+    name: nvidia-power-limit
+    enabled: yes
+    state: started
+  tags: [power, nvidia]
+
+- name: Create systemd override directory for Ollama
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service.d
+    state: directory
+    mode: '0755'
+  tags: [power, ollama]
+
+- name: Configure Ollama to release GPU (Keep-Alive)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ollama.service.d/override.conf
+    mode: '0644'
+    content: |
+      [Service]
+      # Release GPU 5 minutes after last request (default is 5m)
+      # Setting explicitly to ensure predictable power behavior
+      Environment="OLLAMA_KEEP_ALIVE=5m"
+  notify: Restart Ollama service
+  tags: [power, ollama]

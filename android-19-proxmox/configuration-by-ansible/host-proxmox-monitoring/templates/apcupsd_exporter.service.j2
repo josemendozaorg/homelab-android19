@@ -1,0 +1,12 @@
+[Unit]
+Description=Prometheus APCUPSD Exporter
+After=network.target apcupsd.service
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/apcupsd_exporter -apcupsd.addr :3551 -telemetry.addr :9162
+
+[Install]
+WantedBy=multi-user.target

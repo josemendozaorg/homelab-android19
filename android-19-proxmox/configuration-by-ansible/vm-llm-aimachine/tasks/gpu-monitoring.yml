@@ -1,0 +1,16 @@
+---
+# Install NVIDIA DCGM Exporter for GPU Monitoring
+
+- name: Run NVIDIA DCGM Exporter container
+  docker_container:
+    name: dcgm-exporter
+    image: nvidia/dcgm-exporter:latest
+    restart_policy: always
+    runtime: nvidia
+    capabilities:
+      - SYS_ADMIN
+    ports:
+      - "9400:9400"
+    env:
+      DCGM_EXPORTER_NO_HOSTNAME: "1"
+  tags: [monitoring, gpu, nvidia]

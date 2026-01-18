@@ -1,0 +1,10 @@
+---
+- name: restart_apcupsd
+  systemd:
+    name: apcupsd
+    state: restarted
+
+- name: restart_prometheus_node_exporter
+  systemd:
+    name: prometheus-node-exporter
+    state: restarted
