@@ -14,7 +14,7 @@
   args:
     executable: /bin/bash
   become: yes
-  when: ollama_installed_check.rc != 0
+  when: ollama_installed_check.rc != 0 or ollama_ensure_latest | default(false)
   environment:
     # Ensure CUDA/GPU detection during install
     CUDA_VISIBLE_DEVICES: "0"
@@ -44,6 +44,8 @@
       [Service]
       Environment="OLLAMA_HOST={{ ollama_host }}:{{ ollama_port }}"
       Environment="OLLAMA_MODELS={{ ollama_model_dir }}"
+      Environment="OLLAMA_CONTEXT_LENGTH={{ ollama_context_length }}"
+      Environment="OLLAMA_FLASH_ATTENTION={{ '1' if ollama_flash_attention else '0' }}"
       Environment="CUDA_VISIBLE_DEVICES=0"
     owner: root
     group: root
