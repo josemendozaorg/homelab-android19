@@ -42,8 +42,11 @@ ollama_host: "0.0.0.0"  # Listen on all interfaces
 ollama_model_dir: "/opt/ollama/models"
 ollama_service_enabled: true  # Auto-start on boot
 ollama_systemd_service: true  # Install as systemd service
-ollama_context_length: 65536  # Default context length (64K)
+ollama_context_length: 32768  # Reduced to 32K for memory efficiency
 ollama_flash_attention: true  # Enable Flash Attention for performance
+ollama_kv_cache_type: "f16"   # Explicitly set KV cache quantization (f16, q8_0, q4_0)
+ollama_keep_alive: "30m"      # Keep model loaded for 30m (good for dev sessions)
+ollama_num_parallel: 4        # Allow 4 parallel requests (crucial for agents)
 ollama_ensure_latest: true    # Automatically update Ollama to the latest version
 
 # Ollama Model Configuration for Inference-Time Scaling
@@ -51,6 +54,9 @@ ollama_ensure_latest: true    # Automatically update Ollama to the latest versio
 # Q4_K_M quantization fits in ~10GB VRAM (16GB card with headroom)
 ollama_models_to_pull:
   - "deepseek-r1:14b"
+  - "qwen2.5-coder:14b"       # Excellent coding model
+  - "llama3.1:8b"             # Strong generalist with tool support
+  - "nomic-embed-text"        # Embeddings for RAG/Codebase search
 
 ollama_pull_models_on_deploy: true  # Pull models during deployment
 ollama_model_pull_timeout: 3600     # 60 minutes for large model downloads

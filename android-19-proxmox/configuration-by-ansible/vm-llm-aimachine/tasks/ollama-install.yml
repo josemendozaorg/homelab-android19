@@ -46,6 +46,9 @@
       Environment="OLLAMA_MODELS={{ ollama_model_dir }}"
       Environment="OLLAMA_CONTEXT_LENGTH={{ ollama_context_length }}"
       Environment="OLLAMA_FLASH_ATTENTION={{ '1' if ollama_flash_attention else '0' }}"
+      Environment="OLLAMA_KV_CACHE_TYPE={{ ollama_kv_cache_type }}"
+      Environment="OLLAMA_KEEP_ALIVE={{ ollama_keep_alive }}"
+      Environment="OLLAMA_NUM_PARALLEL={{ ollama_num_parallel }}"
       Environment="CUDA_VISIBLE_DEVICES=0"
     owner: root
     group: root
