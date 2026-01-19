@@ -92,3 +92,11 @@ def test_ollama_has_cloud_auth_instructions(ollama_tasks_file):
     content = ollama_tasks_file.read_text()
     assert 'ollama signin' in content.lower() and 'cloud' in content.lower(), \
            "Should provide instructions for cloud model authentication"
+
+
+def test_ollama_has_agent_tuning(ollama_tasks_file):
+    """Should configure Ollama for agentic workloads (KV cache, parallel, keep-alive)."""
+    content = ollama_tasks_file.read_text()
+    assert 'OLLAMA_KV_CACHE_TYPE' in content, "Should configure KV cache type"
+    assert 'OLLAMA_KEEP_ALIVE' in content, "Should configure model keep-alive"
+    assert 'OLLAMA_NUM_PARALLEL' in content, "Should configure parallel requests"
