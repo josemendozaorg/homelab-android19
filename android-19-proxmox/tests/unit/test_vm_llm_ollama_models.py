@@ -106,6 +106,17 @@ def test_defaults_has_deepseek_r1_model(defaults_file):
            "Should include deepseek-r1:14b in models list"
 
 
+def test_defaults_has_coding_agent_models(defaults_file):
+    """defaults/main.yml should include coding agent models (Qwen, Llama, Nomic)."""
+    with open(defaults_file, 'r') as f:
+        data = yaml.safe_load(f)
+    models = data.get('ollama_models_to_pull', [])
+    model_str = str(models).lower()
+    assert 'qwen2.5' in model_str, "Should include qwen2.5 coding model"
+    assert 'llama3.1' in model_str, "Should include llama3.1 model"
+    assert 'nomic' in model_str, "Should include nomic embedding model"
+
+
 def test_defaults_has_pull_on_deploy_flag(defaults_file):
     """defaults/main.yml should have ollama_pull_models_on_deploy flag."""
     with open(defaults_file, 'r') as f:
