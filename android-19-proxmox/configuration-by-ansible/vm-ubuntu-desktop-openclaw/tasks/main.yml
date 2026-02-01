@@ -1,0 +1,20 @@
+---
+- name: Include DNS configuration
+  include_tasks: dns-configure.yml
+  when: vm_config is defined
+  tags: [dns]
+
+- name: Include OpenClaw configuration
+  include_tasks: openclaw-configure.yml
+  tags: [openclaw, configure]
+  
+- name: Display instructions
+  ansible.builtin.debug:
+    msg: |
+      ✅ VM {{ vm_id }} setup initiated via Turnkey Template.
+      
+      1. Terraform has cloned the VM from template 104.
+      2. The VM is booting and configuring itself with IP {{ vm_config.ip }}.
+      3. OpenClaw configuration will attempt to run via QEMU Guest Agent.
+      
+      Note: If configuration fails, ensure QEMU Guest Agent is running in the VM.

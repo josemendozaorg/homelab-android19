@@ -1,0 +1,14 @@
+---
+- name: Display OpenClaw configuration start
+  ansible.builtin.debug:
+    msg: "🔧 Installing OpenClaw on VM {{ vm_id }} using official script..."
+
+- name: Execute OpenClaw installation script
+  ansible.builtin.shell:
+    cmd: "qm guest exec {{ vm_id }} -- bash -c 'curl -fsSL {{ openclaw_install_url }} | bash'"
+  register: openclaw_install
+  changed_when: openclaw_install.rc == 0
+
+- name: Display completion
+  ansible.builtin.debug:
+    msg: "✅ OpenClaw installation completed via official script!"

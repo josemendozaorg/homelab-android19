@@ -75,6 +75,21 @@ services:
       disk: 150
     storage: "vm-storage"
 
+  106:
+    name: "vm-ubuntu-desktop-openclaw"
+    type: "vm"
+    ip: "192.168.0.106"
+    description: "OpenClaw game engine development workstation"
+    template_vm_id: 104
+    cloud_init: true
+    agent: true
+    onboot: false
+    resources:
+      cores: 8
+      memory: 8192
+      disk: 150
+    storage: "vm-storage"
+
   140:
     name: "vm-llm-aimachine"
     type: "vm"
