@@ -1,0 +1,13 @@
+---
+- name: Configure Ubuntu Desktop OpenClaw VM
+  hosts: proxmox
+  gather_facts: false
+  
+  vars:
+    # Load configuration from infrastructure catalog
+    catalog: "{{ lookup('file', '../infrastructure-catalog.yml') | from_yaml }}"
+    vm_id: 106
+    vm_config: "{{ catalog.services[106] }}"
+
+  roles:
+    - vm-ubuntu-desktop-openclaw

@@ -1,0 +1,11 @@
+---
+# Ubuntu Desktop OpenClaw Role Defaults
+
+# ISO Configuration
+ubuntu_desktop_iso_url: "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso"
+ubuntu_desktop_iso_name: "ubuntu-24.04.1-desktop-amd64.iso"
+iso_storage_path: "/var/lib/vz/template/iso"
+proxmox_iso_storage: "local"
+
+# OpenClaw Configuration
+openclaw_install_url: "https://openclaw.ai/install.sh"

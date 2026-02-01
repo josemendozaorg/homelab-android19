@@ -294,3 +294,13 @@ deploy-vm-coolify-containerplatform: proxmox-tf-init proxmox-host-cloud-template
 # All Machines
 all-deploy: ## Deploy configuration to all machines
 	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-16-bastion/playbook.yml android-19-proxmox/configuration-by-ansible/playbook.yml
+
+deploy-vm-ubuntu-desktop-openclaw: proxmox-tf-init ## Deploy OpenClaw VM (Turnkey Clone + Config)
+	@echo "🚀 Deploying OpenClaw VM..."
+	@echo "📋 Step 1/2: Creating VM with Terraform (Cloning from Turnkey Template)"
+	$(DOCKER_COMPOSE) exec -T homelab-dev sh -c "cd android-19-proxmox/provisioning-by-terraform && terraform apply -auto-approve -target=proxmox_virtual_environment_vm.vms[\\\"106\\\"]"
+	@echo "⏳ Waiting 30s for VM to boot and agent to start..."
+	@sleep 30
+	@echo "📋 Step 2/2: Configuring OpenClaw via Ansible"
+	$(ANSIBLE_EXEC) ansible-playbook --inventory $(INVENTORY) android-19-proxmox/configuration-by-ansible/ubuntu-desktop-openclaw-setup.yml
+	@echo "✅ OpenClaw VM deployment complete!"
