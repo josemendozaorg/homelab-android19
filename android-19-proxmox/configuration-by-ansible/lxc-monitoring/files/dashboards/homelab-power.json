@@ -29,180 +29,356 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "id": 10,
+      "type": "stat",
+      "title": "Corsair PSU (Server)",
       "gridPos": {
-        "h": 8,
-        "w": 6,
         "x": 0,
-        "y": 0
+        "y": 0,
+        "w": 8,
+        "h": 10
       },
-      "id": 1,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
       },
-      "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
+          "refId": "A",
           "expr": "node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power1\"}",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
+          "legendFormat": "Power"
+        },
+        {
+          "refId": "B",
+          "expr": "avg_over_time(node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power1\"}[$__range]) * $__range_s / 3600 / 1000",
+          "legendFormat": "Energy (Range)"
         }
       ],
-      "title": "Wall Power (Corsair PSU)",
-      "type": "stat"
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy (Range)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwh"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Power"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 300
+                    },
+                    {
+                      "color": "red",
+                      "value": 600
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     {
+      "id": 11,
+      "type": "stat",
+      "title": "APC UPS (Wall Source)",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 10
+      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "DCGM_FI_DEV_POWER_USAGE{job=\"gpu\"}",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "GPU Power (RTX 5060 Ti)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+          "refId": "A",
+          "expr": "apcupsd_loadpct{job=\"node\", node=\"proxmox\"} * 1320 / 100",
+          "legendFormat": "Power"
         },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
+          "refId": "B",
           "expr": "apcupsd_loadpct{job=\"node\", node=\"proxmox\"}",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
+          "legendFormat": "Load"
+        },
+        {
+          "refId": "C",
+          "expr": "apcupsd_bcharge{job=\"node\", node=\"proxmox\"}",
+          "legendFormat": "Battery"
+        },
+        {
+          "refId": "D",
+          "expr": "(avg_over_time(apcupsd_loadpct{job=\"node\", node=\"proxmox\"}[$__range]) / 100) * 1320 * $__range_s / 3600 / 1000",
+          "legendFormat": "Energy (Range)"
         }
       ],
-      "title": "UPS Load %",
-      "type": "stat"
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 50
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Battery"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 20
+                    },
+                    {
+                      "color": "green",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy (Range)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwh"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     {
+      "id": 12,
+      "type": "stat",
+      "title": "GPU Workload",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 10
+      },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "id": 4,
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "DCGM_FI_DEV_POWER_USAGE{job=\"gpu\"}",
+          "legendFormat": "Power"
+        },
+        {
+          "refId": "B",
+          "expr": "avg_over_time(DCGM_FI_DEV_POWER_USAGE{job=\"gpu\"}[$__range]) * $__range_s / 3600 / 1000",
+          "legendFormat": "Energy (Range)"
+        }
+      ],
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
         "reduceOptions": {
+          "values": false,
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "",
-          "values": false
+          "fields": ""
         },
-        "textMode": "auto",
-        "wideLayout": true
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy (Range)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwh"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
           },
-          "editorMode": "code",
-          "expr": "apcupsd_bcharge{job=\"node\", node=\"proxmox\"}",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "UPS Battery",
-      "type": "stat"
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Power"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 150
+                    },
+                    {
+                      "color": "red",
+                      "value": 200
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "datasource": {
@@ -263,10 +439,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 12,
-        "w": 24,
         "x": 0,
-        "y": 8
+        "y": 10,
+        "w": 24,
+        "h": 12
       },
       "id": 5,
       "options": {
@@ -292,7 +468,6 @@
           "editorMode": "code",
           "expr": "node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power1\"}",
           "legendFormat": "Wall Power (Total)",
-
           "range": true,
           "refId": "A"
         },
@@ -304,7 +479,6 @@
           "editorMode": "code",
           "expr": "node_hwmon_power_watt{job=\"node\", node=\"proxmox\", sensor=\"power2\"}",
           "legendFormat": "12V Rail (CPU/GPU)",
-
           "range": true,
           "refId": "B"
         },
