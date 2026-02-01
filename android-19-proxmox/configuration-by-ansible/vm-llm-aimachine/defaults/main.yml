@@ -44,19 +44,22 @@ ollama_service_enabled: true  # Auto-start on boot
 ollama_systemd_service: true  # Install as systemd service
 ollama_context_length: 32768  # Reduced to 32K for memory efficiency
 ollama_flash_attention: true  # Enable Flash Attention for performance
-ollama_kv_cache_type: "f16"   # Explicitly set KV cache quantization (f16, q8_0, q4_0)
+ollama_kv_cache_type: "f16"   # Reverted to f16 (native) for best single-agent latency
 ollama_keep_alive: "30m"      # Keep model loaded for 30m (good for dev sessions)
-ollama_num_parallel: 4        # Allow 4 parallel requests (crucial for agents)
+ollama_num_parallel: 1        # Reduced to 1 to fit f16 cache + 20B model in VRAM
 ollama_ensure_latest: true    # Automatically update Ollama to the latest version
 
 # Ollama Model Configuration for Inference-Time Scaling
 # DeepSeek-R1:14B provides native <think> token support for System 2 reasoning
 # Q4_K_M quantization fits in ~10GB VRAM (16GB card with headroom)
 ollama_models_to_pull:
-  - "deepseek-r1:14b"
+  - "gpt-oss:20b"             # Primary 20B coding model (MoE)
   - "qwen2.5-coder:14b"       # Excellent coding model
   - "llama3.1:8b"             # Strong generalist with tool support
   - "nomic-embed-text"        # Embeddings for RAG/Codebase search
+  - "deepseek-r1:14b"         # System 2 reasoning
+  - "mistral:latest"          # Fast generalist
+  - "llama3.2-vision:11b"     # Vision capabilities
 
 ollama_pull_models_on_deploy: true  # Pull models during deployment
 ollama_model_pull_timeout: 3600     # 60 minutes for large model downloads

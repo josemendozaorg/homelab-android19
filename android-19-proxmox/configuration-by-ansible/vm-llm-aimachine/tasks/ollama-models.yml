@@ -30,14 +30,24 @@
   ansible.builtin.debug:
     msg: "Installed models: {{ ollama_list_output.stdout_lines }}"
 
-- name: Pull configured models
+- name: Pull configured models (parallel)
   ansible.builtin.command: "ollama pull {{ item }}"
   loop: "{{ ollama_models_to_pull }}"
   when: item not in ollama_list_output.stdout
-  register: ollama_pull_result
+  register: ollama_pull_jobs
   async: "{{ ollama_model_pull_timeout }}"
-  poll: 30
-  changed_when: ollama_pull_result.rc == 0
+  poll: 0
+  changed_when: false
+
+- name: Wait for model downloads to complete
+  ansible.builtin.async_status:
+    jid: "{{ item.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 300
+  delay: 10
+  loop: "{{ ollama_pull_jobs.results }}"
+  when: item.ansible_job_id is defined
 
 - name: Verify models were pulled successfully
   ansible.builtin.command: ollama list
