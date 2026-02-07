@@ -32,6 +32,13 @@
       include_tasks: vm-ubuntu-desktop-devmachine/tasks/monitoring.yml
       tags: [monitoring]
 
+    - name: Include Chrome Remote Desktop fixes
+      include_tasks: vm-ubuntu-desktop-devmachine/tasks/fix-chrome-remote-desktop.yml
+      args:
+        apply:
+          tags: [crd, fix]
+      tags: [crd, fix]
+
     - name: Display next steps
       ansible.builtin.debug:
         msg: |

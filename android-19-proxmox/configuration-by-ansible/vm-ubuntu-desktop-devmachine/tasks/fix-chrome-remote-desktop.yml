@@ -1,0 +1,54 @@
+---
+# Chrome Remote Desktop Fixes for Headless Ubuntu Desktop
+# Solves issue where mouse/keyboard input is blocked or session fails to start
+
+- name: Display CRD fix start
+  ansible.builtin.debug:
+    msg: "🔧 Applying Chrome Remote Desktop headless fixes..."
+
+- name: Stop and disable conflicting gnome-remote-desktop service
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('105') }} -- systemctl disable --now gnome-remote-desktop.service"
+  register: stop_gnome_rd
+  changed_when: false
+  failed_when: false
+
+- name: Disable GNOME screen lock (prevents invisible input blocking)
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('105') }} -- su - {{ desktop_user | default('dev') }} -c 'gsettings set org.gnome.desktop.screensaver lock-enabled false'"
+  register: disable_lock
+  changed_when: false
+
+- name: Add user to input group (for virtual input device access)
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('105') }} -- usermod -aG input {{ desktop_user | default('dev') }}"
+  register: add_input_group
+  changed_when: false
+
+- name: Configure Chrome Remote Desktop session (Headless Ubuntu fix)
+  ansible.builtin.command:
+    cmd: |
+      qm guest exec {{ vm_config.id | default('105') }} -- sh -c 'cat <<EOF > /home/{{ desktop_user | default('dev') }}/.chrome-remote-desktop-session
+      export GNOME_SHELL_SESSION_MODE=ubuntu
+      export XDG_CURRENT_DESKTOP=ubuntu:GNOME
+      export XDG_CONFIG_DIRS=/etc/xdg/xdg-ubuntu:/etc/xdg
+      exec /usr/bin/gnome-session --session=ubuntu
+      EOF'
+  register: crd_session_config
+  changed_when: false
+
+- name: Ensure correct ownership of session file
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('105') }} -- chown {{ desktop_user | default('dev') }}:{{ desktop_user | default('dev') }} /home/{{ desktop_user | default('dev') }}/.chrome-remote-desktop-session"
+  register: chown_session
+  changed_when: false
+
+- name: Restart Chrome Remote Desktop service to apply changes
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('105') }} -- systemctl restart chrome-remote-desktop@{{ desktop_user | default('dev') }}"
+  register: restart_crd
+  changed_when: true
+
+- name: Display CRD fix completion
+  ansible.builtin.debug:
+    msg: "✅ Chrome Remote Desktop fixes applied successfully"

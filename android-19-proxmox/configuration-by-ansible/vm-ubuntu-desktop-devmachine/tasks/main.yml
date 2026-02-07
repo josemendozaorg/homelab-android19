@@ -11,6 +11,11 @@
   tags: [dns, configure]
   when: vm_config is defined
 
+- name: Include Chrome Remote Desktop fixes
+  include_tasks: fix-chrome-remote-desktop.yml
+  tags: [crd, fix]
+  when: vm_config is defined
+
 - name: Display installation instructions
   ansible.builtin.debug:
     msg: |

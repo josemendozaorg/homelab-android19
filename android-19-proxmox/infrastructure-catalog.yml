@@ -64,11 +64,11 @@ services:
     name: "ubuntu-desktop-dev"
     type: "vm"
     ip: "192.168.0.103"
-    description: "Ubuntu Desktop development workstation (Ubuntu 24.04 + Omakub)"
-    iso: "ubuntu-24.04.1-desktop-amd64.iso"  # Boot from Ubuntu Desktop ISO
-    cloud_init: false     # Desktop ISO requires manual installation (cloud-init in GUI not fully automated)
-    agent: true           # QEMU guest agent enabled
-    onboot: false         # Manual start (development workstation)
+    description: "Ubuntu Desktop clean master template (Ubuntu 24.04 + Omakub)"
+    template_vm_id: 103  # Self-reference for clarity or used as clone source
+    cloud_init: true
+    agent: true
+    onboot: false
     resources:
       cores: 32
       memory: 38912
@@ -80,7 +80,7 @@ services:
     type: "vm"
     ip: "192.168.0.106"
     description: "OpenClaw game engine development workstation"
-    template_vm_id: 104
+    template_vm_id: 103
     cloud_init: true
     agent: true
     onboot: false
