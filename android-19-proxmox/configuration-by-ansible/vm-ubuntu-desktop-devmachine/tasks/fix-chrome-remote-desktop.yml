@@ -25,6 +25,12 @@
   register: add_input_group
   changed_when: false
 
+- name: Set system boot target to multi-user (Headless Mode)
+  ansible.builtin.command:
+    cmd: "qm guest exec {{ vm_config.id | default('105') }} -- systemctl set-default multi-user.target"
+  register: set_headless
+  changed_when: "'Created symlink' in set_headless.stdout or 'Created symlink' in set_headless.stderr"
+
 - name: Configure Chrome Remote Desktop session (Headless Ubuntu fix)
   ansible.builtin.command:
     cmd: |
